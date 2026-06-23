@@ -4,17 +4,23 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import type { Transaction, User } from '@prisma/client';
+import type { User } from '@prisma/client';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { FirebaseAuthGuard } from '../auth/guards/firebase-auth.guard';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { QueryTransactionsDto } from './dto/query-transactions.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
-import { TransactionsService } from './transactions.service';
+import {
+  TransactionResponse,
+  TransactionsService,
+} from './transactions.service';
 
 @Controller('transactions')
 @UseGuards(FirebaseAuthGuard)
@@ -25,37 +31,40 @@ export class TransactionsController {
   create(
     @CurrentUser() user: User,
     @Body() dto: CreateTransactionDto,
-  ): Promise<Transaction> {
+  ): Promise<TransactionResponse> {
     return this.transactionsService.create(user.id, dto);
   }
 
   @Get()
-  findAll(@CurrentUser() user: User): Promise<Transaction[]> {
-    return this.transactionsService.findAll(user.id);
+  findAll(
+    @CurrentUser() user: User,
+    @Query() query: QueryTransactionsDto,
+  ): Promise<TransactionResponse[]> {
+    return this.transactionsService.findAll(user.id, query);
   }
 
   @Get(':id')
   findOne(
     @CurrentUser() user: User,
-    @Param('id') id: string,
-  ): Promise<Transaction> {
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<TransactionResponse> {
     return this.transactionsService.findOne(user.id, id);
   }
 
   @Patch(':id')
   update(
     @CurrentUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTransactionDto,
-  ): Promise<Transaction> {
+  ): Promise<TransactionResponse> {
     return this.transactionsService.update(user.id, id, dto);
   }
 
   @Delete(':id')
   remove(
     @CurrentUser() user: User,
-    @Param('id') id: string,
-  ): Promise<Transaction> {
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<TransactionResponse> {
     return this.transactionsService.remove(user.id, id);
   }
 }

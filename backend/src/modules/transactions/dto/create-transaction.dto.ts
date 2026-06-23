@@ -8,17 +8,17 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   Min,
 } from 'class-validator';
 
 export class CreateTransactionDto {
-  @IsString()
+  @IsUUID()
   @IsOptional()
   creditCardId?: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   categoryId!: string;
 
   @IsString()
@@ -26,7 +26,8 @@ export class CreateTransactionDto {
   description!: string;
 
   @Type(() => Number)
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
   amount!: number;
 
   @IsEnum(TransactionType)
@@ -54,7 +55,8 @@ export class CreateTransactionDto {
 
   @Type(() => Number)
   @IsInt()
-  @Min(1)
+  @Min(1900)
+  @Max(9999)
   @IsOptional()
   invoiceStartYear?: number;
 

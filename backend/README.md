@@ -98,8 +98,8 @@ Sem token, a rota deve responder `401 Unauthorized`. Com token valido, se o usua
 - `users`: expoe `GET /users/me` para retornar o usuario logado.
 - `credit-cards`: CRUD de cartoes de credito do usuario logado.
 - `categories`: CRUD de categorias do usuario logado.
-- `transactions`: CRUD simples de transacoes, sem gerar parcelas automaticamente.
-- `invoices`: estrutura inicial de faturas.
+- `transactions`: CRUD de transacoes, com geracao automatica de parcelas para compras no cartao de credito.
+- `invoices`: consulta faturas calculadas a partir de parcelas e permite alterar status das parcelas.
 - `health`: health check da API.
 
 Todas as rotas de negocio usam:
@@ -132,18 +132,129 @@ GET /transactions/:id
 PATCH /transactions/:id
 DELETE /transactions/:id
 
-GET /invoices
+GET /invoices?month=7&year=2026
+PATCH /invoices/installments/:id/pay
+PATCH /invoices/installments/:id/reopen
+PATCH /invoices/installments/:id/cancel
 ```
 
 Cartoes, categorias e transacoes sempre usam o usuario autenticado vindo do token. Nao envie `userId` no body.
 
-Faturas e geracao de parcelas serao implementadas na proxima etapa. Por enquanto `GET /invoices` retorna:
+### Criar transacao no cartao de credito
+
+`POST /transactions` cria a transacao original. Quando `paymentMethod` for `CREDIT_CARD`, a API tambem cria as parcelas em `installments`.
+
+```bash
+curl -X POST http://localhost:3000/transactions \
+  -H "Authorization: Bearer TOKEN_DO_FIREBASE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Mercado",
+    "amount": 300,
+    "transactionType": "EXPENSE",
+    "paymentMethod": "CREDIT_CARD",
+    "purchaseDate": "2026-06-23",
+    "categoryId": "uuid-da-categoria",
+    "creditCardId": "uuid-do-cartao",
+    "installmentsCount": 3,
+    "invoiceStartMonth": 7,
+    "invoiceStartYear": 2026,
+    "notes": "Compra mensal"
+  }'
+```
+
+Uma compra de `300` em `3x`, iniciando na fatura `07/2026`, gera parcelas de `100` em `07/2026`, `08/2026` e `09/2026`. Quando ha diferenca de centavos no arredondamento, a ultima parcela recebe o ajuste.
+
+Para metodos que nao sao cartao de credito, envie os campos basicos:
+
+```bash
+curl -X POST http://localhost:3000/transactions \
+  -H "Authorization: Bearer TOKEN_DO_FIREBASE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Padaria",
+    "amount": 25.5,
+    "transactionType": "EXPENSE",
+    "paymentMethod": "PIX",
+    "purchaseDate": "2026-06-23",
+    "categoryId": "uuid-da-categoria"
+  }'
+```
+
+`PATCH /transactions/:id` nesta etapa permite alterar apenas `description`, `notes`, `categoryId` e `purchaseDate`. Campos como `amount`, `paymentMethod`, `creditCardId`, `installmentsCount`, `invoiceStartMonth` e `invoiceStartYear` ficam bloqueados porque exigem recalculo de parcelas.
+
+### Consultar fatura
+
+`GET /invoices` calcula a fatura a partir das parcelas `OPEN`, sem criar tabela de fatura.
+
+```bash
+curl "http://localhost:3000/invoices?month=7&year=2026" \
+  -H "Authorization: Bearer TOKEN_DO_FIREBASE"
+```
+
+Filtros opcionais:
+
+```bash
+curl "http://localhost:3000/invoices?month=7&year=2026&creditCardId=uuid-do-cartao" \
+  -H "Authorization: Bearer TOKEN_DO_FIREBASE"
+
+curl "http://localhost:3000/invoices?month=7&year=2026&creditCardId=uuid-do-cartao&categoryId=uuid-da-categoria" \
+  -H "Authorization: Bearer TOKEN_DO_FIREBASE"
+```
+
+Resposta resumida:
 
 ```json
 {
-  "message": "Invoices module ready"
+  "month": 7,
+  "year": 2026,
+  "total": 850,
+  "filters": {
+    "creditCardId": null,
+    "categoryId": null
+  },
+  "items": [
+    {
+      "id": "installment-id",
+      "description": "Mercado",
+      "amount": 100,
+      "installmentNumber": 1,
+      "totalInstallments": 3,
+      "status": "OPEN",
+      "category": {
+        "id": "category-id",
+        "name": "Alimentacao",
+        "color": "#22c55e",
+        "icon": "utensils"
+      },
+      "creditCard": {
+        "id": "card-id",
+        "name": "Nubank",
+        "color": "#8b5cf6"
+      },
+      "transaction": {
+        "id": "transaction-id",
+        "purchaseDate": "2026-06-23T00:00:00.000Z"
+      }
+    }
+  ]
 }
 ```
+
+### Alterar status de parcela
+
+```bash
+curl -X PATCH http://localhost:3000/invoices/installments/uuid-da-parcela/pay \
+  -H "Authorization: Bearer TOKEN_DO_FIREBASE"
+
+curl -X PATCH http://localhost:3000/invoices/installments/uuid-da-parcela/reopen \
+  -H "Authorization: Bearer TOKEN_DO_FIREBASE"
+
+curl -X PATCH http://localhost:3000/invoices/installments/uuid-da-parcela/cancel \
+  -H "Authorization: Bearer TOKEN_DO_FIREBASE"
+```
+
+Todas as consultas e alteracoes validam o usuario autenticado. A API nunca aceita `userId` enviado pelo frontend e nao usa Supabase Client no backend.
 
 ## Health check
 
