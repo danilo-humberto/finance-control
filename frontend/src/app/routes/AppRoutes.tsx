@@ -12,6 +12,7 @@ import { InvoicesPage } from '../../pages/invoices/InvoicesPage';
 import { SettingsPage } from '../../pages/settings/SettingsPage';
 import { NewTransactionPage } from '../../pages/transactions/NewTransactionPage';
 import { TransactionsPage } from '../../pages/transactions/TransactionsPage';
+import { UiPreviewPage } from '../../pages/ui-preview/UiPreviewPage';
 import { PrivateRoute } from './PrivateRoute';
 
 export function AppRoutes() {
@@ -33,6 +34,7 @@ export function AppRoutes() {
             <Route path="/credit-cards" element={<CreditCardsPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/ui-preview" element={<UiPreviewPage />} />
           </Route>
         </Route>
 

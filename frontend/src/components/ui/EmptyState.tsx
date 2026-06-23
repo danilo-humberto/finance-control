@@ -11,7 +11,7 @@ export function EmptyState({ title, description, action, icon }: EmptyStateProps
   return (
     <section className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed border-app-border bg-app-surface px-6 py-10 text-center">
       {icon ? (
-        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-brand-900/30 text-brand-400">
+        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-app-icon text-brand-400">
           {icon}
         </div>
       ) : null}

@@ -9,7 +9,7 @@ type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
 };
 
 const variantClasses: Record<BadgeVariant, string> = {
-  default: 'border-brand-700/60 bg-brand-900/30 text-brand-300',
+  default: 'border-brand-700/60 bg-app-icon text-brand-300',
   success: 'border-success-border bg-success-surface text-success-text',
   warning: 'border-warning-border bg-warning-surface text-warning-text',
   danger: 'border-danger-border bg-danger-surface text-danger-text',
