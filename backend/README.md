@@ -35,6 +35,9 @@ Copie `.env.example` para `.env` e ajuste os valores locais quando necessario.
 | `CORS_ORIGIN` | `http://localhost:5173` | Origem permitida para CORS. Use virgula para multiplas origens. |
 | `DATABASE_URL` | - | URL de conexao PostgreSQL usada pela aplicacao. No Supabase, prefira a URL pooled quando aplicavel. |
 | `DIRECT_URL` | - | URL direta PostgreSQL usada pelo Prisma em migrations. |
+| `FIREBASE_PROJECT_ID` | - | ID do projeto Firebase usado pelo Firebase Admin SDK. |
+| `FIREBASE_CLIENT_EMAIL` | - | Client email da service account do Firebase Admin SDK. |
+| `FIREBASE_PRIVATE_KEY` | - | Private key da service account. Use `\n` no lugar das quebras de linha dentro do `.env`. |
 
 Nao coloque credenciais reais no `.env.example`.
 
@@ -43,6 +46,9 @@ Exemplo sem credenciais reais:
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:6543/DATABASE?pgbouncer=true"
 DIRECT_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE"
+FIREBASE_PROJECT_ID="finance-control-dev"
+FIREBASE_CLIENT_EMAIL="firebase-adminsdk@example.iam.gserviceaccount.com"
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nEXAMPLE\n-----END PRIVATE KEY-----\n"
 ```
 
 ## Prisma
@@ -66,6 +72,25 @@ Abra o Prisma Studio:
 ```bash
 npm run prisma:studio
 ```
+
+## Autenticacao Firebase
+
+O login fica no frontend com Firebase Auth. O backend recebe o token Firebase e valida com Firebase Admin SDK.
+
+O frontend deve enviar o token no header:
+
+```http
+Authorization: Bearer TOKEN_DO_FIREBASE
+```
+
+Rota de teste do usuario logado:
+
+```bash
+curl http://localhost:3000/auth/me \
+  -H "Authorization: Bearer TOKEN_DO_FIREBASE"
+```
+
+Sem token, a rota deve responder `401 Unauthorized`. Com token valido, se o usuario ainda nao existir no banco, ele sera criado automaticamente com `firebaseUid`, `email`, `name` e `photoUrl`.
 
 ## Health check
 

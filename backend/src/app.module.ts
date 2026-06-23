@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { CreditCardsModule } from './modules/credit-cards/credit-cards.module';
 import { HealthModule } from './modules/health/health.module';
@@ -15,6 +16,7 @@ import { UsersModule } from './modules/users/users.module';
       isGlobal: true,
     }),
     HealthModule,
+    AuthModule,
     UsersModule,
     CreditCardsModule,
     CategoriesModule,

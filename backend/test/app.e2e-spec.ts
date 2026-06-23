@@ -42,4 +42,10 @@ describe('Health route (e2e)', () => {
         service: 'finance-control-api',
       });
   });
+
+  it('GET /auth/me without token returns unauthorized', () => {
+    const httpServer = app.getHttpServer() as Server;
+
+    return request(httpServer).get('/auth/me').expect(401);
+  });
 });
