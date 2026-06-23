@@ -88,6 +88,15 @@ Componentes criados:
 - `Modal`: base simples com titulo, conteudo e botao de fechar.
 - `PageHeader`, `EmptyState` e `LoadingScreen`: blocos reutilizaveis para
   paginas, estados vazios e carregamento.
+- `sheet` e `dialog`: primitivas estilo shadcn/ui baseadas em Radix Dialog.
+- `BottomNavigation`: navegacao mobile fixa com botao central de criacao.
+- `QuickCreateSheet`: menu rapido para nova compra, cartao e categoria.
+- `BaseBottomSheet`, `CardFormSheet` e `CategoryFormSheet`: sheets mobile de
+  formulario.
+- `ActionSheet` e `ConfirmDialog`: acoes contextuais e confirmacao destrutiva.
+
+Os mocks temporarios ficam centralizados em `src/mocks/financeMocks.ts`. Eles
+servem somente para preview visual e nao integram com API.
 
 Exemplo de uso:
 
@@ -120,6 +129,38 @@ O provider salva a preferencia em `localStorage` e aplica `dark` ou `light` em
 `document.documentElement`. O Tailwind continua configurado com
 `darkMode: "class"`.
 
+### Preview temporario
+
+A rota privada `/ui-preview` abre uma bancada simples para testar:
+
+- `CardFormSheet` em modo `create` e `edit`.
+- `CategoryFormSheet` em modo `create` e `edit`.
+- `ActionSheet`.
+- `ConfirmDialog`.
+
+O botao central `+` da bottom navigation abre o `QuickCreateSheet`. Nele:
+
+- `Nova compra` navega para `/transactions/new`.
+- `Adicionar cartao` abre o sheet de cartao.
+- `Adicionar categoria` abre o sheet de categoria.
+
+### Dashboard mobile inicial
+
+A rota privada `/` renderiza o dashboard mobile inicial usando somente mocks de
+`src/mocks/financeMocks.ts`.
+
+Componentes da tela inicial:
+
+- `DashboardHeader`: saudacao do usuario e avatar simples.
+- `InvoiceCarousel`: secao `Fatura atual`, carrossel horizontal e dots estaticos.
+- `CurrentInvoiceCard`: card de fatura com status, vencimento, limite, progresso
+  de uso e link `Ver fatura` para `/invoices`.
+- `RecentTransactions`: lista de ultimas movimentacoes e link `Ver todas` para
+  `/transactions`.
+
+Essa tela ainda nao integra API, nao define layout desktop final e nao implementa
+regras financeiras reais.
+
 ## Rotas iniciais
 
 Rotas publicas:
@@ -137,6 +178,7 @@ Rotas privadas protegidas por Firebase Auth:
 - `/credit-cards`
 - `/categories`
 - `/settings`
+- `/ui-preview`
 
 Sem usuario logado, essas rotas redirecionam para `/login`.
 
