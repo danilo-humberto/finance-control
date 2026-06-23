@@ -1,4 +1,13 @@
 import { Module } from '@nestjs/common';
 
-@Module({})
+import { PrismaModule } from '../../prisma/prisma.module';
+import { AuthModule } from '../auth/auth.module';
+import { CreditCardsController } from './credit-cards.controller';
+import { CreditCardsService } from './credit-cards.service';
+
+@Module({
+  imports: [AuthModule, PrismaModule],
+  controllers: [CreditCardsController],
+  providers: [CreditCardsService],
+})
 export class CreditCardsModule {}

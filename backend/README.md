@@ -92,6 +92,59 @@ curl http://localhost:3000/auth/me \
 
 Sem token, a rota deve responder `401 Unauthorized`. Com token valido, se o usuario ainda nao existir no banco, ele sera criado automaticamente com `firebaseUid`, `email`, `name` e `photoUrl`.
 
+## Modulos da API
+
+- `auth`: valida o token Firebase e expoe `GET /auth/me`.
+- `users`: expoe `GET /users/me` para retornar o usuario logado.
+- `credit-cards`: CRUD de cartoes de credito do usuario logado.
+- `categories`: CRUD de categorias do usuario logado.
+- `transactions`: CRUD simples de transacoes, sem gerar parcelas automaticamente.
+- `invoices`: estrutura inicial de faturas.
+- `health`: health check da API.
+
+Todas as rotas de negocio usam:
+
+```http
+Authorization: Bearer TOKEN_DO_FIREBASE
+```
+
+Rotas principais:
+
+```http
+GET /auth/me
+GET /users/me
+
+POST /credit-cards
+GET /credit-cards
+GET /credit-cards/:id
+PATCH /credit-cards/:id
+DELETE /credit-cards/:id
+
+POST /categories
+GET /categories
+GET /categories/:id
+PATCH /categories/:id
+DELETE /categories/:id
+
+POST /transactions
+GET /transactions
+GET /transactions/:id
+PATCH /transactions/:id
+DELETE /transactions/:id
+
+GET /invoices
+```
+
+Cartoes, categorias e transacoes sempre usam o usuario autenticado vindo do token. Nao envie `userId` no body.
+
+Faturas e geracao de parcelas serao implementadas na proxima etapa. Por enquanto `GET /invoices` retorna:
+
+```json
+{
+  "message": "Invoices module ready"
+}
+```
+
 ## Health check
 
 ```bash

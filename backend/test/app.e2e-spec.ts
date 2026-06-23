@@ -28,7 +28,7 @@ describe('Health route (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   it('GET /health returns the API health status', () => {
@@ -47,5 +47,35 @@ describe('Health route (e2e)', () => {
     const httpServer = app.getHttpServer() as Server;
 
     return request(httpServer).get('/auth/me').expect(401);
+  });
+
+  it('GET /users/me without token returns unauthorized', () => {
+    const httpServer = app.getHttpServer() as Server;
+
+    return request(httpServer).get('/users/me').expect(401);
+  });
+
+  it('GET /credit-cards without token returns unauthorized', () => {
+    const httpServer = app.getHttpServer() as Server;
+
+    return request(httpServer).get('/credit-cards').expect(401);
+  });
+
+  it('GET /categories without token returns unauthorized', () => {
+    const httpServer = app.getHttpServer() as Server;
+
+    return request(httpServer).get('/categories').expect(401);
+  });
+
+  it('GET /transactions without token returns unauthorized', () => {
+    const httpServer = app.getHttpServer() as Server;
+
+    return request(httpServer).get('/transactions').expect(401);
+  });
+
+  it('GET /invoices without token returns unauthorized', () => {
+    const httpServer = app.getHttpServer() as Server;
+
+    return request(httpServer).get('/invoices').expect(401);
   });
 });
