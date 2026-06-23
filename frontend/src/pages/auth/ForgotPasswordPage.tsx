@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import { Button } from '../../components/ui/Button';
+import { Card, CardContent } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { getFirebaseErrorMessage } from '../../utils/firebaseErrors';
 
@@ -31,53 +35,46 @@ export function ForgotPasswordPage() {
 
   return (
     <section className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-slate-50">
-          Recuperar senha
-        </h1>
-        <p className="text-sm leading-6 text-slate-400">
-          Informe seu e-mail para receber as instrucoes de recuperacao.
-        </p>
-      </div>
+      <PageHeader
+        title="Recuperar senha"
+        description="Informe seu e-mail para receber as instrucoes de recuperacao."
+      />
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-slate-200">E-mail</span>
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            autoComplete="email"
-            required
-            className="h-11 w-full rounded-md border border-slate-800 bg-slate-900 px-3 text-sm text-slate-100 outline-none transition-colors placeholder:text-slate-500 focus:border-brand-500"
-            placeholder="voce@email.com"
-          />
-        </label>
+      <Card>
+        <CardContent className="pt-5">
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <Input
+              label="E-mail"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              autoComplete="email"
+              required
+              placeholder="voce@email.com"
+            />
 
-        {error ? (
-          <p className="rounded-md border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-200">
-            {error}
-          </p>
-        ) : null}
+            {error ? (
+              <p className="rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger-text">
+                {error}
+              </p>
+            ) : null}
 
-        {successMessage ? (
-          <p className="rounded-md border border-brand-900/70 bg-brand-900/30 px-3 py-2 text-sm text-brand-400">
-            {successMessage}
-          </p>
-        ) : null}
+            {successMessage ? (
+              <p className="rounded-md border border-success-border bg-success-surface px-3 py-2 text-sm text-success-text">
+                {successMessage}
+              </p>
+            ) : null}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="h-11 w-full rounded-md bg-brand-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {isSubmitting ? 'Enviando...' : 'Enviar e-mail'}
-        </button>
-      </form>
+            <Button type="submit" loading={isSubmitting} className="w-full">
+              {isSubmitting ? 'Enviando...' : 'Enviar e-mail'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-app-muted">
         Lembrou a senha?{' '}
-        <Link className="font-medium text-brand-400" to="/login">
+        <Link className="font-medium text-brand-500" to="/login">
           Voltar para login
         </Link>
       </p>

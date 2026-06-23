@@ -2,15 +2,20 @@ import {
   CreditCard,
   Home,
   LogOut,
+  Moon,
   ReceiptText,
   Settings,
+  Sun,
   Tags,
   WalletCards,
 } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 
+import { Button } from '../components/ui/Button';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../hooks/useTheme';
+import { cn } from '../lib/utils';
 
 const navigationItems = [
   { label: 'Inicio', to: '/', icon: Home },
@@ -23,6 +28,7 @@ const navigationItems = [
 
 export function AppLayout() {
   const { logout, user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   async function handleLogout() {
@@ -36,27 +42,48 @@ export function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-app-bg text-app-text">
       <main className="mx-auto min-h-screen w-full max-w-5xl px-4 pb-24 pt-6 sm:px-6 lg:px-8">
         <header className="mb-8 flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-wide text-brand-400">
               Finance Control
             </p>
-            <p className="truncate text-sm text-slate-400">
+            <p className="truncate text-sm text-app-muted">
               {user?.displayName || user?.email || 'Usuario logado'}
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-800 px-3 text-sm font-medium text-slate-200 transition-colors hover:border-slate-700 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <LogOut aria-hidden="true" className="h-4 w-4" />
-            <span>{isLoggingOut ? 'Saindo...' : 'Sair'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={toggleTheme}
+              aria-label={
+                theme === 'dark'
+                  ? 'Alternar para tema claro'
+                  : 'Alternar para tema escuro'
+              }
+            >
+              {theme === 'dark' ? (
+                <Sun aria-hidden="true" className="h-4 w-4" />
+              ) : (
+                <Moon aria-hidden="true" className="h-4 w-4" />
+              )}
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleLogout}
+              loading={isLoggingOut}
+              leftIcon={<LogOut aria-hidden="true" className="h-4 w-4" />}
+            >
+              {isLoggingOut ? 'Saindo...' : 'Sair'}
+            </Button>
+          </div>
         </header>
 
         <Outlet />
@@ -64,7 +91,7 @@ export function AppLayout() {
 
       <nav
         aria-label="Navegacao principal"
-        className="fixed inset-x-0 bottom-0 border-t border-slate-800 bg-slate-950/95 px-2 py-2 backdrop-blur"
+        className="fixed inset-x-0 bottom-0 border-t border-app-border bg-app-bg/95 px-2 py-2 backdrop-blur"
       >
         <div className="mx-auto grid max-w-5xl grid-cols-6 gap-1">
           {navigationItems.map((item) => {
@@ -76,12 +103,12 @@ export function AppLayout() {
                 to={item.to}
                 end={item.to === '/'}
                 className={({ isActive }) =>
-                  [
+                  cn(
                     'flex min-h-12 flex-col items-center justify-center gap-1 rounded-md px-1 text-[0.68rem] font-medium transition-colors',
                     isActive
-                      ? 'bg-brand-900 text-brand-400'
-                      : 'text-slate-400 hover:bg-slate-900 hover:text-slate-100',
-                  ].join(' ')
+                      ? 'bg-brand-900/40 text-brand-400'
+                      : 'text-app-muted hover:bg-app-surface hover:text-app-text',
+                  )
                 }
               >
                 <Icon aria-hidden="true" className="h-5 w-5" />

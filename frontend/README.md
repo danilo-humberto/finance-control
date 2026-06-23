@@ -12,6 +12,7 @@ Frontend React do Finance Control.
 - GSAP
 - Vite PWA
 - Lucide React
+- Design system inicial em `src/components/ui`
 
 ## Setup local
 
@@ -68,6 +69,56 @@ Authorization: Bearer TOKEN_DO_FIREBASE
 ```
 
 O backend valida esse token com Firebase Admin SDK.
+
+## Design system inicial
+
+A base visual fica em `src/components/ui` e usa TailwindCSS com tokens
+semanticos. O tema padrao e dark, com suporte a light mode via
+`ThemeProvider` e `useTheme`.
+
+Componentes criados:
+
+- `Button`: variantes `primary`, `secondary`, `ghost` e `danger`; tamanhos
+  `sm`, `md` e `lg`; suporta `loading`, `disabled` e `leftIcon`.
+- `Input`, `Select` e `Textarea`: label, helper text, erro, foco visivel e
+  estilos dark/light.
+- `Card`, `CardHeader`, `CardTitle` e `CardContent`: containers simples para
+  telas e formularios.
+- `Badge`: variantes `default`, `success`, `warning`, `danger` e `muted`.
+- `Modal`: base simples com titulo, conteudo e botao de fechar.
+- `PageHeader`, `EmptyState` e `LoadingScreen`: blocos reutilizaveis para
+  paginas, estados vazios e carregamento.
+
+Exemplo de uso:
+
+```tsx
+import { Button } from './components/ui/Button';
+import { Card, CardContent } from './components/ui/Card';
+import { Input } from './components/ui/Input';
+
+export function Example() {
+  return (
+    <Card>
+      <CardContent className="space-y-4 pt-5">
+        <Input label="E-mail" placeholder="voce@email.com" />
+        <Button type="button">Salvar</Button>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+Para alternar tema:
+
+```tsx
+import { useTheme } from './hooks/useTheme';
+
+const { theme, toggleTheme } = useTheme();
+```
+
+O provider salva a preferencia em `localStorage` e aplica `dark` ou `light` em
+`document.documentElement`. O Tailwind continua configurado com
+`darkMode: "class"`.
 
 ## Rotas iniciais
 
