@@ -39,6 +39,36 @@ VITE_FIREBASE_APP_ID=""
 
 Nao coloque credenciais reais no repositorio.
 
+Para configurar o Firebase, crie um app web no Firebase Console e copie as
+chaves publicas do SDK para as variaveis `VITE_FIREBASE_*`. Essas chaves sao
+usadas pelo Firebase SDK no navegador; mesmo assim, mantenha o `.env` local fora
+do Git.
+
+## Autenticacao
+
+O frontend usa Firebase Auth com e-mail e senha.
+
+- `src/contexts/AuthContext.tsx` controla usuario logado, carregamento, login,
+  cadastro, logout, recuperacao de senha e leitura do ID token.
+- `src/hooks/useAuth.ts` expoe o contexto de autenticacao para componentes.
+- `src/app/routes/PrivateRoute.tsx` protege as rotas privadas e redireciona
+  usuarios nao logados para `/login`.
+
+O cadastro atualiza o `displayName` do usuario com o nome informado. A protecao
+usa `onAuthStateChanged` para manter a sessao sincronizada com o Firebase.
+
+## Backend autenticado
+
+`src/lib/api.ts` configura uma instancia Axios com `VITE_API_URL`. Antes de cada
+requisicao, o interceptor consulta `auth.currentUser?.getIdToken()` e, quando
+existe usuario logado, envia:
+
+```http
+Authorization: Bearer TOKEN_DO_FIREBASE
+```
+
+O backend valida esse token com Firebase Admin SDK.
+
 ## Rotas iniciais
 
 Rotas publicas:
@@ -47,7 +77,7 @@ Rotas publicas:
 - `/register`
 - `/forgot-password`
 
-Rotas privadas ainda sem protecao real:
+Rotas privadas protegidas por Firebase Auth:
 
 - `/`
 - `/invoices`
@@ -57,7 +87,7 @@ Rotas privadas ainda sem protecao real:
 - `/categories`
 - `/settings`
 
-A protecao real das rotas sera adicionada depois da configuracao completa do Firebase Auth no frontend.
+Sem usuario logado, essas rotas redirecionam para `/login`.
 
 ## Comandos uteis
 

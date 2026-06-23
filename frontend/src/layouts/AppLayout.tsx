@@ -1,12 +1,16 @@
 import {
   CreditCard,
   Home,
+  LogOut,
   ReceiptText,
   Settings,
   Tags,
   WalletCards,
 } from 'lucide-react';
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+
+import { useAuth } from '../hooks/useAuth';
 
 const navigationItems = [
   { label: 'Inicio', to: '/', icon: Home },
@@ -18,9 +22,43 @@ const navigationItems = [
 ];
 
 export function AppLayout() {
+  const { logout, user } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setIsLoggingOut(true);
+
+    try {
+      await logout();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <main className="mx-auto min-h-screen w-full max-w-5xl px-4 pb-24 pt-6 sm:px-6 lg:px-8">
+        <header className="mb-8 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-wide text-brand-400">
+              Finance Control
+            </p>
+            <p className="truncate text-sm text-slate-400">
+              {user?.displayName || user?.email || 'Usuario logado'}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-800 px-3 text-sm font-medium text-slate-200 transition-colors hover:border-slate-700 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <LogOut aria-hidden="true" className="h-4 w-4" />
+            <span>{isLoggingOut ? 'Saindo...' : 'Sair'}</span>
+          </button>
+        </header>
+
         <Outlet />
       </main>
 

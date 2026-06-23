@@ -12,6 +12,7 @@ import { InvoicesPage } from '../../pages/invoices/InvoicesPage';
 import { SettingsPage } from '../../pages/settings/SettingsPage';
 import { NewTransactionPage } from '../../pages/transactions/NewTransactionPage';
 import { TransactionsPage } from '../../pages/transactions/TransactionsPage';
+import { PrivateRoute } from './PrivateRoute';
 
 export function AppRoutes() {
   return (
@@ -23,14 +24,16 @@ export function AppRoutes() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/invoices" element={<InvoicesPage />} />
-          <Route path="/transactions" element={<TransactionsPage />} />
-          <Route path="/transactions/new" element={<NewTransactionPage />} />
-          <Route path="/credit-cards" element={<CreditCardsPage />} />
-          <Route path="/categories" element={<CategoriesPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+        <Route element={<PrivateRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/invoices" element={<InvoicesPage />} />
+            <Route path="/transactions" element={<TransactionsPage />} />
+            <Route path="/transactions/new" element={<NewTransactionPage />} />
+            <Route path="/credit-cards" element={<CreditCardsPage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
