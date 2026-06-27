@@ -32,6 +32,47 @@ const emptyValues: CardFormValues = {
   limit: '',
 };
 
+const moneyFormatter = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+});
+
+function parseCurrencyValue(value: string) {
+  const cleanValue = value.replace(/[^\d,.]/g, '');
+
+  if (!cleanValue) {
+    return 0;
+  }
+
+  if (cleanValue.includes(',')) {
+    return Number.parseFloat(cleanValue.replace(/\./g, '').replace(',', '.'));
+  }
+
+  return Number.parseFloat(cleanValue.replace(/\./g, ''));
+}
+
+function formatCurrencyValue(value: string | undefined) {
+  if (!value) {
+    return '';
+  }
+
+  const parsedValue = parseCurrencyValue(value);
+
+  return Number.isFinite(parsedValue) && parsedValue > 0
+    ? moneyFormatter.format(parsedValue)
+    : '';
+}
+
+function formatCurrencyInput(value: string) {
+  const digits = value.replace(/\D/g, '');
+
+  if (!digits || /^0+$/.test(digits)) {
+    return '';
+  }
+
+  return moneyFormatter.format(Number.parseInt(digits, 10) / 100);
+}
+
 export function CardFormSheet({
   open,
   onOpenChange,
@@ -44,7 +85,12 @@ export function CardFormSheet({
 
   useEffect(() => {
     if (open) {
-      setValues({ ...emptyValues, ...initialData });
+      const nextValues = { ...emptyValues, ...initialData };
+
+      setValues({
+        ...nextValues,
+        limit: formatCurrencyValue(nextValues.limit),
+      });
     }
   }, [initialData, open]);
 
@@ -53,6 +99,10 @@ export function CardFormSheet({
       ...currentValues,
       [field]: value,
     }));
+  }
+
+  function updateLimitValue(value: string) {
+    updateValue('limit', formatCurrencyInput(value));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -131,9 +181,9 @@ export function CardFormSheet({
 
         <Input
           label="Limite"
-          inputMode="decimal"
+          inputMode="numeric"
           value={values.limit}
-          onChange={(event) => updateValue('limit', event.target.value)}
+          onChange={(event) => updateLimitValue(event.target.value)}
           placeholder="R$ 0,00"
         />
 
