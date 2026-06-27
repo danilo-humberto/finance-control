@@ -12,9 +12,15 @@ export function AppLayout() {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const showAppHeader = !['/', '/invoices', '/transactions/new'].includes(
-    location.pathname,
-  );
+  const showAppHeader = ![
+    '/',
+    '/invoices',
+    '/transactions',
+    '/transactions/new',
+    '/credit-cards',
+    '/categories',
+    '/settings',
+  ].includes(location.pathname);
 
   async function handleLogout() {
     setIsLoggingOut(true);

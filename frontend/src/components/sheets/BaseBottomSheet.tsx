@@ -32,7 +32,6 @@ export function BaseBottomSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        showClose={false}
         className={cn(
           'mx-auto flex w-full max-w-lg flex-col overflow-hidden bg-app-surface px-5 pt-3',
           className,
@@ -43,7 +42,9 @@ export function BaseBottomSheet({
           <SheetTitle>{title}</SheetTitle>
           {description ? <SheetDescription>{description}</SheetDescription> : null}
         </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto pb-2">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {children}
+        </div>
         {footer ? <div className="pt-4">{footer}</div> : null}
       </SheetContent>
     </Sheet>

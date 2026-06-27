@@ -84,22 +84,22 @@ export function NewTransactionPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-md space-y-5">
-      <header className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-3">
+    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-md space-y-4">
+      <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center gap-3">
         <button
           type="button"
           aria-label="Voltar"
           onClick={handleBack}
-          className="flex h-11 w-11 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text shadow-lg shadow-black/15 transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text shadow-lg shadow-black/15 transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
-          <ArrowLeft aria-hidden="true" className="h-5 w-5" />
+          <ArrowLeft aria-hidden="true" className="h-4 w-4" />
         </button>
 
         <div className="min-w-0 text-center">
-          <h1 className="truncate text-[1.48rem] font-bold leading-tight text-app-text">
+          <h1 className="truncate text-[1.36rem] font-bold leading-tight text-app-text">
             Nova compra
           </h1>
-          <p className="mt-1 truncate text-[0.86rem] leading-5 text-app-muted">
+          <p className="mt-1 truncate text-[0.8rem] leading-5 text-app-muted">
             Adicione uma nova compra ao seu cartão
           </p>
         </div>
@@ -107,9 +107,9 @@ export function NewTransactionPage() {
         <button
           type="button"
           aria-label="Ajuda sobre nova compra"
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-800/60 bg-app-icon text-brand-400 shadow-lg shadow-brand-950/25 transition-colors hover:bg-brand-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-brand-800/60 bg-app-icon text-brand-400 shadow-lg shadow-brand-950/25 transition-colors hover:bg-brand-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
-          <CircleHelp aria-hidden="true" className="h-5 w-5" />
+          <CircleHelp aria-hidden="true" className="h-4 w-4" />
         </button>
       </header>
 
@@ -145,7 +145,7 @@ export function NewTransactionPage() {
         type="submit"
         size="lg"
         leftIcon={<Save aria-hidden="true" className="h-4 w-4" />}
-        className="h-12 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.92rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400"
+        className="h-11 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.86rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400"
       >
         Salvar compra
       </Button>

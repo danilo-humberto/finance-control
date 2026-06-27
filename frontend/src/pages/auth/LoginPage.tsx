@@ -1,12 +1,15 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Lock, Mail } from 'lucide-react';
 
-import { Button } from '../../components/ui/Button';
-import { Card, CardContent } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { PageHeader } from '../../components/ui/PageHeader';
-import { useAuth } from '../../hooks/useAuth';
-import { getFirebaseErrorMessage } from '../../utils/firebaseErrors';
+import { AuthField } from '@/components/auth/AuthField';
+import { AuthHeader } from '@/components/auth/AuthHeader';
+import { AuthMessage } from '@/components/auth/AuthMessage';
+import { AuthShell } from '@/components/auth/AuthShell';
+import { SocialLoginButton } from '@/components/auth/SocialLoginButton';
+import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/hooks/useAuth';
+import { getFirebaseErrorMessage } from '@/utils/firebaseErrors';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -32,62 +35,73 @@ export function LoginPage() {
   }
 
   return (
-    <section className="space-y-6">
-      <PageHeader
-        title="Login"
-        description="Entre com seu e-mail e senha para acessar o Finance Control."
-      />
+    <AuthShell>
+      <div className="space-y-6">
+        <AuthHeader
+          title="Bem-vindo de volta"
+          description="Entre para acompanhar suas faturas e movimentações"
+        />
 
-      <Card>
-        <CardContent className="pt-5">
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <Input
-              label="E-mail"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              required
-              placeholder="seu@email.com"
-            />
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <AuthField
+            label="E-mail"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+            required
+            placeholder="seu@email.com"
+            leftIcon={<Mail aria-hidden="true" className="h-4 w-4" />}
+          />
 
-            <Input
+          <div className="space-y-2">
+            <AuthField
               label="Senha"
-              type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="current-password"
               required
-              placeholder="Sua senha"
+              placeholder="Digite sua senha"
+              leftIcon={<Lock aria-hidden="true" className="h-4 w-4" />}
+              showPasswordToggle
             />
 
-            {error ? (
-              <p className="rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger-text">
-                {error}
-              </p>
-            ) : null}
+            <div className="flex justify-end">
+              <Link
+                className="text-[0.74rem] font-semibold text-brand-400 transition-colors hover:text-brand-300"
+                to="/forgot-password"
+              >
+                Esqueceu sua senha?
+              </Link>
+            </div>
+          </div>
 
-            <Button type="submit" loading={isSubmitting} className="w-full">
-              {isSubmitting ? 'Entrando...' : 'Entrar'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          {error ? <AuthMessage tone="error">{error}</AuthMessage> : null}
 
-      <div className="space-y-2 text-sm text-app-muted">
-        <p>
-          Ainda não tem conta?{' '}
-          <Link className="font-medium text-brand-500" to="/register">
-            Criar conta
-          </Link>
-        </p>
-        <p>
-          Esqueceu sua senha?{' '}
-          <Link className="font-medium text-brand-500" to="/forgot-password">
-            Recuperar senha
+          <Button
+            type="submit"
+            loading={isSubmitting}
+            className="h-11 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.86rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400"
+          >
+            {isSubmitting ? 'Entrando...' : 'Entrar'}
+          </Button>
+        </form>
+
+        <div className="flex items-center gap-3 text-[0.72rem] text-app-muted">
+          <span className="h-px flex-1 bg-app-border" />
+          <span>ou continue com</span>
+          <span className="h-px flex-1 bg-app-border" />
+        </div>
+
+        <SocialLoginButton onClick={() => console.log('Login com Google')} />
+
+        <p className="text-center text-[0.76rem] text-app-muted">
+          Ainda não tem uma conta?{' '}
+          <Link className="font-semibold text-brand-400" to="/register">
+            Cadastre-se
           </Link>
         </p>
       </div>
-    </section>
+    </AuthShell>
   );
 }

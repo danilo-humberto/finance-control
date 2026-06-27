@@ -7,11 +7,14 @@ export type MockUser = {
 export type MockCreditCard = {
   id: string;
   name: string;
+  logo: string;
   brand: string;
   type: string;
   lastFourDigits: string;
   limit: number;
   used: number;
+  currentInvoiceTotal: number;
+  dueDateLabel: string;
   closingDay: number;
   dueDay: number;
   color: string;
@@ -34,6 +37,12 @@ export type MockCategory = {
   icon: string;
   color: string;
   transactionsCount: number;
+};
+
+export type MockCategoriesSummary = {
+  total: number;
+  expenses: number;
+  incomes: number;
 };
 
 export type MockMovement = {
@@ -95,6 +104,15 @@ export type MockPurchaseFormDefaults = {
   };
 };
 
+export type MockCardsSummary = {
+  totalLimit: number;
+  usedLimit: number;
+  availableLimit: number;
+  openInvoiceTotal: number;
+  openCardsCount: number;
+  usedPercentage: number;
+};
+
 export type MockCurrentInvoice = {
   id: string;
   creditCardId: string;
@@ -120,6 +138,31 @@ export type MockRecentTransaction = {
   type: 'expense' | 'income';
 };
 
+export type MockTransactionPaymentType = 'card' | 'pix' | 'account';
+
+export type MockTransactionGroupKey = 'today' | 'yesterday' | 'week' | 'older';
+
+export type MockTransaction = {
+  id: string;
+  description: string;
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  paymentLabel: string;
+  paymentType: MockTransactionPaymentType;
+  groupKey: MockTransactionGroupKey;
+  groupLabel: string;
+  timeLabel: string;
+  amount: number;
+  type: 'expense' | 'income';
+};
+
+export type MockTransactionsSummary = {
+  income: number;
+  expense: number;
+  balance: number;
+};
+
 export const mockUser: MockUser = {
   name: 'Danilo Humberto',
   email: 'danilo@example.com',
@@ -130,40 +173,73 @@ export const mockCreditCards: MockCreditCard[] = [
   {
     id: 'card-nubank',
     name: 'Nubank',
+    logo: 'nu',
     brand: 'Mastercard',
     type: 'Crédito',
     lastFourDigits: '1234',
     limit: 5000,
-    used: 1256.8,
+    used: 2150,
+    currentInvoiceTotal: 1250,
+    dueDateLabel: '05/06',
     closingDay: 5,
-    dueDay: 20,
+    dueDay: 5,
     color: '#6d28d9',
   },
   {
     id: 'card-santander',
     name: 'Santander',
+    logo: 'S',
     brand: 'Visa',
     type: 'Crédito',
-    lastFourDigits: '9012',
-    limit: 3500,
-    used: 872.4,
+    lastFourDigits: '5678',
+    limit: 4000,
+    used: 1580,
+    currentInvoiceTotal: 780.4,
+    dueDateLabel: '10/06',
     closingDay: 8,
-    dueDay: 15,
+    dueDay: 10,
     color: '#dc2626',
   },
   {
     id: 'card-itau',
     name: 'Itaú',
+    logo: 'Itaú',
     brand: 'Elo',
     type: 'Crédito e débito',
-    lastFourDigits: '5678',
-    limit: 4200,
-    used: 1180.1,
+    lastFourDigits: '9012',
+    limit: 3000,
+    used: 0,
+    currentInvoiceTotal: 0,
+    dueDateLabel: '15/06',
     closingDay: 10,
-    dueDay: 25,
+    dueDay: 15,
     color: '#2563eb',
   },
+  {
+    id: 'card-c6',
+    name: 'C6 Bank',
+    logo: 'C6',
+    brand: 'Mastercard',
+    type: 'Crédito',
+    lastFourDigits: '3456',
+    limit: 4800,
+    used: 0,
+    currentInvoiceTotal: 0,
+    dueDateLabel: '20/06',
+    closingDay: 15,
+    dueDay: 20,
+    color: '#262626',
+  },
 ];
+
+export const mockCardsSummary: MockCardsSummary = {
+  totalLimit: 16800,
+  usedLimit: 9350,
+  availableLimit: 7450,
+  openInvoiceTotal: 2030.4,
+  openCardsCount: 2,
+  usedPercentage: 55.7,
+};
 
 export const mockInvoices: MockInvoice[] = [
   {
@@ -271,39 +347,23 @@ export const mockCategories: MockCategory[] = [
     type: 'expense',
     icon: 'Utensils',
     color: '#22c55e',
-    transactionsCount: 128,
+    transactionsCount: 12,
   },
   {
     id: 'cat-transport',
     name: 'Transporte',
     type: 'expense',
     icon: 'Car',
-    color: '#f59e0b',
-    transactionsCount: 41,
+    color: '#eab308',
+    transactionsCount: 8,
   },
   {
     id: 'cat-shopping',
     name: 'Compras',
     type: 'expense',
     icon: 'ShoppingBag',
-    color: '#7c3aed',
-    transactionsCount: 37,
-  },
-  {
-    id: 'cat-health',
-    name: 'Saúde',
-    type: 'expense',
-    icon: 'Heart',
-    color: '#ec4899',
-    transactionsCount: 18,
-  },
-  {
-    id: 'cat-salary',
-    name: 'Salário',
-    type: 'income',
-    icon: 'DollarSign',
-    color: '#16a34a',
-    transactionsCount: 12,
+    color: '#a855f7',
+    transactionsCount: 7,
   },
   {
     id: 'cat-home',
@@ -311,9 +371,55 @@ export const mockCategories: MockCategory[] = [
     type: 'expense',
     icon: 'Home',
     color: '#38bdf8',
-    transactionsCount: 24,
+    transactionsCount: 5,
+  },
+  {
+    id: 'cat-health',
+    name: 'Saúde',
+    type: 'expense',
+    icon: 'Heart',
+    color: '#f97316',
+    transactionsCount: 4,
+  },
+  {
+    id: 'cat-education',
+    name: 'Educação',
+    type: 'expense',
+    icon: 'GraduationCap',
+    color: '#ec4899',
+    transactionsCount: 3,
+  },
+  {
+    id: 'cat-salary',
+    name: 'Salário',
+    type: 'income',
+    icon: 'DollarSign',
+    color: '#22c55e',
+    transactionsCount: 1,
+  },
+  {
+    id: 'cat-investments',
+    name: 'Investimentos',
+    type: 'income',
+    icon: 'BookOpen',
+    color: '#06b6d4',
+    transactionsCount: 2,
+  },
+  {
+    id: 'cat-other',
+    name: 'Outros',
+    type: 'expense',
+    icon: 'Gift',
+    color: '#3b82f6',
+    transactionsCount: 2,
   },
 ];
+
+export const mockCategoriesSummary: MockCategoriesSummary = {
+  total: mockCategories.length,
+  expenses: mockCategories.filter((category) => category.type === 'expense').length,
+  incomes: mockCategories.filter((category) => category.type === 'income').length,
+};
 
 export const mockRecentTransactions: MockRecentTransaction[] = [
   {
@@ -377,6 +483,150 @@ export const mockRecentTransactions: MockRecentTransaction[] = [
     type: 'expense',
   },
 ];
+
+export const mockTransactions: MockTransaction[] = [
+  {
+    id: 'transaction-marketplace',
+    description: 'Mercado Livre',
+    categoryName: 'Compras',
+    categoryIcon: 'ShoppingBag',
+    categoryColor: '#a855f7',
+    paymentLabel: 'Visa •••• 1234',
+    paymentType: 'card',
+    groupKey: 'today',
+    groupLabel: 'Hoje, 20 de maio',
+    timeLabel: '14:32',
+    amount: -159.9,
+    type: 'expense',
+  },
+  {
+    id: 'transaction-restaurant',
+    description: 'Restaurante Bom Sabor',
+    categoryName: 'Alimentação',
+    categoryIcon: 'Utensils',
+    categoryColor: '#22c55e',
+    paymentLabel: 'Mastercard •••• 4321',
+    paymentType: 'card',
+    groupKey: 'today',
+    groupLabel: 'Hoje, 20 de maio',
+    timeLabel: '12:15',
+    amount: -85.5,
+    type: 'expense',
+  },
+  {
+    id: 'transaction-salary',
+    description: 'Salário',
+    categoryName: 'Salário',
+    categoryIcon: 'DollarSign',
+    categoryColor: '#22c55e',
+    paymentLabel: 'Conta Bancária',
+    paymentType: 'account',
+    groupKey: 'today',
+    groupLabel: 'Hoje, 20 de maio',
+    timeLabel: '09:00',
+    amount: 2450,
+    type: 'income',
+  },
+  {
+    id: 'transaction-uber',
+    description: 'Uber',
+    categoryName: 'Transporte',
+    categoryIcon: 'Car',
+    categoryColor: '#eab308',
+    paymentLabel: 'Visa •••• 1234',
+    paymentType: 'card',
+    groupKey: 'yesterday',
+    groupLabel: 'Ontem, 19 de maio',
+    timeLabel: '22:47',
+    amount: -27.9,
+    type: 'expense',
+  },
+  {
+    id: 'transaction-pharmacy',
+    description: 'Farmácia Pague Menos',
+    categoryName: 'Saúde',
+    categoryIcon: 'Heart',
+    categoryColor: '#f97316',
+    paymentLabel: 'Elo •••• 5678',
+    paymentType: 'card',
+    groupKey: 'yesterday',
+    groupLabel: 'Ontem, 19 de maio',
+    timeLabel: '18:20',
+    amount: -62.3,
+    type: 'expense',
+  },
+  {
+    id: 'transaction-sale',
+    description: 'Venda de Produto',
+    categoryName: 'Outros',
+    categoryIcon: 'Gift',
+    categoryColor: '#22c55e',
+    paymentLabel: 'Conta Bancária',
+    paymentType: 'account',
+    groupKey: 'yesterday',
+    groupLabel: 'Ontem, 19 de maio',
+    timeLabel: '16:05',
+    amount: 120,
+    type: 'income',
+  },
+  {
+    id: 'transaction-rent',
+    description: 'Aluguel',
+    categoryName: 'Moradia',
+    categoryIcon: 'Home',
+    categoryColor: '#eab308',
+    paymentLabel: 'Pix',
+    paymentType: 'pix',
+    groupKey: 'yesterday',
+    groupLabel: 'Ontem, 19 de maio',
+    timeLabel: '10:00',
+    amount: -1200,
+    type: 'expense',
+  },
+  {
+    id: 'transaction-market',
+    description: 'Mercado Extra',
+    categoryName: 'Alimentação',
+    categoryIcon: 'Utensils',
+    categoryColor: '#22c55e',
+    paymentLabel: 'Nubank',
+    paymentType: 'card',
+    groupKey: 'week',
+    groupLabel: 'Esta semana',
+    timeLabel: 'Segunda',
+    amount: -185.9,
+    type: 'expense',
+  },
+  {
+    id: 'transaction-course',
+    description: 'Curso online',
+    categoryName: 'Educação',
+    categoryIcon: 'GraduationCap',
+    categoryColor: '#ec4899',
+    paymentLabel: 'Pix',
+    paymentType: 'pix',
+    groupKey: 'older',
+    groupLabel: 'Anteriores',
+    timeLabel: '15/05',
+    amount: -149.9,
+    type: 'expense',
+  },
+];
+
+export const mockTransactionsSummary: MockTransactionsSummary = {
+  income: mockTransactions
+    .filter((transaction) => transaction.type === 'income')
+    .reduce((total, transaction) => total + transaction.amount, 0),
+  expense: Math.abs(
+    mockTransactions
+      .filter((transaction) => transaction.type === 'expense')
+      .reduce((total, transaction) => total + transaction.amount, 0),
+  ),
+  balance: mockTransactions.reduce(
+    (total, transaction) => total + transaction.amount,
+    0,
+  ),
+};
 
 export const mockMovements: MockMovement[] = [
   {

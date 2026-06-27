@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { Info, Mail, ShieldCheck } from 'lucide-react';
 
-import { Button } from '../../components/ui/Button';
-import { Card, CardContent } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { PageHeader } from '../../components/ui/PageHeader';
-import { useAuth } from '../../hooks/useAuth';
-import { getFirebaseErrorMessage } from '../../utils/firebaseErrors';
+import { AuthField } from '@/components/auth/AuthField';
+import { AuthHeader } from '@/components/auth/AuthHeader';
+import { AuthMessage } from '@/components/auth/AuthMessage';
+import { AuthShell } from '@/components/auth/AuthShell';
+import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/hooks/useAuth';
+import { getFirebaseErrorMessage } from '@/utils/firebaseErrors';
 
 export function ForgotPasswordPage() {
   const { resetPassword } = useAuth();
@@ -24,7 +26,7 @@ export function ForgotPasswordPage() {
     try {
       await resetPassword(email);
       setSuccessMessage(
-        'Enviamos as instruções de recuperação para o e-mail informado.',
+        'Enviaremos um link para redefinir sua senha para o e-mail informado.',
       );
     } catch (resetError) {
       setError(getFirebaseErrorMessage(resetError));
@@ -34,50 +36,60 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <section className="space-y-6">
-      <PageHeader
-        title="Recuperar senha"
-        description="Informe seu e-mail para receber as instruções de recuperação."
-      />
+    <AuthShell>
+      <div className="space-y-6">
+        <AuthHeader
+          title="Recuperar senha"
+          description="Informe seu e-mail e enviaremos as instruções"
+          backTo="/login"
+          variant="secure"
+          icon={ShieldCheck}
+        />
 
-      <Card>
-        <CardContent className="pt-5">
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <Input
-              label="E-mail"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              required
-              placeholder="seu@email.com"
-            />
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <AuthField
+            label="E-mail"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+            required
+            placeholder="seu@email.com"
+            leftIcon={<Mail aria-hidden="true" className="h-4 w-4" />}
+          />
 
-            {error ? (
-              <p className="rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger-text">
-                {error}
-              </p>
-            ) : null}
+          {error ? <AuthMessage tone="error">{error}</AuthMessage> : null}
+          {successMessage ? (
+            <AuthMessage tone="success">{successMessage}</AuthMessage>
+          ) : null}
 
-            {successMessage ? (
-              <p className="rounded-md border border-success-border bg-success-surface px-3 py-2 text-sm text-success-text">
-                {successMessage}
-              </p>
-            ) : null}
+          <Button
+            type="submit"
+            loading={isSubmitting}
+            className="h-11 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.86rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400"
+          >
+            {isSubmitting ? 'Enviando...' : 'Enviar instruções'}
+          </Button>
+        </form>
 
-            <Button type="submit" loading={isSubmitting} className="w-full">
-              {isSubmitting ? 'Enviando...' : 'Enviar e-mail'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+        {!successMessage ? (
+          <AuthMessage tone="info">
+            Enviaremos um link para redefinir sua senha para o e-mail informado.
+          </AuthMessage>
+        ) : null}
 
-      <p className="text-sm text-app-muted">
-        Lembrou a senha?{' '}
-        <Link className="font-medium text-brand-500" to="/login">
-          Voltar para login
-        </Link>
-      </p>
-    </section>
+        <div className="flex items-center gap-3 text-[0.72rem] text-app-muted">
+          <span className="h-px flex-1 bg-app-border" />
+          <Info aria-hidden="true" className="h-3.5 w-3.5 text-brand-400" />
+          <span className="h-px flex-1 bg-app-border" />
+        </div>
+
+        <p className="text-center text-[0.76rem]">
+          <Link className="font-semibold text-brand-400" to="/login">
+            Voltar para o login
+          </Link>
+        </p>
+      </div>
+    </AuthShell>
   );
 }

@@ -25,13 +25,13 @@ export function PaymentMethodCard({
   }
 
   return (
-    <section className="space-y-2.5" aria-labelledby="payment-title">
-      <h2 id="payment-title" className="text-base font-semibold leading-tight">
+    <section className="space-y-2" aria-labelledby="payment-title">
+      <h2 id="payment-title" className="text-[0.94rem] font-semibold leading-tight">
         Pagamento
       </h2>
 
       <div className="overflow-hidden rounded-2xl border border-app-border bg-app-surface/75 shadow-lg shadow-black/15">
-        <div className="grid grid-cols-2 gap-1 p-2">
+        <div className="grid grid-cols-2 gap-1 p-1.5">
           <PaymentModeButton
             active={isCash}
             icon={<CreditCard aria-hidden="true" className="h-4 w-4" />}
@@ -46,14 +46,14 @@ export function PaymentMethodCard({
           />
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-app-border p-3">
+        <div className="flex items-center justify-between gap-2.5 border-t border-app-border p-2.5">
           <div className="min-w-0">
-            <p className="text-[0.78rem] font-medium leading-none text-app-muted">
+            <p className="text-[0.72rem] font-medium leading-none text-app-muted">
               Número de parcelas
             </p>
             <div className="mt-2 flex min-w-0 items-center gap-2.5">
               <Layers3 aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-400" />
-              <p className="truncate text-[0.86rem] font-semibold text-app-text">
+              <p className="truncate text-[0.8rem] font-semibold text-app-text">
                 {visibleInstallments}{' '}
                 {visibleInstallments === 1 ? 'parcela' : 'parcelas'}
                 {isCash ? ' (à vista)' : null}
@@ -61,7 +61,7 @@ export function PaymentMethodCard({
             </div>
           </div>
 
-          <div className="grid h-10 w-[7.9rem] shrink-0 grid-cols-3 overflow-hidden rounded-xl bg-app-elevated/65">
+          <div className="grid h-9 w-[7rem] shrink-0 grid-cols-3 overflow-hidden rounded-xl bg-app-elevated/65">
             <StepperButton
               label="Diminuir parcelas"
               disabled={isCash || visibleInstallments <= 1}
@@ -99,7 +99,7 @@ function PaymentModeButton({ active, icon, label, onClick }: PaymentModeButtonPr
       type="button"
       onClick={onClick}
       className={cn(
-        'flex h-10 items-center justify-center gap-2 rounded-xl text-[0.82rem] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+        'flex h-9 items-center justify-center gap-2 rounded-xl text-[0.76rem] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
         active
           ? 'bg-brand-950/85 text-app-text'
           : 'bg-app-bg/25 text-app-muted hover:bg-app-elevated hover:text-app-text',

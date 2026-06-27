@@ -48,7 +48,7 @@ export function InvoiceFilters({ filters }: InvoiceFiltersProps) {
             type="button"
             aria-label={option.ariaLabel}
             className={cn(
-              'flex h-10 min-w-0 items-center gap-2 rounded-xl border border-app-border bg-app-surface/70 px-3 text-[0.74rem] font-medium text-app-text shadow-sm shadow-black/10 transition-colors',
+              'flex h-9 min-w-0 items-center gap-1.5 rounded-xl border border-app-border bg-app-surface/70 px-2.5 text-[0.68rem] font-medium text-app-text shadow-sm shadow-black/10 transition-colors',
               'hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
               index === 2 && 'col-span-2 min-[380px]:col-span-1',
             )}

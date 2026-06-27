@@ -9,6 +9,7 @@ import {
   Plane,
   ShoppingBag,
   Utensils,
+  User,
 } from 'lucide-react';
 import { useEffect, useState, type ComponentType, type FormEvent } from 'react';
 
@@ -50,6 +51,7 @@ const iconOptions: IconOption[] = [
   { value: 'Gift', icon: Gift },
   { value: 'Plane', icon: Plane },
   { value: 'BookOpen', icon: BookOpen },
+  { value: 'User', icon: User },
 ];
 
 const colorOptions = [
