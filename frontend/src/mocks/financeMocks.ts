@@ -51,9 +51,48 @@ export type MockInvoiceItem = {
   invoiceId: string;
   description: string;
   categoryId: string;
+  categoryName: string;
+  categoryIcon: string;
   amount: number;
+  dateLabel: string;
   installmentLabel: string;
   status: 'open' | 'paid' | 'canceled';
+};
+
+export type MockInvoiceSummary = {
+  id: string;
+  cardName: string;
+  cardLogo: string;
+  cardColor: string;
+  status: 'open' | 'paid' | 'canceled';
+  dueDate: string;
+  bestPurchaseDate: string;
+  total: number;
+  limit: number;
+  usedPercentage: number;
+};
+
+export type MockInvoiceFilters = {
+  monthLabel: string;
+  cardLabel: string;
+  categoryLabel: string;
+};
+
+export type MockPurchaseFormDefaults = {
+  purchaseDate: string;
+  card: {
+    name: string;
+    logo: string;
+    color: string;
+  };
+  category: {
+    name: string;
+    icon: string;
+  };
+  invoice: {
+    label: string;
+    closeDateLabel: string;
+  };
 };
 
 export type MockCurrentInvoice = {
@@ -92,7 +131,7 @@ export const mockCreditCards: MockCreditCard[] = [
     id: 'card-nubank',
     name: 'Nubank',
     brand: 'Mastercard',
-    type: 'Credito',
+    type: 'Crédito',
     lastFourDigits: '1234',
     limit: 5000,
     used: 1256.8,
@@ -104,7 +143,7 @@ export const mockCreditCards: MockCreditCard[] = [
     id: 'card-santander',
     name: 'Santander',
     brand: 'Visa',
-    type: 'Credito',
+    type: 'Crédito',
     lastFourDigits: '9012',
     limit: 3500,
     used: 872.4,
@@ -114,9 +153,9 @@ export const mockCreditCards: MockCreditCard[] = [
   },
   {
     id: 'card-itau',
-    name: 'Itau',
+    name: 'Itaú',
     brand: 'Elo',
-    type: 'Credito e debito',
+    type: 'Crédito e débito',
     lastFourDigits: '5678',
     limit: 4200,
     used: 1180.1,
@@ -177,7 +216,7 @@ export const mockCurrentInvoices: MockCurrentInvoice[] = [
   {
     id: 'current-invoice-itau',
     creditCardId: 'card-itau',
-    cardName: 'Itau',
+    cardName: 'Itaú',
     cardLogo: 'itau',
     cardColor: '#2563eb',
     status: 'open',
@@ -189,10 +228,46 @@ export const mockCurrentInvoices: MockCurrentInvoice[] = [
   },
 ];
 
+export const mockInvoiceSummary: MockInvoiceSummary = {
+  id: 'invoice-nubank-detail',
+  cardName: 'Nubank',
+  cardLogo: 'nu',
+  cardColor: '#7c3aed',
+  status: 'open',
+  dueDate: '05/06/2025',
+  bestPurchaseDate: '25/05',
+  total: 1250,
+  limit: 4000,
+  usedPercentage: 31,
+};
+
+export const mockInvoiceFilters: MockInvoiceFilters = {
+  monthLabel: 'Mai/2025',
+  cardLabel: 'Nubank',
+  categoryLabel: 'Todas categorias',
+};
+
+export const mockPurchaseFormDefaults: MockPurchaseFormDefaults = {
+  purchaseDate: '28/05/2025',
+  card: {
+    name: 'Nubank',
+    logo: 'nu',
+    color: '#7c3aed',
+  },
+  category: {
+    name: 'Alimentação',
+    icon: 'Utensils',
+  },
+  invoice: {
+    label: 'Fatura atual',
+    closeDateLabel: 'fecha em 05/06',
+  },
+};
+
 export const mockCategories: MockCategory[] = [
   {
     id: 'cat-food',
-    name: 'Alimentacao',
+    name: 'Alimentação',
     type: 'expense',
     icon: 'Utensils',
     color: '#22c55e',
@@ -216,7 +291,7 @@ export const mockCategories: MockCategory[] = [
   },
   {
     id: 'cat-health',
-    name: 'Saude',
+    name: 'Saúde',
     type: 'expense',
     icon: 'Heart',
     color: '#ec4899',
@@ -224,7 +299,7 @@ export const mockCategories: MockCategory[] = [
   },
   {
     id: 'cat-salary',
-    name: 'Salario',
+    name: 'Salário',
     type: 'income',
     icon: 'DollarSign',
     color: '#16a34a',
@@ -244,7 +319,7 @@ export const mockRecentTransactions: MockRecentTransaction[] = [
   {
     id: 'recent-market',
     description: 'Mercado Extra',
-    categoryName: 'Alimentacao',
+    categoryName: 'Alimentação',
     categoryIcon: 'ShoppingCart',
     paymentLabel: 'Nubank',
     dateLabel: '28/05',
@@ -264,7 +339,7 @@ export const mockRecentTransactions: MockRecentTransaction[] = [
   {
     id: 'recent-restaurant',
     description: 'Restaurante Sabores',
-    categoryName: 'Alimentacao',
+    categoryName: 'Alimentação',
     categoryIcon: 'Utensils',
     paymentLabel: 'Nubank',
     dateLabel: '27/05',
@@ -324,7 +399,7 @@ export const mockMovements: MockMovement[] = [
   },
   {
     id: 'movement-salary',
-    description: 'Salario',
+    description: 'Salário',
     categoryId: 'cat-salary',
     paymentLabel: 'Conta bancaria',
     amount: 2450,
@@ -342,7 +417,7 @@ export const mockMovements: MockMovement[] = [
   },
   {
     id: 'movement-pharmacy',
-    description: 'Farmacia',
+    description: 'Farmácia',
     categoryId: 'cat-health',
     paymentLabel: 'Elo 5678',
     amount: -62.3,
@@ -354,29 +429,74 @@ export const mockMovements: MockMovement[] = [
 export const mockInvoiceItems: MockInvoiceItem[] = [
   {
     id: 'invoice-item-market',
-    invoiceId: 'invoice-nubank-current',
+    invoiceId: 'invoice-nubank-detail',
     description: 'Mercado Extra',
     categoryId: 'cat-food',
-    amount: 159.9,
-    installmentLabel: '1/1',
+    categoryName: 'Alimentação',
+    categoryIcon: 'ShoppingCart',
+    amount: 85.4,
+    dateLabel: '28/05',
+    installmentLabel: 'Parcela 2/3',
+    status: 'open',
+  },
+  {
+    id: 'invoice-item-gas',
+    invoiceId: 'invoice-nubank-detail',
+    description: 'Posto Ipiranga',
+    categoryId: 'cat-transport',
+    categoryName: 'Transporte',
+    categoryIcon: 'Fuel',
+    amount: 120,
+    dateLabel: '28/05',
+    installmentLabel: 'À vista',
     status: 'open',
   },
   {
     id: 'invoice-item-restaurant',
-    invoiceId: 'invoice-nubank-current',
-    description: 'Restaurante Bom Sabor',
+    invoiceId: 'invoice-nubank-detail',
+    description: 'Restaurante Sabores',
     categoryId: 'cat-food',
-    amount: 85.5,
-    installmentLabel: '1/1',
+    categoryName: 'Alimentação',
+    categoryIcon: 'Utensils',
+    amount: 68.9,
+    dateLabel: '27/05',
+    installmentLabel: 'À vista',
     status: 'open',
   },
   {
-    id: 'invoice-item-shopping',
-    invoiceId: 'invoice-santander-current',
-    description: 'Compras online',
+    id: 'invoice-item-amazon',
+    invoiceId: 'invoice-nubank-detail',
+    description: 'Amazon',
     categoryId: 'cat-shopping',
-    amount: 310.2,
-    installmentLabel: '2/3',
+    categoryName: 'Compras',
+    categoryIcon: 'ShoppingBag',
+    amount: 199.9,
+    dateLabel: '26/05',
+    installmentLabel: 'Parcela 3/6',
+    status: 'open',
+  },
+  {
+    id: 'invoice-item-renner',
+    invoiceId: 'invoice-nubank-detail',
+    description: 'Renner',
+    categoryId: 'cat-shopping',
+    categoryName: 'Compras',
+    categoryIcon: 'Shirt',
+    amount: 159.9,
+    dateLabel: '26/05',
+    installmentLabel: 'Parcela 1/4',
+    status: 'open',
+  },
+  {
+    id: 'invoice-item-cinema',
+    invoiceId: 'invoice-nubank-detail',
+    description: 'Cinema',
+    categoryId: 'cat-entertainment',
+    categoryName: 'Lazer',
+    categoryIcon: 'Clapperboard',
+    amount: 45,
+    dateLabel: '25/05',
+    installmentLabel: 'À vista',
     status: 'open',
   },
 ];

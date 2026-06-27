@@ -24,7 +24,7 @@ export function ForgotPasswordPage() {
     try {
       await resetPassword(email);
       setSuccessMessage(
-        'Enviamos as instrucoes de recuperacao para o e-mail informado.',
+        'Enviamos as instruções de recuperação para o e-mail informado.',
       );
     } catch (resetError) {
       setError(getFirebaseErrorMessage(resetError));
@@ -37,7 +37,7 @@ export function ForgotPasswordPage() {
     <section className="space-y-6">
       <PageHeader
         title="Recuperar senha"
-        description="Informe seu e-mail para receber as instrucoes de recuperacao."
+        description="Informe seu e-mail para receber as instruções de recuperação."
       />
 
       <Card>
@@ -50,7 +50,7 @@ export function ForgotPasswordPage() {
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="email"
               required
-              placeholder="voce@email.com"
+              placeholder="seu@email.com"
             />
 
             {error ? (

@@ -4,7 +4,7 @@ export function CategoriesPage() {
   return (
     <PageIntro
       title="Categorias"
-      description="Gestao de categorias sera implementada aqui."
+      description="Gestão de categorias será implementada aqui."
     />
   );
 }

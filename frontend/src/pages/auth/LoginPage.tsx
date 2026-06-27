@@ -48,7 +48,7 @@ export function LoginPage() {
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="email"
               required
-              placeholder="voce@email.com"
+              placeholder="seu@email.com"
             />
 
             <Input
@@ -76,7 +76,7 @@ export function LoginPage() {
 
       <div className="space-y-2 text-sm text-app-muted">
         <p>
-          Ainda nao tem conta?{' '}
+          Ainda não tem conta?{' '}
           <Link className="font-medium text-brand-500" to="/register">
             Criar conta
           </Link>

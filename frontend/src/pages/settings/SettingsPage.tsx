@@ -4,7 +4,7 @@ export function SettingsPage() {
   return (
     <PageIntro
       title="Ajustes"
-      description="Preferencias da conta serao implementadas aqui."
+      description="Preferências da conta serão implementadas aqui."
     />
   );
 }

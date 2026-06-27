@@ -46,7 +46,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
     <section className="space-y-2.5" aria-labelledby="recent-transactions-title">
       <div className="flex items-center justify-between gap-3">
         <h2 id="recent-transactions-title" className="text-base font-semibold">
-          Ultimas movimentacoes
+          Últimas movimentações
         </h2>
 
         <Link
@@ -104,8 +104,8 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
       ) : (
         <EmptyState
           icon={<DollarSign aria-hidden="true" className="h-5 w-5" />}
-          title="Nenhuma movimentacao recente"
-          description="Suas compras e receitas mais recentes aparecerao aqui."
+          title="Nenhuma movimentação recente"
+          description="Suas compras e receitas mais recentes aparecerão aqui."
         />
       )}
     </section>

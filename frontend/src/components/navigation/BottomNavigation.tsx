@@ -18,19 +18,22 @@ import {
 } from '@/components/sheets/CategoryFormSheet';
 import { QuickCreateSheet } from '@/components/sheets/QuickCreateSheet';
 import { cn } from '@/lib/utils';
+import { useLocation } from 'react-router-dom';
 
 const navigationItems = [
-  { label: 'Inicio', to: '/', icon: Home },
+  { label: 'Início', to: '/', icon: Home },
   { label: 'Faturas', to: '/invoices', icon: FileText },
-  { label: 'Cartoes', to: '/credit-cards', icon: CreditCard },
+  { label: 'Cartões', to: '/credit-cards', icon: CreditCard },
   { label: 'Config.', to: '/settings', icon: Settings },
 ];
 
 export function BottomNavigation() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [cardSheetOpen, setCardSheetOpen] = useState(false);
   const [categorySheetOpen, setCategorySheetOpen] = useState(false);
+  const isNewPurchaseRoute = location.pathname === '/transactions/new';
 
   function handleCardSubmit(values: CardFormValues) {
     console.log('Card form submit', values);
@@ -43,10 +46,10 @@ export function BottomNavigation() {
   return (
     <>
       <nav
-        aria-label="Navegacao principal"
-        className="fixed inset-x-0 bottom-0 z-40 h-[calc(86px+env(safe-area-inset-bottom))] w-full rounded-t-[26px] border-t border-white/10 bg-app-bg pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_30px_rgba(0,0,0,0.38)] md:hidden"
+        aria-label="Navegação principal"
+        className="fixed inset-x-0 bottom-0 z-40 h-[calc(78px+env(safe-area-inset-bottom))] w-full overflow-visible rounded-t-[18px] border-t border-white/[0.06] bg-[#101113] pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_26px_rgba(0,0,0,0.42)] md:hidden"
       >
-        <div className="relative mx-auto grid h-[86px] max-w-md grid-cols-5 items-end px-3.5 pb-2.5 pt-6">
+        <div className="relative mx-auto grid h-[78px] max-w-md grid-cols-5 items-start px-3.5 pt-7">
           {navigationItems.slice(0, 2).map((item) => (
             <BottomNavigationItem key={item.to} {...item} />
           ))}
@@ -54,11 +57,17 @@ export function BottomNavigation() {
           <button
             type="button"
             onClick={() => setQuickCreateOpen(true)}
-            className="relative flex min-h-[3.45rem] flex-col items-center justify-end gap-0.5 rounded-xl text-[0.64rem] font-medium text-app-text transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+            aria-current={isNewPurchaseRoute ? 'page' : undefined}
+            className={cn(
+              'relative flex h-10 flex-col items-center justify-end rounded-xl px-1 text-[0.58rem] font-medium leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300',
+              isNewPurchaseRoute
+                ? 'text-brand-400'
+                : 'text-app-muted hover:text-app-text',
+            )}
             aria-label="Adicionar"
           >
-            <span className="absolute -top-[40px] left-1/2 flex h-[68px] w-[68px] -translate-x-1/2 items-center justify-center rounded-full bg-gradient-to-br from-brand-300 via-brand-500 to-brand-700 text-white shadow-[0_0_26px_rgba(49,214,103,0.52)] transition-transform hover:scale-105">
-              <Plus aria-hidden="true" className="h-8 w-8" />
+            <span className="absolute -top-[30px] left-1/2 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full bg-gradient-to-br from-brand-300 via-brand-500 to-brand-700 text-white shadow-[0_0_0_5px_rgba(34,197,94,0.1),0_10px_24px_rgba(34,197,94,0.45)] transition-transform hover:scale-105">
+              <Plus aria-hidden="true" className="h-5 w-5" />
             </span>
             <span>Nova</span>
           </button>
@@ -66,6 +75,11 @@ export function BottomNavigation() {
           {navigationItems.slice(2).map((item) => (
             <BottomNavigationItem key={item.to} {...item} />
           ))}
+
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 h-1 w-24 -translate-x-1/2 rounded-full bg-white/90 bottom-[calc(env(safe-area-inset-bottom)+0.375rem)]"
+          />
         </div>
       </nav>
 
@@ -107,15 +121,15 @@ function BottomNavigationItem({ label, to, icon: Icon }: BottomNavigationItemPro
       end={to === '/'}
       className={({ isActive }) =>
         cn(
-          'relative flex min-h-[3.45rem] flex-col items-center justify-end gap-0.5 px-1 text-[0.64rem] font-medium transition-colors',
-          'after:absolute after:top-0 after:h-0.5 after:w-7 after:rounded-full after:bg-transparent',
+          'relative flex h-10 flex-col items-center justify-start gap-1 rounded-xl px-1 pt-1 text-[0.58rem] font-medium leading-none transition-colors',
+          'after:absolute after:-top-1 after:left-1/2 after:h-0.5 after:w-6 after:-translate-x-1/2 after:rounded-full after:bg-transparent',
           isActive
             ? 'text-brand-400 after:bg-brand-500'
             : 'text-app-muted hover:text-app-text',
         )
       }
     >
-      <Icon aria-hidden="true" className="h-[1.12rem] w-[1.12rem]" />
+      <Icon aria-hidden="true" className="h-4 w-4" />
       <span className="max-w-full truncate">{label}</span>
     </NavLink>
   );

@@ -60,7 +60,7 @@ export function CurrentInvoiceCard({ invoice }: CurrentInvoiceCardProps) {
 
         <button
           type="button"
-          aria-label={`Mais opcoes da fatura ${invoice.cardName}`}
+          aria-label={`Mais opções da fatura ${invoice.cardName}`}
           className="rounded-full p-1 text-app-muted transition-colors hover:bg-app-elevated hover:text-app-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
           <MoreHorizontal aria-hidden="true" className="h-4 w-4" />
@@ -85,7 +85,7 @@ export function CurrentInvoiceCard({ invoice }: CurrentInvoiceCardProps) {
       <div
         className="mt-2 h-2 overflow-hidden rounded-full bg-app-elevated"
         role="progressbar"
-        aria-label={`Uso do limite do cartao ${invoice.cardName}`}
+        aria-label={`Uso do limite do cartão ${invoice.cardName}`}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={progress}

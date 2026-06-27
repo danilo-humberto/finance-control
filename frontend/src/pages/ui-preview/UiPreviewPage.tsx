@@ -38,31 +38,31 @@ export function UiPreviewPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="UI Preview"
-        description="Bancada temporaria para testar sheets e modais mobile."
+        title="Prévia de UI"
+        description="Bancada temporária para testar painéis e modais mobile."
       />
 
       <Card>
         <CardContent className="grid gap-3 pt-5">
           <Button type="button" onClick={() => setCardCreateOpen(true)}>
-            Abrir CardFormSheet create
+            Abrir criação de cartão
           </Button>
           <Button
             type="button"
             variant="secondary"
             onClick={() => setCardEditOpen(true)}
           >
-            Abrir CardFormSheet edit
+            Abrir edição de cartão
           </Button>
           <Button type="button" onClick={() => setCategoryCreateOpen(true)}>
-            Abrir CategoryFormSheet create
+            Abrir criação de categoria
           </Button>
           <Button
             type="button"
             variant="secondary"
             onClick={() => setCategoryEditOpen(true)}
           >
-            Abrir CategoryFormSheet edit
+            Abrir edição de categoria
           </Button>
           <Button
             type="button"
@@ -70,7 +70,7 @@ export function UiPreviewPage() {
             leftIcon={<MoreVertical aria-hidden="true" className="h-4 w-4" />}
             onClick={() => setActionSheetOpen(true)}
           >
-            Abrir ActionSheet
+            Abrir painel de ações
           </Button>
           <Button
             type="button"
@@ -78,7 +78,7 @@ export function UiPreviewPage() {
             leftIcon={<Trash2 aria-hidden="true" className="h-4 w-4" />}
             onClick={() => setConfirmDialogOpen(true)}
           >
-            Abrir ConfirmDialog
+            Abrir diálogo de confirmação
           </Button>
         </CardContent>
       </Card>
@@ -128,17 +128,17 @@ export function UiPreviewPage() {
       <ActionSheet
         open={actionSheetOpen}
         onOpenChange={setActionSheetOpen}
-        title="Acoes"
+        title="Ações"
         actions={[
           {
-            label: 'Editar movimentacao',
-            description: 'Abrir formulario de edicao',
+            label: 'Editar movimentação',
+            description: 'Abrir formulário de edição',
             icon: Edit3,
             onClick: () => setCardEditOpen(true),
           },
           {
-            label: 'Excluir movimentacao',
-            description: 'Abrir confirmacao de exclusao',
+            label: 'Excluir movimentação',
+            description: 'Abrir confirmação de exclusão',
             icon: Trash2,
             variant: 'danger',
             onClick: () => setConfirmDialogOpen(true),
@@ -149,8 +149,8 @@ export function UiPreviewPage() {
       <ConfirmDialog
         open={confirmDialogOpen}
         onOpenChange={setConfirmDialogOpen}
-        title="Excluir movimentacao"
-        description="Tem certeza que deseja excluir esta movimentacao?"
+        title="Excluir movimentação"
+        description="Tem certeza que deseja excluir esta movimentação?"
         confirmText="Excluir"
         cancelText="Cancelar"
         variant="danger"

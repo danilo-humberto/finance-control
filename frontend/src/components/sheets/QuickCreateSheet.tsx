@@ -15,13 +15,13 @@ const quickActions = [
   {
     key: 'purchase',
     title: 'Nova compra',
-    description: 'Registre uma compra no cartao',
+    description: 'Registre uma compra no cartão',
     icon: ShoppingCart,
   },
   {
     key: 'card',
-    title: 'Adicionar cartao',
-    description: 'Cadastre um novo cartao de credito',
+    title: 'Adicionar cartão',
+    description: 'Cadastre um novo cartão de crédito',
     icon: CreditCard,
   },
   {
@@ -61,8 +61,8 @@ export function QuickCreateSheet({
     <BaseBottomSheet
       open={open}
       onOpenChange={onOpenChange}
-      title="O que voce deseja adicionar?"
-      description="Escolha uma opcao abaixo"
+      title="O que você deseja adicionar?"
+      description="Escolha uma opção abaixo"
     >
       <div className="space-y-3">
         {quickActions.map((action) => {

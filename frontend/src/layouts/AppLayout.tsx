@@ -12,7 +12,9 @@ export function AppLayout() {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const showAppHeader = location.pathname !== '/';
+  const showAppHeader = !['/', '/invoices', '/transactions/new'].includes(
+    location.pathname,
+  );
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -34,7 +36,7 @@ export function AppLayout() {
                 Finance Control
               </p>
               <p className="truncate text-sm text-app-muted">
-                {user?.displayName || user?.email || 'Usuario logado'}
+                {user?.displayName || user?.email || 'Usuário logado'}
               </p>
             </div>
 

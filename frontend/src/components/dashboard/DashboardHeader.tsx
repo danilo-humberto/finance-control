@@ -5,14 +5,14 @@ type DashboardHeaderProps = {
 };
 
 export function DashboardHeader({ user }: DashboardHeaderProps) {
-  const firstName = user.name.split(' ')[0] || 'Usuario';
+  const firstName = user.name.split(' ')[0] || 'Usuário';
   const avatarLabel = firstName.charAt(0).toUpperCase();
 
   return (
     <header className="flex items-start justify-between gap-4">
       <div className="min-w-0">
         <h1 className="text-[1.48rem] font-bold leading-tight text-app-text">
-          Ola, {firstName} <span aria-hidden="true">{'\u{1F44B}'}</span>
+          Olá, {firstName} <span aria-hidden="true">{'\u{1F44B}'}</span>
         </h1>
         <p className="mt-1 text-[0.86rem] leading-5 text-app-muted">
           Resumo financeiro

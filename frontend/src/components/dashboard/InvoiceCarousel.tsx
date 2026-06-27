@@ -87,7 +87,7 @@ export function InvoiceCarousel({ invoices }: InvoiceCarouselProps) {
         <>
           <div
             ref={carouselRef}
-            className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             aria-label="Carrossel de faturas atuais"
             onScroll={handleCarouselScroll}
           >
@@ -115,9 +115,9 @@ export function InvoiceCarousel({ invoices }: InvoiceCarouselProps) {
       ) : (
         <EmptyState
           icon={<CreditCard aria-hidden="true" className="h-5 w-5" />}
-          title="Nenhum cartao cadastrado"
-          description="Cadastre um cartao para acompanhar sua fatura atual."
-          action={<Button disabled>Adicionar cartao</Button>}
+          title="Nenhum cartão cadastrado"
+          description="Cadastre um cartão para acompanhar sua fatura atual."
+          action={<Button disabled>Adicionar cartão</Button>}
         />
       )}
     </section>

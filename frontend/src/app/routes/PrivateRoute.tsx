@@ -8,7 +8,7 @@ export function PrivateRoute() {
   const location = useLocation();
 
   if (loading) {
-    return <LoadingScreen message="Carregando sessao..." />;
+    return <LoadingScreen message="Carregando sessão..." />;
   }
 
   if (!user) {

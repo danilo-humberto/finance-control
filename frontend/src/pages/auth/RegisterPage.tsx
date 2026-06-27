@@ -66,7 +66,7 @@ export function RegisterPage() {
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="email"
               required
-              placeholder="voce@email.com"
+              placeholder="seu@email.com"
             />
 
             <Input
@@ -76,7 +76,7 @@ export function RegisterPage() {
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="new-password"
               required
-              placeholder="Minimo 6 caracteres"
+              placeholder="Mínimo 6 caracteres"
             />
 
             <Input
@@ -103,7 +103,7 @@ export function RegisterPage() {
       </Card>
 
       <p className="text-sm text-app-muted">
-        Ja tem conta?{' '}
+        Já tem conta?{' '}
         <Link className="font-medium text-brand-500" to="/login">
           Entrar
         </Link>

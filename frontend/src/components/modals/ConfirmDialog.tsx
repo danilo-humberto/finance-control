@@ -53,7 +53,7 @@ export function ConfirmDialog({
           </div>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            {description} Esta acao nao pode ser desfeita.
+            {description} Esta ação não pode ser desfeita.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

@@ -67,27 +67,27 @@ export function CardFormSheet({
     <BaseBottomSheet
       open={open}
       onOpenChange={onOpenChange}
-      title={isEdit ? 'Editar cartao' : 'Adicionar cartao'}
+      title={isEdit ? 'Editar cartão' : 'Adicionar cartão'}
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <Input
-          label="Nome do cartao"
+          label="Nome do cartão"
           value={values.name}
           onChange={(event) => updateValue('name', event.target.value)}
-          placeholder="Ex: Nubank, Itau, Santander..."
+          placeholder="Ex.: Nubank, Itaú, Santander..."
           required
         />
 
         <Select
-          label="Tipo do cartao"
+          label="Tipo do cartão"
           value={values.type}
           onChange={(event) => updateValue('type', event.target.value)}
           required
         >
           <option value="">Selecione o tipo</option>
-          <option value="Credito">Credito</option>
-          <option value="Debito">Debito</option>
-          <option value="Credito e debito">Credito e debito</option>
+          <option value="Crédito">Crédito</option>
+          <option value="Débito">Débito</option>
+          <option value="Crédito e débito">Crédito e débito</option>
         </Select>
 
         <Select
@@ -139,7 +139,7 @@ export function CardFormSheet({
 
         <div className="space-y-3 pt-2">
           <Button type="submit" className="w-full">
-            {isEdit ? 'Salvar alteracoes' : 'Adicionar cartao'}
+            {isEdit ? 'Salvar alterações' : 'Adicionar cartão'}
           </Button>
           {isEdit && onDelete ? (
             <Button
@@ -148,7 +148,7 @@ export function CardFormSheet({
               className="w-full text-danger-text hover:text-danger-text"
               onClick={onDelete}
             >
-              Excluir cartao
+              Excluir cartão
             </Button>
           ) : null}
         </div>

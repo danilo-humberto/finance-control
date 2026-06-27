@@ -115,7 +115,7 @@ export function CategoryFormSheet({
           label="Nome da categoria"
           value={values.name}
           onChange={(event) => updateValue('name', event.target.value)}
-          placeholder="Ex: Alimentacao, Transporte..."
+          placeholder="Ex.: Alimentação, Transporte..."
           required
         />
 
@@ -131,7 +131,7 @@ export function CategoryFormSheet({
         </Select>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium text-app-text">Icone</p>
+          <p className="text-sm font-medium text-app-text">Ícone</p>
           <div className="flex flex-wrap gap-2">
             {iconOptions.map((option) => {
               const Icon = option.icon;
@@ -184,7 +184,7 @@ export function CategoryFormSheet({
 
         <div className="space-y-3 pt-2">
           <Button type="submit" className="w-full">
-            {isEdit ? 'Salvar alteracoes' : 'Adicionar categoria'}
+            {isEdit ? 'Salvar alterações' : 'Adicionar categoria'}
           </Button>
           {isEdit && onDelete ? (
             <Button
