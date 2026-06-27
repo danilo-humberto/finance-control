@@ -14,12 +14,12 @@ export function PurchaseDetailsCard({ defaults }: PurchaseDetailsCardProps) {
   const CategoryIcon = iconByName[defaults.category.icon] ?? DollarSign;
 
   return (
-    <section className="space-y-2.5" aria-labelledby="purchase-details-title">
-      <h2 id="purchase-details-title" className="text-base font-semibold leading-tight">
+    <section className="space-y-2" aria-labelledby="purchase-details-title">
+      <h2 id="purchase-details-title" className="text-[0.94rem] font-semibold leading-tight">
         Detalhes
       </h2>
 
-      <div className="space-y-3 rounded-2xl border border-app-border bg-app-surface/75 p-3 shadow-lg shadow-black/15">
+      <div className="space-y-2.5 rounded-2xl border border-app-border bg-app-surface/75 p-2.5 shadow-lg shadow-black/15">
         <PurchaseSelectRow
           label="Cartão"
           value={defaults.card.name}
@@ -61,13 +61,13 @@ type PurchaseSelectRowProps = {
 function PurchaseSelectRow({ label, value, detail, leading }: PurchaseSelectRowProps) {
   return (
     <div className="space-y-1.5">
-      <p className="text-[0.78rem] font-medium leading-none text-app-muted">{label}</p>
+      <p className="text-[0.72rem] font-medium leading-none text-app-muted">{label}</p>
       <button
         type="button"
-        className="flex h-11 w-full items-center gap-3 rounded-xl border border-app-border bg-app-bg/35 px-3 text-left transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+        className="flex h-10 w-full items-center gap-2.5 rounded-xl border border-app-border bg-app-bg/35 px-3 text-left transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
       >
         <span className="flex h-7 w-7 shrink-0 items-center justify-center">{leading}</span>
-        <span className="min-w-0 flex-1 truncate text-[0.86rem] font-semibold text-app-text">
+        <span className="min-w-0 flex-1 truncate text-[0.8rem] font-semibold text-app-text">
           {value}
           {detail ? (
             <span className="ml-1 font-medium text-app-muted">({detail})</span>
