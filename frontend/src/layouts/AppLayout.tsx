@@ -9,10 +9,10 @@ import { useTheme } from '../hooks/useTheme';
 
 export function AppLayout() {
   const { logout, user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const showAppHeader = ![
+  const hideAppHeaderRoutes = [
     '/',
     '/invoices',
     '/transactions',
@@ -20,7 +20,10 @@ export function AppLayout() {
     '/credit-cards',
     '/categories',
     '/settings',
-  ].includes(location.pathname);
+  ];
+  const showAppHeader =
+    !hideAppHeaderRoutes.includes(location.pathname) &&
+    !location.pathname.startsWith('/settings/');
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -53,12 +56,12 @@ export function AppLayout() {
                 size="sm"
                 onClick={toggleTheme}
                 aria-label={
-                  theme === 'dark'
+                  resolvedTheme === 'dark'
                     ? 'Alternar para tema claro'
                     : 'Alternar para tema escuro'
                 }
               >
-                {theme === 'dark' ? (
+                {resolvedTheme === 'dark' ? (
                   <Sun aria-hidden="true" className="h-4 w-4" />
                 ) : (
                   <Moon aria-hidden="true" className="h-4 w-4" />

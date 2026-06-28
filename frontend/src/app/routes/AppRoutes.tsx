@@ -10,6 +10,7 @@ import { CreditCardsPage } from '../../pages/credit-cards/CreditCardsPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { InvoicesPage } from '../../pages/invoices/InvoicesPage';
 import { SettingsPage } from '../../pages/settings/SettingsPage';
+import { ThemeSettingsPage } from '../../pages/settings/ThemeSettingsPage';
 import { NewTransactionPage } from '../../pages/transactions/NewTransactionPage';
 import { TransactionsPage } from '../../pages/transactions/TransactionsPage';
 import { UiPreviewPage } from '../../pages/ui-preview/UiPreviewPage';
@@ -34,6 +35,7 @@ export function AppRoutes() {
             <Route path="/credit-cards" element={<CreditCardsPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/theme" element={<ThemeSettingsPage />} />
             <Route path="/ui-preview" element={<UiPreviewPage />} />
           </Route>
         </Route>

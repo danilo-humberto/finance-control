@@ -32,14 +32,15 @@ function getInitials(name: string, fallback: string) {
 export function SettingsPage() {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const userName = user?.displayName || mockUser.name;
   const userEmail = user?.email || mockUser.email;
   const userInitials = getInitials(userName, mockUser.initials);
   const userPhotoUrl = user?.photoURL;
-  const themeLabel = theme === 'dark' ? 'Escuro' : 'Claro';
+  const themeLabel =
+    theme === 'system' ? 'Automático' : theme === 'dark' ? 'Escuro' : 'Claro';
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -104,7 +105,7 @@ export function SettingsPage() {
           description="Escolha entre claro, escuro ou automático"
           icon={Moon}
           badge={themeLabel}
-          onClick={toggleTheme}
+          onClick={() => navigate('/settings/theme')}
         />
         <SettingsItem
           title="Preferências gerais"
