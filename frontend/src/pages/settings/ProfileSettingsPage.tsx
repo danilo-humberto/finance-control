@@ -1,15 +1,11 @@
-import { mockUser } from '@/mocks/financeMocks';
 import { useAuth } from '@/hooks/useAuth';
+import { mockUser } from '@/mocks/financeMocks';
 import {
   ArrowLeft,
   BadgeCheck,
-  CheckCircle2,
-  IdCard,
-  Image,
   Mail,
   ShieldCheck,
   User,
-  XCircle,
   type LucideIcon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +14,7 @@ type ProfileInfoRowProps = {
   label: string;
   value: string;
   icon: LucideIcon;
-  tone?: 'default' | 'success' | 'warning';
+  tone?: 'default' | 'success';
 };
 
 function getInitials(name: string, fallback: string) {
@@ -45,30 +41,13 @@ function getProviderLabel(providerId?: string) {
   return providerId || 'Firebase Auth';
 }
 
-function formatUid(uid?: string) {
-  if (!uid) {
-    return 'Não disponível';
-  }
-
-  if (uid.length <= 12) {
-    return uid;
-  }
-
-  return `${uid.slice(0, 6)}...${uid.slice(-6)}`;
-}
-
 function ProfileInfoRow({
   label,
   value,
   icon: Icon,
   tone = 'default',
 }: ProfileInfoRowProps) {
-  const toneClass =
-    tone === 'success'
-      ? 'text-brand-400'
-      : tone === 'warning'
-        ? 'text-warning-text'
-        : 'text-app-muted';
+  const valueClass = tone === 'success' ? 'text-brand-400' : 'text-app-muted';
 
   return (
     <div className="flex items-center gap-2.5 border-b border-app-border/80 px-2.5 py-3 last:border-b-0">
@@ -80,7 +59,7 @@ function ProfileInfoRow({
         <p className="text-[0.68rem] font-medium leading-4 text-app-muted">
           {label}
         </p>
-        <p className={`mt-0.5 truncate text-[0.84rem] font-semibold leading-5 ${toneClass}`}>
+        <p className={`mt-0.5 truncate text-[0.84rem] font-semibold leading-5 ${valueClass}`}>
           {value}
         </p>
       </div>
@@ -97,7 +76,6 @@ export function ProfileSettingsPage() {
   const userInitials = getInitials(userName, mockUser.initials);
   const primaryProvider = user?.providerData[0];
   const providerLabel = getProviderLabel(primaryProvider?.providerId);
-  const isEmailVerified = Boolean(user?.emailVerified);
 
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
@@ -163,46 +141,13 @@ export function ProfileSettingsPage() {
           <ProfileInfoRow label="Nome" value={userName} icon={User} />
           <ProfileInfoRow label="E-mail" value={userEmail} icon={Mail} />
           <ProfileInfoRow
-            label="Foto de perfil"
-            value={userPhotoUrl ? 'Imagem carregada da conta' : 'Usando iniciais'}
-            icon={Image}
-          />
-          <ProfileInfoRow
-            label="ID da conta"
-            value={formatUid(user?.uid)}
-            icon={IdCard}
-          />
-        </div>
-      </section>
-
-      <section className="space-y-2" aria-labelledby="profile-access-title">
-        <h2
-          id="profile-access-title"
-          className="text-[0.94rem] font-semibold leading-tight text-app-muted"
-        >
-          Acesso
-        </h2>
-
-        <div className="overflow-hidden rounded-2xl border border-app-border bg-app-surface/75 shadow-lg shadow-black/15">
-          <ProfileInfoRow
             label="Método de login"
             value={providerLabel}
             icon={BadgeCheck}
             tone="success"
           />
-          <ProfileInfoRow
-            label="E-mail verificado"
-            value={isEmailVerified ? 'Verificado' : 'Pendente'}
-            icon={isEmailVerified ? CheckCircle2 : XCircle}
-            tone={isEmailVerified ? 'success' : 'warning'}
-          />
         </div>
       </section>
-
-      <p className="rounded-2xl border border-brand-800/65 bg-brand-950/25 p-3 text-[0.72rem] leading-5 text-app-muted shadow-lg shadow-black/15">
-        Dados vindos do Google são gerenciados pela própria conta Google. Quando
-        você entrar novamente, nome e foto podem ser sincronizados pelo Firebase.
-      </p>
     </div>
   );
 }
