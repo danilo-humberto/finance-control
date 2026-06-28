@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/Badge';
+import { usePreferences } from '@/hooks/usePreferences';
 import { type MockInvoiceItem } from '@/mocks/financeMocks';
 import {
   ChevronRight,
@@ -32,12 +33,8 @@ const statusLabel: Record<MockInvoiceItem['status'], string> = {
   canceled: 'Cancelada',
 };
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
 export function InvoiceItem({ item }: InvoiceItemProps) {
+  const { formatCurrency, formatDateLabel } = usePreferences();
   const Icon = iconByName[item.categoryIcon] ?? DollarSign;
 
   return (
@@ -54,7 +51,7 @@ export function InvoiceItem({ item }: InvoiceItemProps) {
           {item.description}
         </span>
         <span className="block truncate text-[0.68rem] leading-4 text-app-muted">
-          {item.categoryName} {'\u2022'} {item.dateLabel}
+          {item.categoryName} {'\u2022'} {formatDateLabel(item.dateLabel)}
         </span>
         <span className="mt-0.5 block truncate text-[0.68rem] font-medium leading-4 text-brand-400">
           {item.installmentLabel}
@@ -69,7 +66,7 @@ export function InvoiceItem({ item }: InvoiceItemProps) {
       </Badge>
 
       <span className="w-[3.95rem] shrink-0 text-right text-[0.76rem] font-semibold text-app-text">
-        {moneyFormatter.format(item.amount)}
+        {formatCurrency(item.amount)}
       </span>
 
       <ChevronRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-app-muted" />

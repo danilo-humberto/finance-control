@@ -1,3 +1,4 @@
+import { usePreferences } from '@/hooks/usePreferences';
 import { type MockTransactionsSummary } from '@/mocks/financeMocks';
 import { ArrowDown, ArrowUp, Wallet, type LucideIcon } from 'lucide-react';
 
@@ -12,12 +13,8 @@ type SummaryItem = {
   tone: 'income' | 'expense' | 'balance';
 };
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
 export function TransactionsSummary({ summary }: TransactionsSummaryProps) {
+  const { formatCurrency } = usePreferences();
   const items: SummaryItem[] = [
     {
       label: 'Entradas',
@@ -72,7 +69,7 @@ export function TransactionsSummary({ summary }: TransactionsSummaryProps) {
             <p
               className={`mt-1 break-words text-[0.78rem] font-semibold leading-4 ${valueColor}`}
             >
-              {moneyFormatter.format(Math.abs(item.value))}
+              {formatCurrency(Math.abs(item.value))}
             </p>
           </div>
         );

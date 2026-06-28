@@ -1,3 +1,4 @@
+import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
 import { type MockCreditCard } from '@/mocks/financeMocks';
 import { MoreHorizontal } from 'lucide-react';
@@ -9,15 +10,11 @@ type CreditCardListItemProps = {
   onMenuClick: (card: MockCreditCard) => void;
 };
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
 export function CreditCardListItem({
   card,
   onMenuClick,
 }: CreditCardListItemProps) {
+  const { formatCurrency, formatDateLabel } = usePreferences();
   const usedPercentage =
     card.limit > 0 ? Math.floor((card.used / card.limit) * 100) : 0;
   const progress = Math.min(Math.max(usedPercentage, 0), 100);
@@ -51,21 +48,21 @@ export function CreditCardListItem({
           <div className="min-w-0">
             <p className="text-[0.66rem] leading-3 text-app-muted">Fatura atual</p>
             <p className="truncate text-[0.98rem] font-bold leading-5 text-app-text">
-              {moneyFormatter.format(card.currentInvoiceTotal)}
+              {formatCurrency(card.currentInvoiceTotal)}
             </p>
             <p className="truncate text-[0.66rem] leading-3 text-app-muted">
-              Vencimento {card.dueDateLabel}
+              Vencimento {formatDateLabel(card.dueDateLabel)}
             </p>
           </div>
 
           <div className="min-w-0 text-right">
             <p className="text-[0.6rem] leading-3 text-app-muted">Limite</p>
             <p className="truncate text-[0.7rem] font-semibold leading-3 text-app-text">
-              {moneyFormatter.format(card.limit)}
+              {formatCurrency(card.limit)}
             </p>
             <p className="mt-0.5 text-[0.6rem] leading-3 text-app-muted">Utilizado</p>
             <p className="truncate text-[0.7rem] font-semibold leading-3 text-brand-400">
-              {moneyFormatter.format(card.used)}
+              {formatCurrency(card.used)}
             </p>
           </div>
         </div>

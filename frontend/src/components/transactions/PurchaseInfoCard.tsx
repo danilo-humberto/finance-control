@@ -1,3 +1,4 @@
+import { usePreferences } from "@/hooks/usePreferences";
 import { cn } from "@/lib/utils";
 import {
   CalendarDays,
@@ -22,6 +23,8 @@ export function PurchaseInfoCard({
   onDescriptionChange,
   onAmountChange,
 }: PurchaseInfoCardProps) {
+  const { formatCurrency, formatDateLabel, preferences } = usePreferences();
+
   return (
     <section className="space-y-2" aria-labelledby="purchase-info-title">
       <h2
@@ -44,9 +47,9 @@ export function PurchaseInfoCard({
 
           <PurchaseTextField
             id="purchase-amount"
-            label="Valor (R$)"
+            label={`Valor (${preferences.currency})`}
             value={amount}
-            placeholder="R$ 0,00"
+            placeholder={formatCurrency(0)}
             inputMode="numeric"
             icon={<CircleDollarSign aria-hidden="true" className="h-4 w-4" />}
             onChange={onAmountChange}
@@ -65,7 +68,9 @@ export function PurchaseInfoCard({
               aria-hidden="true"
               className="h-4 w-4 shrink-0 text-brand-400"
             />
-            <span className="min-w-0 flex-1 truncate">{purchaseDate}</span>
+            <span className="min-w-0 flex-1 truncate">
+              {formatDateLabel(purchaseDate)}
+            </span>
             <ChevronDown
               aria-hidden="true"
               className="h-4 w-4 shrink-0 text-app-muted"

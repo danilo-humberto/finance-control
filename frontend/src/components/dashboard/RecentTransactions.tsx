@@ -1,4 +1,5 @@
 import { EmptyState } from '@/components/ui/EmptyState';
+import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
 import { type MockRecentTransaction } from '@/mocks/financeMocks';
 import {
@@ -28,20 +29,17 @@ const iconByName: Record<string, LucideIcon> = {
   Utensils,
 };
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
+export function RecentTransactions({ transactions }: RecentTransactionsProps) {
+  const { formatCurrency, formatDateLabel } = usePreferences();
 
-function formatSignedCurrency(value: number) {
-  if (value < 0) {
-    return moneyFormatter.format(Math.abs(value));
+  function formatSignedCurrency(value: number) {
+    if (value < 0) {
+      return formatCurrency(Math.abs(value));
+    }
+
+    return `+${formatCurrency(value)}`;
   }
 
-  return `+${moneyFormatter.format(value)}`;
-}
-
-export function RecentTransactions({ transactions }: RecentTransactionsProps) {
   return (
     <section className="space-y-2.5" aria-labelledby="recent-transactions-title">
       <div className="flex items-center justify-between gap-3">
@@ -81,8 +79,8 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                     {transaction.description}
                   </span>
                   <span className="block truncate text-[0.72rem] leading-4 text-app-muted">
-                    {transaction.categoryName} {'\u2022'} {transaction.dateLabel}{' '}
-                    {'\u2022'}{' '}
+                    {transaction.categoryName} {'\u2022'}{' '}
+                    {formatDateLabel(transaction.dateLabel)} {'\u2022'}{' '}
                     {transaction.paymentLabel}
                   </span>
                 </span>

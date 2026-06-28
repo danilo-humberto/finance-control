@@ -1,3 +1,4 @@
+import { usePreferences } from '@/hooks/usePreferences';
 import { ReceiptText } from 'lucide-react';
 
 type PurchaseSummaryCardProps = {
@@ -5,15 +6,11 @@ type PurchaseSummaryCardProps = {
   installmentCount: number;
 };
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
 export function PurchaseSummaryCard({
   amount,
   installmentCount,
 }: PurchaseSummaryCardProps) {
+  const { formatCurrency } = usePreferences();
   const safeInstallments = Math.max(installmentCount, 1);
   const installmentValue = amount / safeInstallments;
 
@@ -32,14 +29,14 @@ export function PurchaseSummaryCard({
         </h2>
         <p className="mt-0.5 text-[0.68rem] leading-4 text-app-muted">Valor</p>
         <p className="text-[0.82rem] font-semibold leading-5 text-brand-400">
-          {moneyFormatter.format(amount)}
+          {formatCurrency(amount)}
         </p>
       </div>
 
       <div className="shrink-0 text-right">
         <p className="text-[0.68rem] leading-4 text-app-muted">Parcelas</p>
         <p className="mt-0.5 text-[0.8rem] font-semibold leading-5 text-app-text">
-          {safeInstallments}x de {moneyFormatter.format(installmentValue)}
+          {safeInstallments}x de {formatCurrency(installmentValue)}
         </p>
       </div>
     </section>

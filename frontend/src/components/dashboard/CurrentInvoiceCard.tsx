@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/Badge';
+import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
 import { type MockCurrentInvoice } from '@/mocks/financeMocks';
 import { ChevronRight, MoreHorizontal, ScanLine } from 'lucide-react';
@@ -23,12 +24,8 @@ const statusVariant: Record<
   canceled: 'danger',
 };
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
 export function CurrentInvoiceCard({ invoice }: CurrentInvoiceCardProps) {
+  const { formatCurrency, formatDateLabel } = usePreferences();
   const progress = Math.min(Math.max(invoice.usedPercentage, 0), 100);
 
   return (
@@ -68,17 +65,17 @@ export function CurrentInvoiceCard({ invoice }: CurrentInvoiceCardProps) {
       </div>
 
       <p className="mt-3 text-[0.82rem] text-app-muted">
-        Vencimento dia {invoice.dueDate}
+        Vencimento dia {formatDateLabel(invoice.dueDate)}
       </p>
 
       <strong className="mt-2.5 block text-[1.72rem] font-bold leading-tight tracking-normal text-app-text">
-        {moneyFormatter.format(invoice.total)}
+        {formatCurrency(invoice.total)}
       </strong>
 
       <div className="mt-3 flex items-center justify-between gap-3 text-[0.68rem]">
         <span className="font-medium text-brand-400">{progress}% utilizado</span>
         <span className="text-app-muted">
-          Limite: {moneyFormatter.format(invoice.limit)}
+          Limite: {formatCurrency(invoice.limit)}
         </span>
       </div>
 

@@ -1,3 +1,4 @@
+import { usePreferences } from '@/hooks/usePreferences';
 import { type MockCardsSummary } from '@/mocks/financeMocks';
 import { FileText, PieChart, WalletCards, type LucideIcon } from 'lucide-react';
 
@@ -12,33 +13,29 @@ type SummaryItem = {
   icon: LucideIcon;
 };
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
 const percentageFormatter = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
   minimumFractionDigits: 1,
 });
 
 export function CardsSummary({ summary }: CardsSummaryProps) {
+  const { formatCurrency } = usePreferences();
   const items: SummaryItem[] = [
     {
       label: 'Limite total',
-      value: moneyFormatter.format(summary.totalLimit),
-      helper: `Disponível: ${moneyFormatter.format(summary.availableLimit)}`,
+      value: formatCurrency(summary.totalLimit),
+      helper: `Disponível: ${formatCurrency(summary.availableLimit)}`,
       icon: WalletCards,
     },
     {
       label: 'Utilizado',
-      value: moneyFormatter.format(summary.usedLimit),
+      value: formatCurrency(summary.usedLimit),
       helper: `${percentageFormatter.format(summary.usedPercentage)}% do limite`,
       icon: PieChart,
     },
     {
       label: 'Fatura total aberta',
-      value: moneyFormatter.format(summary.openInvoiceTotal),
+      value: formatCurrency(summary.openInvoiceTotal),
       helper: `Em ${summary.openCardsCount} cartões`,
       icon: FileText,
     },

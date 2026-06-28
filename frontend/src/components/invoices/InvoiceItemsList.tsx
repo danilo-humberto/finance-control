@@ -1,4 +1,5 @@
 import { EmptyState } from '@/components/ui/EmptyState';
+import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
 import { type MockInvoiceItem } from '@/mocks/financeMocks';
 import { Receipt } from 'lucide-react';
@@ -10,12 +11,9 @@ type InvoiceItemsListProps = {
   total: number;
 };
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
 export function InvoiceItemsList({ items, total }: InvoiceItemsListProps) {
+  const { formatCurrency } = usePreferences();
+
   return (
     <section className="space-y-2" aria-labelledby="invoice-items-title">
       <div className="flex items-center justify-between gap-3">
@@ -26,7 +24,7 @@ export function InvoiceItemsList({ items, total }: InvoiceItemsListProps) {
         <p className="shrink-0 rounded-full bg-app-surface/80 px-2 py-1 text-[0.68rem] font-medium text-app-text">
           Total:{' '}
           <span className="font-semibold text-brand-400">
-            {moneyFormatter.format(total)}
+            {formatCurrency(total)}
           </span>
         </p>
       </div>

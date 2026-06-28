@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { usePreferences } from '@/hooks/usePreferences';
 import { BaseBottomSheet } from './BaseBottomSheet';
 
 export type CardFormValues = {
@@ -32,26 +33,26 @@ const emptyValues: CardFormValues = {
   limit: '',
 };
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
 function parseCurrencyValue(value: string) {
-  const cleanValue = value.replace(/[^\d,.]/g, '');
+  const trimmedValue = value.trim();
 
-  if (!cleanValue) {
+  if (!trimmedValue) {
     return 0;
   }
 
-  if (cleanValue.includes(',')) {
-    return Number.parseFloat(cleanValue.replace(/\./g, '').replace(',', '.'));
+  if (/^\d+$/.test(trimmedValue)) {
+    return Number.parseFloat(trimmedValue);
   }
 
-  return Number.parseFloat(cleanValue.replace(/\./g, ''));
+  const digits = trimmedValue.replace(/\D/g, '');
+
+  return digits ? Number.parseInt(digits, 10) / 100 : 0;
 }
 
-function formatCurrencyValue(value: string | undefined) {
+function formatCurrencyValue(
+  value: string | undefined,
+  formatCurrency: (value: number) => string,
+) {
   if (!value) {
     return '';
   }
@@ -59,18 +60,21 @@ function formatCurrencyValue(value: string | undefined) {
   const parsedValue = parseCurrencyValue(value);
 
   return Number.isFinite(parsedValue) && parsedValue > 0
-    ? moneyFormatter.format(parsedValue)
+    ? formatCurrency(parsedValue)
     : '';
 }
 
-function formatCurrencyInput(value: string) {
+function formatCurrencyInput(
+  value: string,
+  formatCurrency: (value: number) => string,
+) {
   const digits = value.replace(/\D/g, '');
 
   if (!digits || /^0+$/.test(digits)) {
     return '';
   }
 
-  return moneyFormatter.format(Number.parseInt(digits, 10) / 100);
+  return formatCurrency(Number.parseInt(digits, 10) / 100);
 }
 
 export function CardFormSheet({
@@ -81,6 +85,7 @@ export function CardFormSheet({
   onSubmit,
   onDelete,
 }: CardFormSheetProps) {
+  const { formatCurrency } = usePreferences();
   const [values, setValues] = useState<CardFormValues>(emptyValues);
 
   useEffect(() => {
@@ -89,10 +94,10 @@ export function CardFormSheet({
 
       setValues({
         ...nextValues,
-        limit: formatCurrencyValue(nextValues.limit),
+        limit: formatCurrencyValue(nextValues.limit, formatCurrency),
       });
     }
-  }, [initialData, open]);
+  }, [formatCurrency, initialData, open]);
 
   function updateValue(field: keyof CardFormValues, value: string) {
     setValues((currentValues) => ({
@@ -102,7 +107,7 @@ export function CardFormSheet({
   }
 
   function updateLimitValue(value: string) {
-    updateValue('limit', formatCurrencyInput(value));
+    updateValue('limit', formatCurrencyInput(value, formatCurrency));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -184,7 +189,7 @@ export function CardFormSheet({
           inputMode="numeric"
           value={values.limit}
           onChange={(event) => updateLimitValue(event.target.value)}
-          placeholder="R$ 0,00"
+          placeholder={formatCurrency(0)}
         />
 
         <div className="space-y-3 pt-2">

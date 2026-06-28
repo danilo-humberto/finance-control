@@ -7,16 +7,13 @@ import { PurchaseInfoCard } from '@/components/transactions/PurchaseInfoCard';
 import { PurchaseNoteCard } from '@/components/transactions/PurchaseNoteCard';
 import { PurchaseSummaryCard } from '@/components/transactions/PurchaseSummaryCard';
 import { Button } from '@/components/ui/Button';
+import { usePreferences } from '@/hooks/usePreferences';
 import { mockPurchaseFormDefaults } from '@/mocks/financeMocks';
 import { ArrowLeft, CircleHelp, Save } from 'lucide-react';
 import { useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const noteMaxLength = 200;
-const brlFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
 
 function parseCurrencyInput(value: string) {
   const digits = value.replace(/\D/g, '');
@@ -25,18 +22,22 @@ function parseCurrencyInput(value: string) {
   return Number.isFinite(parsedValue) ? parsedValue / 100 : 0;
 }
 
-function formatCurrencyInput(value: string) {
+function formatCurrencyInput(
+  value: string,
+  formatCurrency: (value: number) => string,
+) {
   const digits = value.replace(/\D/g, '');
 
   if (!digits || /^0+$/.test(digits)) {
     return '';
   }
 
-  return brlFormatter.format(Number.parseInt(digits, 10) / 100);
+  return formatCurrency(Number.parseInt(digits, 10) / 100);
 }
 
 export function NewTransactionPage() {
   const navigate = useNavigate();
+  const { formatCurrency } = usePreferences();
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash');
@@ -56,7 +57,7 @@ export function NewTransactionPage() {
   }
 
   function handleAmountChange(value: string) {
-    setAmount(formatCurrencyInput(value));
+    setAmount(formatCurrencyInput(value, formatCurrency));
   }
 
   function handlePaymentModeChange(mode: PaymentMode) {

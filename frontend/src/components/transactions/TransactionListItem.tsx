@@ -1,3 +1,4 @@
+import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
 import { type MockTransaction } from '@/mocks/financeMocks';
 import {
@@ -41,18 +42,14 @@ const categoryIconMap: Record<string, LucideIcon> = {
   User,
 };
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
 export function TransactionListItem({
   transaction,
   onMenuClick,
 }: TransactionListItemProps) {
+  const { formatCurrency, formatDateLabel } = usePreferences();
   const Icon = categoryIconMap[transaction.categoryIcon] ?? Tag;
   const isIncome = transaction.type === 'income';
-  const amountLabel = `${isIncome ? '+' : '-'} ${moneyFormatter.format(
+  const amountLabel = `${isIncome ? '+' : '-'} ${formatCurrency(
     Math.abs(transaction.amount),
   )}`;
 
@@ -88,7 +85,7 @@ export function TransactionListItem({
             {amountLabel}
           </p>
           <p className="mt-1 text-[0.68rem] leading-4 text-app-muted">
-            {transaction.timeLabel}
+            {formatDateLabel(transaction.timeLabel)}
           </p>
         </div>
 

@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/Badge';
+import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
 import { type MockInvoiceSummary } from '@/mocks/financeMocks';
 import {
@@ -28,12 +29,8 @@ const statusVariant: Record<
   canceled: 'danger',
 };
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
 export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
+  const { formatCurrency, formatDateLabel } = usePreferences();
   const progress = Math.min(Math.max(invoice.usedPercentage, 0), 100);
 
   return (
@@ -75,7 +72,7 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
         <div className="min-w-0">
           <p className="text-[0.72rem] leading-4 text-app-muted">Vencimento</p>
           <p className="mt-0.5 truncate text-[1rem] font-bold leading-tight text-brand-400">
-            {invoice.dueDate}
+            {formatDateLabel(invoice.dueDate)}
           </p>
         </div>
 
@@ -85,7 +82,7 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
           </p>
           <div className="mt-0.5 flex items-center gap-1.5">
             <p className="truncate text-[0.82rem] font-semibold leading-tight text-app-text">
-              {invoice.bestPurchaseDate}
+              {formatDateLabel(invoice.bestPurchaseDate)}
             </p>
             <Info aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-app-muted" />
           </div>
@@ -97,14 +94,14 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
           <div className="min-w-0">
             <p className="text-[0.72rem] leading-4 text-app-muted">Total da fatura</p>
             <strong className="mt-1 block truncate text-[1.54rem] font-bold leading-tight text-app-text">
-              {moneyFormatter.format(invoice.total)}
+              {formatCurrency(invoice.total)}
             </strong>
           </div>
 
           <div className="shrink-0 text-right">
             <p className="text-[0.72rem] leading-4 text-app-muted">Limite</p>
             <p className="mt-1 text-[0.82rem] font-semibold leading-tight text-brand-400">
-              {moneyFormatter.format(invoice.limit)}
+              {formatCurrency(invoice.limit)}
             </p>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { usePreferences } from '@/hooks/usePreferences';
 import { type MockPurchaseFormDefaults } from '@/mocks/financeMocks';
 import { CalendarDays, ChevronDown, DollarSign, Utensils, type LucideIcon } from 'lucide-react';
 import { type ReactNode } from 'react';
@@ -11,6 +12,7 @@ const iconByName: Record<string, LucideIcon> = {
 };
 
 export function PurchaseDetailsCard({ defaults }: PurchaseDetailsCardProps) {
+  const { formatDateLabel } = usePreferences();
   const CategoryIcon = iconByName[defaults.category.icon] ?? DollarSign;
 
   return (
@@ -43,7 +45,7 @@ export function PurchaseDetailsCard({ defaults }: PurchaseDetailsCardProps) {
         <PurchaseSelectRow
           label="Fatura"
           value={defaults.invoice.label}
-          detail={defaults.invoice.closeDateLabel}
+          detail={formatDateLabel(defaults.invoice.closeDateLabel)}
           leading={<CalendarDays aria-hidden="true" className="h-4 w-4 text-brand-400" />}
         />
       </div>

@@ -1,25 +1,20 @@
-import { ProfileCard } from '@/components/settings/ProfileCard';
-import { SettingsItem } from '@/components/settings/SettingsItem';
-import { SettingsSection } from '@/components/settings/SettingsSection';
-import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/hooks/useTheme';
-import { mockUser } from '@/mocks/financeMocks';
-import {
-  ChevronRight,
-  LogOut,
-  Moon,
-  SlidersHorizontal,
-} from 'lucide-react';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { ProfileCard } from "@/components/settings/ProfileCard";
+import { SettingsItem } from "@/components/settings/SettingsItem";
+import { SettingsSection } from "@/components/settings/SettingsSection";
+import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
+import { mockUser } from "@/mocks/financeMocks";
+import { ChevronRight, LogOut, Moon, SlidersHorizontal } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function getInitials(name: string, fallback: string) {
   const initials = name
-    .split(' ')
+    .split(" ")
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0])
-    .join('')
+    .join("")
     .toUpperCase();
 
   return initials || fallback;
@@ -36,14 +31,14 @@ export function SettingsPage() {
   const userInitials = getInitials(userName, mockUser.initials);
   const userPhotoUrl = user?.photoURL;
   const themeLabel =
-    theme === 'system' ? 'Automático' : theme === 'dark' ? 'Escuro' : 'Claro';
+    theme === "system" ? "Automático" : theme === "dark" ? "Escuro" : "Claro";
 
   async function handleLogout() {
     setIsLoggingOut(true);
 
     try {
       await logout();
-      navigate('/login', { replace: true });
+      navigate("/login", { replace: true });
     } finally {
       setIsLoggingOut(false);
     }
@@ -65,7 +60,7 @@ export function SettingsPage() {
         email={userEmail}
         initials={userInitials}
         photoUrl={userPhotoUrl}
-        onClick={() => navigate('/settings/profile')}
+        onClick={() => navigate("/settings/profile")}
       />
 
       <SettingsSection title="Preferências">
@@ -74,13 +69,13 @@ export function SettingsPage() {
           description="Escolha entre claro, escuro ou automático"
           icon={Moon}
           badge={themeLabel}
-          onClick={() => navigate('/settings/theme')}
+          onClick={() => navigate("/settings/theme")}
         />
         <SettingsItem
           title="Preferências gerais"
-          description="Moeda, linguagem e outras opções"
+          description="Moeda e datas"
           icon={SlidersHorizontal}
-          onClick={() => console.log('Abrir preferências gerais')}
+          onClick={() => navigate("/settings/preferences")}
         />
       </SettingsSection>
 
@@ -91,7 +86,7 @@ export function SettingsPage() {
         className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-red-500/20 bg-red-950/15 px-4 text-[0.9rem] font-semibold text-red-300 shadow-lg shadow-black/15 transition-colors hover:bg-red-950/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <LogOut aria-hidden="true" className="h-5 w-5" />
-        <span>{isLoggingOut ? 'Saindo...' : 'Sair da conta'}</span>
+        <span>{isLoggingOut ? "Saindo..." : "Sair da conta"}</span>
         <ChevronRight aria-hidden="true" className="h-4 w-4 opacity-0" />
       </button>
     </div>
