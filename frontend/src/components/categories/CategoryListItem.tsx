@@ -1,5 +1,4 @@
 import { cn } from '@/lib/utils';
-import { type MockCategory } from '@/mocks/financeMocks';
 import {
   BookOpen,
   Car,
@@ -18,23 +17,44 @@ import {
 } from 'lucide-react';
 
 type CategoryListItemProps = {
-  category: MockCategory;
-  onMenuClick: (category: MockCategory) => void;
+  category: CategoryListItemData;
+  onMenuClick: (category: CategoryListItemData) => void;
+};
+
+export type CategoryListItemData = {
+  id: string;
+  name: string;
+  type: 'EXPENSE' | 'INCOME';
+  icon: string;
+  color: string;
+  transactionsCount: number;
 };
 
 const categoryIconMap: Record<string, LucideIcon> = {
   BookOpen,
+  'book-open': BookOpen,
   Car,
+  car: Car,
   DollarSign,
+  'dollar-sign': DollarSign,
   Gift,
+  gift: Gift,
   GraduationCap,
+  'graduation-cap': GraduationCap,
   Heart,
+  heart: Heart,
   Home,
+  home: Home,
   Plane,
+  plane: Plane,
   ShoppingBag,
+  'shopping-bag': ShoppingBag,
   Tag,
+  tag: Tag,
   Utensils,
+  utensils: Utensils,
   User,
+  user: User,
 };
 
 function getTransactionsLabel(count: number) {
@@ -50,7 +70,7 @@ export function CategoryListItem({
   onMenuClick,
 }: CategoryListItemProps) {
   const Icon = categoryIconMap[category.icon] ?? Tag;
-  const isIncome = category.type === 'income';
+  const isIncome = category.type === 'INCOME';
   const typeLabel = isIncome ? 'Receita' : 'Despesa';
 
   return (

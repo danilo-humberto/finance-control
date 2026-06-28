@@ -1,8 +1,13 @@
-import { type MockCategoriesSummary } from '@/mocks/financeMocks';
 import { ArrowDown, ArrowUp, Tags, type LucideIcon } from 'lucide-react';
 
+export type CategoriesSummaryData = {
+  total: number;
+  expenses: number;
+  incomes: number;
+};
+
 type CategoriesSummaryProps = {
-  summary: MockCategoriesSummary;
+  summary: CategoriesSummaryData;
 };
 
 type SummaryItem = {

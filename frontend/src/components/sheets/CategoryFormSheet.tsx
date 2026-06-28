@@ -31,8 +31,10 @@ type CategoryFormSheetProps = {
   onOpenChange: (open: boolean) => void;
   mode: 'create' | 'edit';
   initialData?: Partial<CategoryFormValues>;
-  onSubmit: (values: CategoryFormValues) => void;
+  onSubmit: (values: CategoryFormValues) => void | Promise<void>;
   onDelete?: () => void;
+  closeOnSubmit?: boolean;
+  submitting?: boolean;
 };
 
 type IconOption = {
@@ -79,6 +81,8 @@ export function CategoryFormSheet({
   initialData,
   onSubmit,
   onDelete,
+  closeOnSubmit = true,
+  submitting = false,
 }: CategoryFormSheetProps) {
   const [values, setValues] = useState<CategoryFormValues>(emptyValues);
 
@@ -98,10 +102,13 @@ export function CategoryFormSheet({
     }));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    onSubmit(values);
-    onOpenChange(false);
+    await onSubmit(values);
+
+    if (closeOnSubmit) {
+      onOpenChange(false);
+    }
   }
 
   const isEdit = mode === 'edit';
@@ -185,7 +192,7 @@ export function CategoryFormSheet({
         </div>
 
         <div className="space-y-3 pt-2">
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" loading={submitting}>
             {isEdit ? 'Salvar alterações' : 'Adicionar categoria'}
           </Button>
           {isEdit && onDelete ? (

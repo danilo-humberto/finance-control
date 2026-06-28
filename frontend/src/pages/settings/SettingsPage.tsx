@@ -4,7 +4,13 @@ import { SettingsSection } from "@/components/settings/SettingsSection";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { mockUser } from "@/mocks/financeMocks";
-import { ChevronRight, LogOut, Moon, SlidersHorizontal } from "lucide-react";
+import {
+  ChevronRight,
+  LayoutGrid,
+  LogOut,
+  Moon,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -64,6 +70,12 @@ export function SettingsPage() {
       />
 
       <SettingsSection title="Preferências">
+        <SettingsItem
+          title="Categorias"
+          description="Organize gastos e receitas"
+          icon={LayoutGrid}
+          onClick={() => navigate("/categories")}
+        />
         <SettingsItem
           title="Tema"
           description="Escolha entre claro, escuro ou automático"
