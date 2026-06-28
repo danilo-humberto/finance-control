@@ -38,6 +38,7 @@ export function SettingsPage() {
   const userName = user?.displayName || mockUser.name;
   const userEmail = user?.email || mockUser.email;
   const userInitials = getInitials(userName, mockUser.initials);
+  const userPhotoUrl = user?.photoURL;
   const themeLabel = theme === 'dark' ? 'Escuro' : 'Claro';
 
   async function handleLogout() {
@@ -66,6 +67,7 @@ export function SettingsPage() {
         name={userName}
         email={userEmail}
         initials={userInitials}
+        photoUrl={userPhotoUrl}
         onClick={() => console.log('Abrir perfil')}
       />
 

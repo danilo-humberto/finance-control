@@ -13,11 +13,12 @@ import { getFirebaseErrorMessage } from '@/utils/firebaseErrors';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,6 +32,20 @@ export function LoginPage() {
       setError(getFirebaseErrorMessage(loginError));
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setError('');
+    setIsGoogleSubmitting(true);
+
+    try {
+      await loginWithGoogle();
+      navigate('/', { replace: true });
+    } catch (loginError) {
+      setError(getFirebaseErrorMessage(loginError));
+    } finally {
+      setIsGoogleSubmitting(false);
     }
   }
 
@@ -93,7 +108,10 @@ export function LoginPage() {
           <span className="h-px flex-1 bg-app-border" />
         </div>
 
-        <SocialLoginButton onClick={() => console.log('Login com Google')} />
+        <SocialLoginButton
+          loading={isGoogleSubmitting}
+          onClick={handleGoogleLogin}
+        />
 
         <p className="text-center text-[0.76rem] text-app-muted">
           Ainda não tem uma conta?{' '}

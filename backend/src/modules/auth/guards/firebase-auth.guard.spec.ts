@@ -28,6 +28,7 @@ describe('FirebaseAuthGuard', () => {
     user: {
       findUnique: jest.Mock;
       create: jest.Mock;
+      update: jest.Mock;
     };
   };
   let guard: FirebaseAuthGuard;
@@ -50,6 +51,7 @@ describe('FirebaseAuthGuard', () => {
       user: {
         findUnique: jest.fn(),
         create: jest.fn(),
+        update: jest.fn(),
       },
     };
     guard = new FirebaseAuthGuard(
@@ -108,7 +110,45 @@ describe('FirebaseAuthGuard', () => {
       },
     });
     expect(prismaService.user.create).not.toHaveBeenCalled();
+    expect(prismaService.user.update).not.toHaveBeenCalled();
     expect(request.user).toEqual(user);
+  });
+
+  it('updates an existing user with fresh firebase claims', async () => {
+    const request: RequestStub = {
+      headers: {
+        authorization: 'Bearer valid-token',
+      },
+    };
+    const updatedUser: User = {
+      ...user,
+      email: 'updated@example.com',
+      name: 'Updated Name',
+      photoUrl: 'https://example.com/updated.png',
+    };
+
+    firebaseAdminService.verifyIdToken.mockResolvedValue({
+      uid: user.firebaseUid,
+      email: updatedUser.email,
+      name: updatedUser.name,
+      picture: updatedUser.photoUrl,
+    });
+    prismaService.user.findUnique.mockResolvedValue(user);
+    prismaService.user.update.mockResolvedValue(updatedUser);
+
+    await expect(guard.canActivate(createContext(request))).resolves.toBe(true);
+
+    expect(prismaService.user.update).toHaveBeenCalledWith({
+      where: {
+        id: user.id,
+      },
+      data: {
+        email: updatedUser.email,
+        name: updatedUser.name,
+        photoUrl: updatedUser.photoUrl,
+      },
+    });
+    expect(request.user).toEqual(updatedUser);
   });
 
   it('creates and attaches the user when the firebase uid is unknown', async () => {

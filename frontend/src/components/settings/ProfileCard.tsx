@@ -4,6 +4,7 @@ type ProfileCardProps = {
   name: string;
   email: string;
   initials: string;
+  photoUrl?: string | null;
   onClick?: () => void;
 };
 
@@ -11,6 +12,7 @@ export function ProfileCard({
   name,
   email,
   initials,
+  photoUrl,
   onClick,
 }: ProfileCardProps) {
   return (
@@ -20,7 +22,16 @@ export function ProfileCard({
       className="flex w-full items-center gap-3 rounded-2xl border border-app-border bg-app-surface/75 p-3 text-left shadow-lg shadow-black/15 transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
     >
       <span className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-950 via-brand-900 to-brand-700 text-[1.15rem] font-bold text-brand-400">
-        {initials}
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt=""
+            className="h-full w-full rounded-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          initials
+        )}
         <span className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 text-slate-950 shadow-lg shadow-brand-950/35">
           <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
         </span>

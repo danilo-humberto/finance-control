@@ -29,13 +29,14 @@ const passwordRules = [
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { loginWithGoogle, register } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   const passwordRuleStatus = passwordRules.map((rule) => ({
     ...rule,
@@ -66,6 +67,20 @@ export function RegisterPage() {
       setError(getFirebaseErrorMessage(registerError));
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleGoogleRegister() {
+    setError('');
+    setIsGoogleSubmitting(true);
+
+    try {
+      await loginWithGoogle();
+      navigate('/', { replace: true });
+    } catch (registerError) {
+      setError(getFirebaseErrorMessage(registerError));
+    } finally {
+      setIsGoogleSubmitting(false);
     }
   }
 
@@ -155,7 +170,10 @@ export function RegisterPage() {
           <span className="h-px flex-1 bg-app-border" />
         </div>
 
-        <SocialLoginButton onClick={() => console.log('Cadastro com Google')} />
+        <SocialLoginButton
+          loading={isGoogleSubmitting}
+          onClick={handleGoogleRegister}
+        />
 
         <p className="text-center text-[0.76rem] text-app-muted">
           Já tem uma conta?{' '}

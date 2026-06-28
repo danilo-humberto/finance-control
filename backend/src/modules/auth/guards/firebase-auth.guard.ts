@@ -72,7 +72,7 @@ export class FirebaseAuthGuard implements CanActivate {
     });
 
     if (existingUser) {
-      return existingUser;
+      return this.updateExistingUserFromFirebaseClaims(existingUser, params);
     }
 
     if (!params.email) {
@@ -88,6 +88,44 @@ export class FirebaseAuthGuard implements CanActivate {
         name: params.name ?? null,
         photoUrl: params.photoUrl ?? null,
       },
+    });
+  }
+
+  private async updateExistingUserFromFirebaseClaims(
+    existingUser: User,
+    params: {
+      email?: string;
+      name?: string;
+      photoUrl?: string;
+    },
+  ): Promise<User> {
+    const data: {
+      email?: string;
+      name?: string;
+      photoUrl?: string;
+    } = {};
+
+    if (params.email && params.email !== existingUser.email) {
+      data.email = params.email;
+    }
+
+    if (params.name && params.name !== existingUser.name) {
+      data.name = params.name;
+    }
+
+    if (params.photoUrl && params.photoUrl !== existingUser.photoUrl) {
+      data.photoUrl = params.photoUrl;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return existingUser;
+    }
+
+    return this.prismaService.user.update({
+      where: {
+        id: existingUser.id,
+      },
+      data,
     });
   }
 }

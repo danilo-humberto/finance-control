@@ -1,8 +1,10 @@
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   updateProfile,
   type User,
@@ -22,6 +24,7 @@ type AuthContextValue = {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -51,6 +54,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = useCallback(async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
+  }, []);
+
+  const loginWithGoogle = useCallback(async () => {
+    const provider = new GoogleAuthProvider();
+
+    provider.setCustomParameters({
+      prompt: 'select_account',
+    });
+
+    const credential = await signInWithPopup(auth, provider);
+    setUser(credential.user);
   }, []);
 
   const register = useCallback(
@@ -87,12 +101,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
       user,
       loading,
       login,
+      loginWithGoogle,
       register,
       logout,
       resetPassword,
       getToken,
     }),
-    [getToken, loading, login, logout, register, resetPassword, user],
+    [
+      getToken,
+      loading,
+      login,
+      loginWithGoogle,
+      logout,
+      register,
+      resetPassword,
+      user,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
