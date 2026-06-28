@@ -1,40 +1,76 @@
+import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
-import { type MockRecentTransaction } from '@/mocks/financeMocks';
+import { type DashboardRecentTransaction } from '@/types/dashboard';
 import {
+  BookOpen,
+  Car,
   ChevronRight,
   Clapperboard,
+  CircleDollarSign,
   DollarSign,
   Fuel,
+  Gift,
+  GraduationCap,
+  Heart,
+  Home,
+  LoaderCircle,
+  Plane,
   Shirt,
   ShoppingBag,
   ShoppingCart,
+  Tag,
+  User,
   Utensils,
   type LucideIcon,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type RecentTransactionsProps = {
-  transactions: MockRecentTransaction[];
+  transactions: DashboardRecentTransaction[];
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
 };
+
+const defaultColor = '#22c55e';
 
 const iconByName: Record<string, LucideIcon> = {
-  Clapperboard,
-  DollarSign,
-  Fuel,
-  Shirt,
-  ShoppingBag,
-  ShoppingCart,
-  Utensils,
+  'book-open': BookOpen,
+  bookopen: BookOpen,
+  car: Car,
+  clapperboard: Clapperboard,
+  'dollar-sign': CircleDollarSign,
+  dollarsign: CircleDollarSign,
+  fuel: Fuel,
+  gift: Gift,
+  'graduation-cap': GraduationCap,
+  graduationcap: GraduationCap,
+  heart: Heart,
+  home: Home,
+  plane: Plane,
+  shirt: Shirt,
+  'shopping-bag': ShoppingBag,
+  shoppingbag: ShoppingBag,
+  shoppingcart: ShoppingCart,
+  'shopping-cart': ShoppingCart,
+  tag: Tag,
+  user: User,
+  utensils: Utensils,
 };
 
-export function RecentTransactions({ transactions }: RecentTransactionsProps) {
+export function RecentTransactions({
+  transactions,
+  loading,
+  error,
+  onRetry,
+}: RecentTransactionsProps) {
   const { formatCurrency, formatDateLabel } = usePreferences();
 
   function formatSignedCurrency(value: number) {
     if (value < 0) {
-      return formatCurrency(Math.abs(value));
+      return `-${formatCurrency(Math.abs(value))}`;
     }
 
     return `+${formatCurrency(value)}`;
@@ -55,11 +91,24 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
         </Link>
       </div>
 
-      {transactions.length > 0 ? (
+      {loading ? (
+        <RecentTransactionsLoadingState />
+      ) : error ? (
+        <EmptyState
+          icon={<LoaderCircle aria-hidden="true" className="h-5 w-5" />}
+          title="Não foi possível carregar as movimentações"
+          description={error}
+          action={
+            <Button type="button" size="sm" onClick={onRetry}>
+              Tentar novamente
+            </Button>
+          }
+        />
+      ) : transactions.length > 0 ? (
         <div className="overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-lg shadow-black/15">
           {transactions.map((transaction, index) => {
-            const Icon = iconByName[transaction.categoryIcon] ?? DollarSign;
-            const isExpense = transaction.type === 'expense';
+            const Icon = getTransactionIcon(transaction.categoryIcon);
+            const isExpense = transaction.transactionType === 'EXPENSE';
 
             return (
               <Link
@@ -70,7 +119,10 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                   index > 0 && 'border-t border-app-border',
                 )}
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-icon text-brand-400">
+                <span
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-icon text-brand-400"
+                  style={{ color: transaction.categoryColor || defaultColor }}
+                >
                   <Icon aria-hidden="true" className="h-[1.12rem] w-[1.12rem]" />
                 </span>
 
@@ -102,10 +154,51 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
       ) : (
         <EmptyState
           icon={<DollarSign aria-hidden="true" className="h-5 w-5" />}
-          title="Nenhuma movimentação recente"
-          description="Suas compras e receitas mais recentes aparecerão aqui."
+          title="Nenhuma movimentação ainda"
+          description="Registre sua primeira compra para começar."
         />
       )}
     </section>
   );
+}
+
+function RecentTransactionsLoadingState() {
+  return (
+    <div
+      className="overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-lg shadow-black/15"
+      aria-label="Carregando últimas movimentações"
+    >
+      {[0, 1, 2].map((item, index) => (
+        <div
+          key={item}
+          className={cn(
+            'flex min-h-[3.85rem] items-center gap-2.5 px-3 py-2.5',
+            index > 0 && 'border-t border-app-border',
+          )}
+        >
+          <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-app-elevated" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="h-3 w-32 animate-pulse rounded-full bg-app-elevated" />
+            <div className="h-2.5 w-44 animate-pulse rounded-full bg-app-elevated" />
+          </div>
+          <div className="h-3 w-16 animate-pulse rounded-full bg-app-elevated" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function normalizeIconName(icon?: string | null) {
+  if (!icon) {
+    return '';
+  }
+
+  return icon
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .toLowerCase()
+    .trim();
+}
+
+function getTransactionIcon(icon?: string | null) {
+  return iconByName[normalizeIconName(icon)] ?? DollarSign;
 }

@@ -2,17 +2,26 @@ import { CurrentInvoiceCard } from '@/components/dashboard/CurrentInvoiceCard';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { cn } from '@/lib/utils';
+import { type DashboardCurrentInvoice } from '@/types/dashboard';
+import { CreditCard, LoaderCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-import { type MockCurrentInvoice } from '@/mocks/financeMocks';
-
 type InvoiceCarouselProps = {
-  invoices: MockCurrentInvoice[];
+  invoices: DashboardCurrentInvoice[];
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+  onAddCard: () => void;
 };
 
-export function InvoiceCarousel({ invoices }: InvoiceCarouselProps) {
+export function InvoiceCarousel({
+  invoices,
+  loading,
+  error,
+  onRetry,
+  onAddCard,
+}: InvoiceCarouselProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -83,7 +92,20 @@ export function InvoiceCarousel({ invoices }: InvoiceCarouselProps) {
         </Link>
       </div>
 
-      {invoices.length > 0 ? (
+      {loading ? (
+        <InvoiceCarouselLoadingState />
+      ) : error ? (
+        <EmptyState
+          icon={<LoaderCircle aria-hidden="true" className="h-5 w-5" />}
+          title="Não foi possível carregar as faturas"
+          description={error}
+          action={
+            <Button type="button" size="sm" onClick={onRetry}>
+              Tentar novamente
+            </Button>
+          }
+        />
+      ) : invoices.length > 0 ? (
         <>
           <div
             ref={carouselRef}
@@ -116,10 +138,42 @@ export function InvoiceCarousel({ invoices }: InvoiceCarouselProps) {
         <EmptyState
           icon={<CreditCard aria-hidden="true" className="h-5 w-5" />}
           title="Nenhum cartão cadastrado"
-          description="Cadastre um cartão para acompanhar sua fatura atual."
-          action={<Button disabled>Adicionar cartão</Button>}
+          description="Cadastre um cartão para acompanhar suas faturas."
+          action={
+            <Button type="button" size="sm" onClick={onAddCard}>
+              Adicionar cartão
+            </Button>
+          }
         />
       )}
     </section>
+  );
+}
+
+function InvoiceCarouselLoadingState() {
+  return (
+    <div
+      className="flex snap-x snap-mandatory gap-3 overflow-hidden pb-0.5"
+      aria-label="Carregando faturas atuais"
+    >
+      {[0, 1].map((item) => (
+        <article
+          key={item}
+          className="w-[min(19rem,calc(100vw-5.5rem))] shrink-0 rounded-2xl border border-brand-800/65 bg-app-surface p-3.5 shadow-lg shadow-black/20"
+        >
+          <div className="flex items-start gap-2">
+            <div className="h-9 w-9 animate-pulse rounded-lg bg-app-elevated" />
+            <div className="space-y-2">
+              <div className="h-3 w-24 animate-pulse rounded-full bg-app-elevated" />
+              <div className="h-2.5 w-16 animate-pulse rounded-full bg-app-elevated" />
+            </div>
+          </div>
+          <div className="mt-4 h-3 w-32 animate-pulse rounded-full bg-app-elevated" />
+          <div className="mt-4 h-7 w-44 animate-pulse rounded-full bg-app-elevated" />
+          <div className="mt-4 h-2 w-full animate-pulse rounded-full bg-app-elevated" />
+          <div className="mt-4 h-10 w-full animate-pulse rounded-xl bg-app-elevated" />
+        </article>
+      ))}
+    </div>
   );
 }

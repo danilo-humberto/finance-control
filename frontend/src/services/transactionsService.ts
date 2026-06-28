@@ -1,6 +1,7 @@
 import { api } from '@/lib/api';
 import {
   type CreateTransactionPayload,
+  type GetTransactionsFilters,
   type Transaction,
 } from '@/types/transaction';
 
@@ -23,6 +24,14 @@ export async function createTransaction(payload: CreateTransactionPayload) {
     '/transactions',
     payload,
   );
+
+  return unwrapResponseData(response.data);
+}
+
+export async function getTransactions(filters?: GetTransactionsFilters) {
+  const response = await api.get<ApiResponse<Transaction[]>>('/transactions', {
+    params: filters,
+  });
 
   return unwrapResponseData(response.data);
 }

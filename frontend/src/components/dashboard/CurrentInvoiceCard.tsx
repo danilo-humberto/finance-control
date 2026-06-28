@@ -1,27 +1,27 @@
 import { Badge } from '@/components/ui/Badge';
 import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
-import { type MockCurrentInvoice } from '@/mocks/financeMocks';
+import { type DashboardCurrentInvoice } from '@/types/dashboard';
 import { ChevronRight, MoreHorizontal, ScanLine } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type CurrentInvoiceCardProps = {
-  invoice: MockCurrentInvoice;
+  invoice: DashboardCurrentInvoice;
 };
 
-const statusLabel: Record<MockCurrentInvoice['status'], string> = {
-  open: 'Aberta',
-  paid: 'Paga',
-  canceled: 'Cancelada',
+const statusLabel: Record<DashboardCurrentInvoice['status'], string> = {
+  OPEN: 'Aberta',
+  PAID: 'Paga',
+  CANCELED: 'Cancelada',
 };
 
 const statusVariant: Record<
-  MockCurrentInvoice['status'],
+  DashboardCurrentInvoice['status'],
   'default' | 'success' | 'danger'
 > = {
-  open: 'default',
-  paid: 'success',
-  canceled: 'danger',
+  OPEN: 'default',
+  PAID: 'success',
+  CANCELED: 'danger',
 };
 
 export function CurrentInvoiceCard({ invoice }: CurrentInvoiceCardProps) {
