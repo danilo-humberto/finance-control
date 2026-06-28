@@ -1,18 +1,14 @@
 import { ProfileCard } from '@/components/settings/ProfileCard';
 import { SettingsItem } from '@/components/settings/SettingsItem';
 import { SettingsSection } from '@/components/settings/SettingsSection';
-import { mockUser } from '@/mocks/financeMocks';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
+import { mockUser } from '@/mocks/financeMocks';
 import {
-  Bell,
   ChevronRight,
-  CloudUpload,
   LogOut,
   Moon,
-  ShieldCheck,
   SlidersHorizontal,
-  User,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -69,35 +65,8 @@ export function SettingsPage() {
         email={userEmail}
         initials={userInitials}
         photoUrl={userPhotoUrl}
-        onClick={() => console.log('Abrir perfil')}
+        onClick={() => navigate('/settings/profile')}
       />
-
-      <SettingsSection title="Conta">
-        <SettingsItem
-          title="Perfil"
-          description="Dados pessoais e informações da conta"
-          icon={User}
-          onClick={() => console.log('Abrir perfil')}
-        />
-        <SettingsItem
-          title="Segurança"
-          description="Senha, autenticação e proteção"
-          icon={ShieldCheck}
-          onClick={() => console.log('Abrir segurança')}
-        />
-        <SettingsItem
-          title="Notificações"
-          description="Alertas de fatura e movimentações"
-          icon={Bell}
-          onClick={() => console.log('Abrir notificações')}
-        />
-        <SettingsItem
-          title="Backup e sincronização"
-          description="Dados salvos e sincronizados"
-          icon={CloudUpload}
-          onClick={() => console.log('Abrir backup')}
-        />
-      </SettingsSection>
 
       <SettingsSection title="Preferências">
         <SettingsItem
