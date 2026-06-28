@@ -22,6 +22,8 @@ const firebaseErrorMessages: Record<string, string> = {
     'Muitas tentativas em pouco tempo. Aguarde um instante e tente novamente.',
   'auth/unauthorized-domain':
     'Este domínio não está autorizado no Firebase Authentication.',
+  'auth/requires-recent-login':
+    'Por segurança, entre novamente na conta antes de trocar a senha.',
   'auth/user-disabled': 'Esta conta foi desativada.',
   'auth/user-not-found': 'Usuário não encontrado.',
   'auth/weak-password': 'A senha deve ter pelo menos 6 caracteres.',

@@ -95,8 +95,6 @@ export function UiPreviewPage() {
         mode="edit"
         initialData={{
           name: firstCard?.name,
-          type: firstCard?.type,
-          brand: firstCard?.brand,
           closingDay: String(firstCard?.closingDay ?? ''),
           dueDay: String(firstCard?.dueDay ?? ''),
           limit: String(firstCard?.limit ?? ''),

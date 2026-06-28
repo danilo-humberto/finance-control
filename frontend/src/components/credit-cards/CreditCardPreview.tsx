@@ -1,7 +1,12 @@
-import { type MockCreditCard } from '@/mocks/financeMocks';
+export type CreditCardPreviewData = {
+  id: string;
+  name: string;
+  logo: string;
+  color: string;
+};
 
 type CreditCardPreviewProps = {
-  card: MockCreditCard;
+  card: CreditCardPreviewData;
 };
 
 const previewGradientByCardId: Record<string, string> = {
@@ -22,16 +27,13 @@ export function CreditCardPreview({ card }: CreditCardPreviewProps) {
       style={{
         background: previewGradientByCardId[card.id] ?? card.color,
       }}
-      aria-label={`Cartão ${card.name} final ${card.lastFourDigits}`}
+      aria-label={`Cartao ${card.name}`}
     >
       <span className="block max-w-[4.1rem] truncate text-[0.9rem] font-bold leading-none">
         {card.logo}
       </span>
 
       <span className="absolute bottom-2.5 left-2.5 h-3.5 w-[1.15rem] rounded-[0.2rem] bg-yellow-200/90 shadow-sm shadow-black/20" />
-      <span className="absolute bottom-2.5 right-2.5 text-[0.66rem] font-medium tracking-normal">
-        ••• {card.lastFourDigits}
-      </span>
     </div>
   );
 }

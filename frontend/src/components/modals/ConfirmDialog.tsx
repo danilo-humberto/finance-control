@@ -19,7 +19,8 @@ type ConfirmDialogProps = {
   confirmText: string;
   cancelText: string;
   variant?: 'danger' | 'default';
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
+  confirming?: boolean;
 };
 
 export function ConfirmDialog({
@@ -31,11 +32,12 @@ export function ConfirmDialog({
   cancelText,
   variant = 'default',
   onConfirm,
+  confirming = false,
 }: ConfirmDialogProps) {
   const isDanger = variant === 'danger';
 
-  function handleConfirm() {
-    onConfirm();
+  async function handleConfirm() {
+    await onConfirm();
     onOpenChange(false);
   }
 
@@ -69,6 +71,7 @@ export function ConfirmDialog({
             type="button"
             variant={isDanger ? 'danger' : 'primary'}
             onClick={handleConfirm}
+            loading={confirming}
             className="w-full"
           >
             {confirmText}

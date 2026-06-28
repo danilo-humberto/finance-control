@@ -1,9 +1,17 @@
 import { usePreferences } from '@/hooks/usePreferences';
-import { type MockCardsSummary } from '@/mocks/financeMocks';
 import { FileText, PieChart, WalletCards, type LucideIcon } from 'lucide-react';
 
 type CardsSummaryProps = {
-  summary: MockCardsSummary;
+  summary: CardsSummaryData;
+};
+
+export type CardsSummaryData = {
+  totalLimit: number;
+  usedLimit: number;
+  availableLimit: number;
+  openInvoiceTotal: number;
+  openCardsCount: number;
+  usedPercentage: number;
 };
 
 type SummaryItem = {

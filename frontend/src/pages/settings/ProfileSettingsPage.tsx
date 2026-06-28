@@ -1,13 +1,22 @@
+import { AuthField } from '@/components/auth/AuthField';
+import { AuthMessage } from '@/components/auth/AuthMessage';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/hooks/useAuth';
 import { mockUser } from '@/mocks/financeMocks';
+import { getFirebaseErrorMessage } from '@/utils/firebaseErrors';
 import {
   ArrowLeft,
   BadgeCheck,
+  KeyRound,
+  Lock,
   Mail,
+  Save,
   ShieldCheck,
   User,
   type LucideIcon,
 } from 'lucide-react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 type ProfileInfoRowProps = {
@@ -16,6 +25,11 @@ type ProfileInfoRowProps = {
   icon: LucideIcon;
   tone?: 'default' | 'success';
 };
+
+type FeedbackMessage = {
+  tone: 'error' | 'success' | 'info';
+  message: string;
+} | null;
 
 function getInitials(name: string, fallback: string) {
   const initials = name
@@ -69,13 +83,132 @@ function ProfileInfoRow({
 
 export function ProfileSettingsPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { changePassword, updateDisplayName, user } = useAuth();
   const userName = user?.displayName || mockUser.name;
   const userEmail = user?.email || mockUser.email;
   const userPhotoUrl = user?.photoURL;
   const userInitials = getInitials(userName, mockUser.initials);
   const primaryProvider = user?.providerData[0];
   const providerLabel = getProviderLabel(primaryProvider?.providerId);
+  const canChangePassword =
+    user?.providerData.some((provider) => provider.providerId === 'password') ??
+    false;
+  const [name, setName] = useState(userName);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [profileMessage, setProfileMessage] = useState<FeedbackMessage>(null);
+  const [passwordMessage, setPasswordMessage] =
+    useState<FeedbackMessage>(null);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+
+  useEffect(() => {
+    setName(userName);
+  }, [userName]);
+
+  async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setProfileMessage(null);
+
+    const nextName = name.trim();
+
+    if (nextName.length < 2) {
+      setProfileMessage({
+        tone: 'error',
+        message: 'Informe um nome com pelo menos 2 caracteres.',
+      });
+      return;
+    }
+
+    if (nextName === userName) {
+      setProfileMessage({
+        tone: 'info',
+        message: 'Nenhuma alteração de nome para salvar.',
+      });
+      return;
+    }
+
+    try {
+      setIsSavingProfile(true);
+      await updateDisplayName(nextName);
+      setProfileMessage({
+        tone: 'success',
+        message: 'Nome atualizado com sucesso.',
+      });
+    } catch (error) {
+      setProfileMessage({
+        tone: 'error',
+        message: getFirebaseErrorMessage(error),
+      });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  }
+
+  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPasswordMessage(null);
+
+    if (!canChangePassword) {
+      setPasswordMessage({
+        tone: 'info',
+        message: 'A senha desta conta é gerenciada pelo provedor de login.',
+      });
+      return;
+    }
+
+    if (!currentPassword) {
+      setPasswordMessage({
+        tone: 'error',
+        message: 'Informe sua senha atual.',
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordMessage({
+        tone: 'error',
+        message: 'A nova senha deve ter pelo menos 6 caracteres.',
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage({
+        tone: 'error',
+        message: 'A confirmação precisa ser igual à nova senha.',
+      });
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordMessage({
+        tone: 'error',
+        message: 'A nova senha precisa ser diferente da senha atual.',
+      });
+      return;
+    }
+
+    try {
+      setIsSavingPassword(true);
+      await changePassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordMessage({
+        tone: 'success',
+        message: 'Senha atualizada com sucesso.',
+      });
+    } catch (error) {
+      setPasswordMessage({
+        tone: 'error',
+        message: getFirebaseErrorMessage(error),
+      });
+    } finally {
+      setIsSavingPassword(false);
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
@@ -147,6 +280,120 @@ export function ProfileSettingsPage() {
             tone="success"
           />
         </div>
+      </section>
+
+      <section className="space-y-2" aria-labelledby="profile-edit-title">
+        <h2
+          id="profile-edit-title"
+          className="text-[0.94rem] font-semibold leading-tight text-app-muted"
+        >
+          Editar perfil
+        </h2>
+
+        <form
+          className="space-y-3 rounded-2xl border border-app-border bg-app-surface/75 p-3 shadow-lg shadow-black/15"
+          onSubmit={handleProfileSubmit}
+        >
+          <Input
+            label="Nome completo"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Seu nome completo"
+            leftIcon={<User aria-hidden="true" className="h-4 w-4" />}
+            autoComplete="name"
+          />
+
+          {profileMessage ? (
+            <AuthMessage tone={profileMessage.tone}>
+              {profileMessage.message}
+            </AuthMessage>
+          ) : null}
+
+          <Button
+            type="submit"
+            className="h-10 w-full rounded-xl"
+            loading={isSavingProfile}
+            leftIcon={<Save aria-hidden="true" className="h-4 w-4" />}
+          >
+            Salvar nome
+          </Button>
+        </form>
+      </section>
+
+      <section className="space-y-2" aria-labelledby="profile-password-title">
+        <h2
+          id="profile-password-title"
+          className="text-[0.94rem] font-semibold leading-tight text-app-muted"
+        >
+          Senha
+        </h2>
+
+        {canChangePassword ? (
+          <form
+            className="space-y-3 rounded-2xl border border-app-border bg-app-surface/75 p-3 shadow-lg shadow-black/15"
+            onSubmit={handlePasswordSubmit}
+          >
+            <AuthField
+              label="Senha atual"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              leftIcon={<Lock aria-hidden="true" className="h-4 w-4" />}
+              showPasswordToggle
+              autoComplete="current-password"
+            />
+
+            <AuthField
+              label="Nova senha"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              leftIcon={<KeyRound aria-hidden="true" className="h-4 w-4" />}
+              showPasswordToggle
+              autoComplete="new-password"
+            />
+
+            <AuthField
+              label="Confirmar nova senha"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              leftIcon={<KeyRound aria-hidden="true" className="h-4 w-4" />}
+              showPasswordToggle
+              autoComplete="new-password"
+            />
+
+            {passwordMessage ? (
+              <AuthMessage tone={passwordMessage.tone}>
+                {passwordMessage.message}
+              </AuthMessage>
+            ) : null}
+
+            <Button
+              type="submit"
+              className="h-10 w-full rounded-xl"
+              loading={isSavingPassword}
+              leftIcon={<Save aria-hidden="true" className="h-4 w-4" />}
+            >
+              Atualizar senha
+            </Button>
+          </form>
+        ) : (
+          <div className="rounded-2xl border border-app-border bg-app-surface/75 p-3 shadow-lg shadow-black/15">
+            <div className="flex items-start gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-icon text-brand-400">
+                <KeyRound aria-hidden="true" className="h-4 w-4" />
+              </span>
+
+              <div className="min-w-0">
+                <p className="text-[0.86rem] font-semibold leading-5 text-app-text">
+                  Senha gerenciada pelo provedor
+                </p>
+                <p className="mt-1 text-[0.72rem] leading-5 text-app-muted">
+                  Essa conta usa {providerLabel}. Para trocar a senha, acesse as
+                  configurações desse provedor de login.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

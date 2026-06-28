@@ -1,13 +1,24 @@
 import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
-import { type MockCreditCard } from '@/mocks/financeMocks';
 import { MoreHorizontal } from 'lucide-react';
 
-import { CreditCardPreview } from './CreditCardPreview';
+import {
+  CreditCardPreview,
+  type CreditCardPreviewData,
+} from './CreditCardPreview';
+
+export type CreditCardListItemData = CreditCardPreviewData & {
+  limit: number;
+  used: number;
+  currentInvoiceTotal: number;
+  dueDateLabel: string;
+  closingDay: number;
+  dueDay: number;
+};
 
 type CreditCardListItemProps = {
-  card: MockCreditCard;
-  onMenuClick: (card: MockCreditCard) => void;
+  card: CreditCardListItemData;
+  onMenuClick: (card: CreditCardListItemData) => void;
 };
 
 export function CreditCardListItem({
@@ -29,14 +40,11 @@ export function CreditCardListItem({
             <h3 className="truncate text-[0.92rem] font-semibold leading-5 text-app-text">
               {card.name}
             </h3>
-            <p className="truncate text-[0.62rem] leading-3 text-app-muted">
-              {card.type} • final {card.lastFourDigits}
-            </p>
           </div>
 
           <button
             type="button"
-            aria-label={`Mais ações do cartão ${card.name}`}
+            aria-label={`Mais acoes do cartao ${card.name}`}
             onClick={() => onMenuClick(card)}
             className="shrink-0 rounded-full p-1 text-app-text transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           >
@@ -71,7 +79,7 @@ export function CreditCardListItem({
           <div
             className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-app-elevated"
             role="progressbar"
-            aria-label={`Uso do limite do cartão ${card.name}`}
+            aria-label={`Uso do limite do cartao ${card.name}`}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={progress}

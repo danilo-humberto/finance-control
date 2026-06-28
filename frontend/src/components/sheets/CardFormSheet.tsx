@@ -2,14 +2,14 @@ import { useEffect, useState, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { usePreferences } from '@/hooks/usePreferences';
+import { cn } from '@/lib/utils';
+import { Check } from 'lucide-react';
 import { BaseBottomSheet } from './BaseBottomSheet';
 
 export type CardFormValues = {
   name: string;
-  type: string;
-  brand: string;
+  color: string;
   closingDay: string;
   dueDay: string;
   limit: string;
@@ -20,18 +20,28 @@ type CardFormSheetProps = {
   onOpenChange: (open: boolean) => void;
   mode: 'create' | 'edit';
   initialData?: Partial<CardFormValues>;
-  onSubmit: (values: CardFormValues) => void;
+  onSubmit: (values: CardFormValues) => void | Promise<void>;
   onDelete?: () => void;
+  closeOnSubmit?: boolean;
+  submitting?: boolean;
 };
 
 const emptyValues: CardFormValues = {
   name: '',
-  type: '',
-  brand: '',
+  color: '#22c55e',
   closingDay: '',
   dueDay: '',
   limit: '',
 };
+
+const cardColorOptions = [
+  { label: 'Verde', value: '#22c55e' },
+  { label: 'Roxo', value: '#7c3aed' },
+  { label: 'Vermelho', value: '#dc2626' },
+  { label: 'Azul', value: '#2563eb' },
+  { label: 'Preto', value: '#262626' },
+  { label: 'Dourado', value: '#ca8a04' },
+];
 
 function parseCurrencyValue(value: string) {
   const trimmedValue = value.trim();
@@ -84,6 +94,8 @@ export function CardFormSheet({
   initialData,
   onSubmit,
   onDelete,
+  closeOnSubmit = true,
+  submitting = false,
 }: CardFormSheetProps) {
   const { formatCurrency } = usePreferences();
   const [values, setValues] = useState<CardFormValues>(emptyValues);
@@ -110,10 +122,13 @@ export function CardFormSheet({
     updateValue('limit', formatCurrencyInput(value, formatCurrency));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    onSubmit(values);
-    onOpenChange(false);
+    await onSubmit(values);
+
+    if (closeOnSubmit) {
+      onOpenChange(false);
+    }
   }
 
   const isEdit = mode === 'edit';
@@ -133,31 +148,10 @@ export function CardFormSheet({
           required
         />
 
-        <Select
-          label="Tipo do cartão"
-          value={values.type}
-          onChange={(event) => updateValue('type', event.target.value)}
-          required
-        >
-          <option value="">Selecione o tipo</option>
-          <option value="Crédito">Crédito</option>
-          <option value="Débito">Débito</option>
-          <option value="Crédito e débito">Crédito e débito</option>
-        </Select>
-
-        <Select
-          label="Bandeira"
-          value={values.brand}
-          onChange={(event) => updateValue('brand', event.target.value)}
-          required
-        >
-          <option value="">Selecione a bandeira</option>
-          <option value="Visa">Visa</option>
-          <option value="Mastercard">Mastercard</option>
-          <option value="Elo">Elo</option>
-          <option value="Hipercard">Hipercard</option>
-          <option value="Outra">Outra</option>
-        </Select>
+        <CardColorPicker
+          value={values.color}
+          onChange={(color) => updateValue('color', color)}
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <Input
@@ -193,7 +187,7 @@ export function CardFormSheet({
         />
 
         <div className="space-y-3 pt-2">
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" loading={submitting}>
             {isEdit ? 'Salvar alterações' : 'Adicionar cartão'}
           </Button>
           {isEdit && onDelete ? (
@@ -209,5 +203,48 @@ export function CardFormSheet({
         </div>
       </form>
     </BaseBottomSheet>
+  );
+}
+
+type CardColorPickerProps = {
+  value: string;
+  onChange: (value: string) => void;
+};
+
+function CardColorPicker({ value, onChange }: CardColorPickerProps) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-medium text-app-text">Cor do cartão</p>
+      <div className="grid grid-cols-6 gap-2">
+        {cardColorOptions.map((option) => {
+          const isSelected = option.value === value;
+
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-label={`Selecionar cor ${option.label}`}
+              aria-pressed={isSelected}
+              onClick={() => onChange(option.value)}
+              className={cn(
+                'flex h-9 w-full items-center justify-center rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                isSelected
+                  ? 'border-brand-400 bg-app-elevated'
+                  : 'border-app-border bg-app-bg/35 hover:bg-app-elevated',
+              )}
+            >
+              <span
+                className="flex h-6 w-6 items-center justify-center rounded-full shadow-sm shadow-black/25"
+                style={{ backgroundColor: option.value }}
+              >
+                {isSelected ? (
+                  <Check aria-hidden="true" className="h-3.5 w-3.5 text-white" />
+                ) : null}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

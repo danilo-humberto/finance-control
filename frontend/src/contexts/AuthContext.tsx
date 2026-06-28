@@ -1,11 +1,14 @@
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
   GoogleAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  updatePassword as updateFirebasePassword,
   updateProfile,
   type User,
 } from 'firebase/auth';
@@ -28,6 +31,11 @@ type AuthContextValue = {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  updateDisplayName: (name: string) => Promise<void>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<void>;
   getToken: () => Promise<string | null>;
 };
 
@@ -42,6 +50,7 @@ export const AuthContext = createContext<AuthContextValue | undefined>(
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authRevision, setAuthRevision] = useState(0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -92,6 +101,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await sendPasswordResetEmail(auth, email);
   }, []);
 
+  const updateDisplayName = useCallback(async (name: string) => {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      throw new Error('Usuário não autenticado.');
+    }
+
+    await updateProfile(currentUser, {
+      displayName: name.trim(),
+    });
+
+    setUser(currentUser);
+    setAuthRevision((currentRevision) => currentRevision + 1);
+  }, []);
+
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      const currentUser = auth.currentUser;
+
+      if (!currentUser?.email) {
+        throw new Error('Usuário não autenticado.');
+      }
+
+      const credential = EmailAuthProvider.credential(
+        currentUser.email,
+        currentPassword,
+      );
+
+      await reauthenticateWithCredential(currentUser, credential);
+      await updateFirebasePassword(currentUser, newPassword);
+      setAuthRevision((currentRevision) => currentRevision + 1);
+    },
+    [],
+  );
+
   const getToken = useCallback(async () => {
     return auth.currentUser?.getIdToken() ?? null;
   }, []);
@@ -105,9 +149,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       register,
       logout,
       resetPassword,
+      updateDisplayName,
+      changePassword,
       getToken,
     }),
     [
+      authRevision,
+      changePassword,
       getToken,
       loading,
       login,
@@ -115,6 +163,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       logout,
       register,
       resetPassword,
+      updateDisplayName,
       user,
     ],
   );

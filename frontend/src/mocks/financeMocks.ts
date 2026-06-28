@@ -10,7 +10,6 @@ export type MockCreditCard = {
   logo: string;
   brand: string;
   type: string;
-  lastFourDigits: string;
   limit: number;
   used: number;
   currentInvoiceTotal: number;
@@ -176,7 +175,6 @@ export const mockCreditCards: MockCreditCard[] = [
     logo: 'nu',
     brand: 'Mastercard',
     type: 'Crédito',
-    lastFourDigits: '1234',
     limit: 5000,
     used: 2150,
     currentInvoiceTotal: 1250,
@@ -191,7 +189,6 @@ export const mockCreditCards: MockCreditCard[] = [
     logo: 'S',
     brand: 'Visa',
     type: 'Crédito',
-    lastFourDigits: '5678',
     limit: 4000,
     used: 1580,
     currentInvoiceTotal: 780.4,
@@ -206,7 +203,6 @@ export const mockCreditCards: MockCreditCard[] = [
     logo: 'Itaú',
     brand: 'Elo',
     type: 'Crédito e débito',
-    lastFourDigits: '9012',
     limit: 3000,
     used: 0,
     currentInvoiceTotal: 0,
@@ -221,7 +217,6 @@ export const mockCreditCards: MockCreditCard[] = [
     logo: 'C6',
     brand: 'Mastercard',
     type: 'Crédito',
-    lastFourDigits: '3456',
     limit: 4800,
     used: 0,
     currentInvoiceTotal: 0,
