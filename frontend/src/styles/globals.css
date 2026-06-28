@@ -92,6 +92,19 @@ a {
   background: #0e0f11;
 }
 
+@media (max-width: 767px) {
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+    height: 0;
+    width: 0;
+  }
+}
+
 ::selection {
   background: #31d667;
   color: #0e0f11;
