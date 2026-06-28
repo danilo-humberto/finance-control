@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/Badge';
 import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
-import { type MockInvoiceSummary } from '@/mocks/financeMocks';
+import { type InstallmentStatus } from '@/types/invoice';
 import {
   BarChart3,
   ChevronDown,
@@ -10,23 +10,37 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 
-type InvoiceSummaryCardProps = {
-  invoice: MockInvoiceSummary;
+export type InvoiceSummaryData = {
+  cardName: string;
+  cardLogo: string;
+  cardColor: string;
+  status: InstallmentStatus;
+  dueDate: string;
+  closingDate: string;
+  total: number;
+  limit: number;
+  openAmount: number;
+  paidAmount: number;
+  usedPercentage: number;
 };
 
-const statusLabel: Record<MockInvoiceSummary['status'], string> = {
-  open: 'Aberta',
-  paid: 'Paga',
-  canceled: 'Cancelada',
+type InvoiceSummaryCardProps = {
+  invoice: InvoiceSummaryData;
+};
+
+const statusLabel: Record<InstallmentStatus, string> = {
+  OPEN: 'Aberta',
+  PAID: 'Paga',
+  CANCELED: 'Cancelada',
 };
 
 const statusVariant: Record<
-  MockInvoiceSummary['status'],
+  InstallmentStatus,
   'default' | 'success' | 'danger'
 > = {
-  open: 'default',
-  paid: 'success',
-  canceled: 'danger',
+  OPEN: 'default',
+  PAID: 'success',
+  CANCELED: 'danger',
 };
 
 export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
@@ -78,11 +92,11 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
 
         <div className="min-w-0 border-l border-app-border pl-3">
           <p className="text-[0.72rem] leading-4 text-app-muted">
-            Melhor data para compra
+            Fechamento
           </p>
           <div className="mt-0.5 flex items-center gap-1.5">
             <p className="truncate text-[0.82rem] font-semibold leading-tight text-app-text">
-              {formatDateLabel(invoice.bestPurchaseDate)}
+              {formatDateLabel(invoice.closingDate)}
             </p>
             <Info aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-app-muted" />
           </div>
@@ -133,7 +147,10 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
         )}
       >
         <BarChart3 aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-400" />
-        <span className="min-w-0 flex-1 truncate">Resumo da fatura</span>
+        <span className="min-w-0 flex-1 truncate">
+          Aberto: {formatCurrency(invoice.openAmount)} • Pago:{' '}
+          {formatCurrency(invoice.paidAmount)}
+        </span>
         <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0 text-brand-400" />
       </button>
     </article>

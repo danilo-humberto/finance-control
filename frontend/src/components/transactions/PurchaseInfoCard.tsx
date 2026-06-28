@@ -14,6 +14,7 @@ type PurchaseInfoCardProps = {
   purchaseDate: string;
   onDescriptionChange: (value: string) => void;
   onAmountChange: (value: string) => void;
+  onPurchaseDateChange: (value: string) => void;
 };
 
 export function PurchaseInfoCard({
@@ -22,8 +23,10 @@ export function PurchaseInfoCard({
   purchaseDate,
   onDescriptionChange,
   onAmountChange,
+  onPurchaseDateChange,
 }: PurchaseInfoCardProps) {
   const { formatCurrency, formatDateLabel, preferences } = usePreferences();
+  const formattedPurchaseDate = formatDateLabel(formatIsoDateToBr(purchaseDate));
 
   return (
     <section className="space-y-2" aria-labelledby="purchase-info-title">
@@ -60,26 +63,44 @@ export function PurchaseInfoCard({
           <p className="mb-1.5 text-[0.72rem] font-medium leading-none text-app-muted">
             Data da compra
           </p>
-          <button
-            type="button"
-            className="flex h-10 w-full items-center gap-2.5 rounded-xl border border-app-border bg-app-bg/35 px-3 text-left text-[0.8rem] font-semibold text-app-text transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          <label
+            htmlFor="purchase-date"
+            className="relative flex h-10 w-full cursor-pointer items-center gap-2.5 rounded-xl border border-app-border bg-app-bg/35 px-3 text-left text-[0.8rem] font-semibold text-app-text transition-colors hover:bg-app-elevated focus-within:outline-none focus-within:ring-2 focus-within:ring-brand-500"
           >
             <CalendarDays
               aria-hidden="true"
               className="h-4 w-4 shrink-0 text-brand-400"
             />
             <span className="min-w-0 flex-1 truncate">
-              {formatDateLabel(purchaseDate)}
+              {formattedPurchaseDate}
             </span>
             <ChevronDown
               aria-hidden="true"
               className="h-4 w-4 shrink-0 text-app-muted"
             />
-          </button>
+            <input
+              id="purchase-date"
+              type="date"
+              value={purchaseDate}
+              aria-label="Data da compra"
+              onChange={(event) => onPurchaseDateChange(event.target.value)}
+              className="absolute inset-0 cursor-pointer opacity-0"
+            />
+          </label>
         </div>
       </div>
     </section>
   );
+}
+
+function formatIsoDateToBr(value: string) {
+  const [year, month, day] = value.split('-');
+
+  if (!year || !month || !day) {
+    return value;
+  }
+
+  return `${day}/${month}/${year}`;
 }
 
 type PurchaseTextFieldProps = {
