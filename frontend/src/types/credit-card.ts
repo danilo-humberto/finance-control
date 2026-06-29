@@ -1,6 +1,8 @@
 export type CreditCard = {
   id: string;
+  userId?: string;
   name: string;
+  lastFourDigits?: string | null;
   limitAmount: number;
   closingDay: number;
   dueDay: number;
@@ -12,6 +14,7 @@ export type CreditCard = {
 
 export type CreateCreditCardPayload = {
   name: string;
+  lastFourDigits?: string;
   limitAmount: number;
   closingDay: number;
   dueDay: number;

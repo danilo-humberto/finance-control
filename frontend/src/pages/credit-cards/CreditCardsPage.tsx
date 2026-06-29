@@ -28,15 +28,15 @@ import {
   type CreditCard,
 } from '@/types/credit-card';
 import {
-  ChevronRight,
+  getCurrentInvoiceMonthYear,
+  getInvoiceDueDateLabel,
+} from '@/utils/invoiceCycle';
+import {
   CreditCard as CreditCardIcon,
   Edit3,
-  Info,
   LoaderCircle,
-  PieChart,
   Plus,
   Trash2,
-  X,
 } from 'lucide-react';
 import { isAxiosError } from 'axios';
 
@@ -138,12 +138,13 @@ function getCardLogo(name: string) {
 }
 
 function getDueDateLabel(dueDay: number) {
-  const currentMonth = new Date().getMonth() + 1;
+  const currentInvoiceMonthYear = getCurrentInvoiceMonthYear(dueDay);
 
-  return `${String(dueDay).padStart(2, '0')}/${String(currentMonth).padStart(
-    2,
-    '0',
-  )}`;
+  return getInvoiceDueDateLabel(
+    dueDay,
+    currentInvoiceMonthYear.month,
+    currentInvoiceMonthYear.year,
+  );
 }
 
 function toCardListItem(card: CreditCard): CreditCardListItemData {
@@ -208,7 +209,6 @@ export function CreditCardsPage() {
   const [cardFormMode, setCardFormMode] = useState<'create' | 'edit'>('create');
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [showOrderHint, setShowOrderHint] = useState(true);
   const [loading, setLoading] = useState(true);
   const [submittingCard, setSubmittingCard] = useState(false);
   const [deletingCard, setDeletingCard] = useState(false);
@@ -419,39 +419,6 @@ export function CreditCardsPage() {
           </div>
         )}
       </section>
-
-      <button
-        type="button"
-        className="flex h-10 w-full items-center gap-2.5 rounded-2xl border border-brand-800/65 bg-brand-950/35 px-3 text-left text-[0.8rem] font-semibold text-brand-400 shadow-lg shadow-black/15 transition-colors hover:bg-brand-900/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-      >
-        <PieChart aria-hidden="true" className="h-4 w-4 shrink-0" />
-        <span className="min-w-0 flex-1 truncate">Ver relatório de cartões</span>
-        <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0" />
-      </button>
-
-      {showOrderHint ? (
-        <aside className="flex items-start gap-2.5 rounded-2xl border border-app-border bg-app-surface/75 p-2.5 shadow-lg shadow-black/15">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-app-icon text-brand-400">
-            <Info aria-hidden="true" className="h-4 w-4" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[0.76rem] font-semibold leading-4 text-app-text">
-              Arraste os cartões para reordenar
-            </p>
-            <p className="mt-0.5 text-[0.66rem] leading-4 text-app-muted">
-              A ordem exibida aqui será refletida no dashboard.
-            </p>
-          </div>
-          <button
-            type="button"
-            aria-label="Fechar aviso de ordenação"
-            onClick={() => setShowOrderHint(false)}
-            className="rounded-full p-1 text-app-muted transition-colors hover:bg-app-elevated hover:text-app-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-          >
-            <X aria-hidden="true" className="h-4 w-4" />
-          </button>
-        </aside>
-      ) : null}
 
       <ActionSheet
         open={actionSheetOpen}

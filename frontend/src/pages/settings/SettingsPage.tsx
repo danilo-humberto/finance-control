@@ -3,7 +3,6 @@ import { SettingsItem } from "@/components/settings/SettingsItem";
 import { SettingsSection } from "@/components/settings/SettingsSection";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
-import { mockUser } from "@/mocks/financeMocks";
 import {
   ChevronRight,
   LayoutGrid,
@@ -32,9 +31,9 @@ export function SettingsPage() {
   const { theme } = useTheme();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const userName = user?.displayName || mockUser.name;
-  const userEmail = user?.email || mockUser.email;
-  const userInitials = getInitials(userName, mockUser.initials);
+  const userName = user?.displayName || user?.email?.split("@")[0] || "Usuário";
+  const userEmail = user?.email || "E-mail não informado";
+  const userInitials = getInitials(userName, "U");
   const userPhotoUrl = user?.photoURL;
   const themeLabel =
     theme === "system" ? "Automático" : theme === "dark" ? "Escuro" : "Claro";

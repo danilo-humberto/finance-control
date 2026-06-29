@@ -2,6 +2,7 @@ export type CategoryType = 'EXPENSE' | 'INCOME';
 
 export type Category = {
   id: string;
+  userId?: string;
   name: string;
   icon?: string | null;
   color?: string | null;

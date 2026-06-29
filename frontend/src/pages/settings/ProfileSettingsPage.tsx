@@ -3,7 +3,6 @@ import { AuthMessage } from '@/components/auth/AuthMessage';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/hooks/useAuth';
-import { mockUser } from '@/mocks/financeMocks';
 import { getFirebaseErrorMessage } from '@/utils/firebaseErrors';
 import {
   ArrowLeft,
@@ -84,10 +83,10 @@ function ProfileInfoRow({
 export function ProfileSettingsPage() {
   const navigate = useNavigate();
   const { changePassword, updateDisplayName, user } = useAuth();
-  const userName = user?.displayName || mockUser.name;
-  const userEmail = user?.email || mockUser.email;
+  const userName = user?.displayName || user?.email?.split('@')[0] || 'Usuário';
+  const userEmail = user?.email || 'E-mail não informado';
   const userPhotoUrl = user?.photoURL;
-  const userInitials = getInitials(userName, mockUser.initials);
+  const userInitials = getInitials(userName, 'U');
   const primaryProvider = user?.providerData[0];
   const providerLabel = getProviderLabel(primaryProvider?.providerId);
   const canChangePassword =
