@@ -288,6 +288,7 @@ export function InvoicesPage() {
     }
 
     const currentInvoiceMonthYear = getCurrentInvoiceMonthYear(
+      selectedCard.closingDay,
       selectedCard.dueDay,
     );
     setMonth(currentInvoiceMonthYear.month);
@@ -325,7 +326,10 @@ export function InvoicesPage() {
     const card = cards.find((currentCard) => currentCard.id === cardId);
 
     if (card) {
-      const currentInvoiceMonthYear = getCurrentInvoiceMonthYear(card.dueDay);
+      const currentInvoiceMonthYear = getCurrentInvoiceMonthYear(
+        card.closingDay,
+        card.dueDay,
+      );
       setMonth(currentInvoiceMonthYear.month);
       setYear(currentInvoiceMonthYear.year);
     }

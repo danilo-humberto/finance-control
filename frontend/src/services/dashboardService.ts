@@ -120,7 +120,10 @@ export async function getDashboardInvoices() {
 
   const invoices = await Promise.all(
     activeCards.map(async (card) => {
-      const { month, year } = getCurrentInvoiceMonthYear(card.dueDay);
+      const { month, year } = getCurrentInvoiceMonthYear(
+        card.closingDay,
+        card.dueDay,
+      );
       const invoice = await getInvoice({
         month,
         year,

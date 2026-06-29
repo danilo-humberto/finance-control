@@ -38,32 +38,25 @@ export function getCurrentMonthYear(referenceDate = new Date()): MonthYear {
   };
 }
 
+function getLocalIsoDate(value: Date) {
+  const localDate = new Date(
+    value.getTime() - value.getTimezoneOffset() * 60_000,
+  );
+
+  return localDate.toISOString().slice(0, 10);
+}
+
 export function getCurrentInvoiceMonthYear(
+  closingDay: number | undefined,
   dueDay: number | undefined,
   referenceDate = new Date(),
 ): MonthYear {
-  const currentMonthYear = getCurrentMonthYear(referenceDate);
-
-  if (!isValidDay(dueDay)) {
-    return currentMonthYear;
-  }
-
-  const currentDueDate = getDateFromDay(
-    Number(dueDay),
-    currentMonthYear.month,
-    currentMonthYear.year,
+  return getInvoiceMonthYearForPurchaseDate(
+    getLocalIsoDate(referenceDate),
+    closingDay,
+    dueDay,
+    referenceDate,
   );
-  const today = new Date(
-    referenceDate.getFullYear(),
-    referenceDate.getMonth(),
-    referenceDate.getDate(),
-  );
-
-  if (today > currentDueDate) {
-    return addMonthsToMonthYear(currentMonthYear, 1);
-  }
-
-  return currentMonthYear;
 }
 
 export function getInvoiceMonthYearForPurchaseDate(

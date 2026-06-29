@@ -23,6 +23,7 @@ import {
   getCreditCards,
   updateCreditCard,
 } from '@/services/creditCardsService';
+import { getInvoice } from '@/services/invoicesService';
 import {
   type CreateCreditCardPayload,
   type CreditCard,
@@ -44,6 +45,11 @@ type FeedbackMessage = {
   tone: 'error' | 'success' | 'info';
   message: string;
 } | null;
+
+type CreditCardWithUsage = CreditCard & {
+  currentInvoiceTotal: number;
+  usedLimit: number;
+};
 
 const defaultCardColor = '#22c55e';
 
@@ -137,8 +143,11 @@ function getCardLogo(name: string) {
     .toUpperCase();
 }
 
-function getDueDateLabel(dueDay: number) {
-  const currentInvoiceMonthYear = getCurrentInvoiceMonthYear(dueDay);
+function getDueDateLabel(closingDay: number, dueDay: number) {
+  const currentInvoiceMonthYear = getCurrentInvoiceMonthYear(
+    closingDay,
+    dueDay,
+  );
 
   return getInvoiceDueDateLabel(
     dueDay,
@@ -147,7 +156,7 @@ function getDueDateLabel(dueDay: number) {
   );
 }
 
-function toCardListItem(card: CreditCard): CreditCardListItemData {
+function toCardListItem(card: CreditCardWithUsage): CreditCardListItemData {
   const limitAmount = Number(card.limitAmount) || 0;
 
   return {
@@ -155,29 +164,69 @@ function toCardListItem(card: CreditCard): CreditCardListItemData {
     name: card.name,
     logo: getCardLogo(card.name) || 'CC',
     limit: limitAmount,
-    used: 0,
-    currentInvoiceTotal: 0,
-    dueDateLabel: getDueDateLabel(card.dueDay),
+    used: card.usedLimit,
+    currentInvoiceTotal: card.currentInvoiceTotal,
+    dueDateLabel: getDueDateLabel(card.closingDay, card.dueDay),
     closingDay: card.closingDay,
     dueDay: card.dueDay,
     color: card.color || defaultCardColor,
   };
 }
 
-function getCardsSummary(cards: CreditCard[]): CardsSummaryData {
+function getCardsSummary(cards: CreditCardWithUsage[]): CardsSummaryData {
   const totalLimit = cards.reduce(
     (total, card) => total + (Number(card.limitAmount) || 0),
     0,
   );
-  const usedLimit = 0;
+  const usedLimit = cards.reduce((total, card) => total + card.usedLimit, 0);
+  const openInvoiceTotal = cards.reduce(
+    (total, card) => total + card.currentInvoiceTotal,
+    0,
+  );
 
   return {
     totalLimit,
     usedLimit,
     availableLimit: totalLimit - usedLimit,
-    openInvoiceTotal: 0,
-    openCardsCount: 0,
+    openInvoiceTotal,
+    openCardsCount: cards.filter((card) => card.currentInvoiceTotal > 0).length,
     usedPercentage: totalLimit > 0 ? (usedLimit / totalLimit) * 100 : 0,
+  };
+}
+
+async function getCreditCardUsage(card: CreditCard) {
+  const { month, year } = getCurrentInvoiceMonthYear(
+    card.closingDay,
+    card.dueDay,
+  );
+  const invoice = await getInvoice({
+    month,
+    year,
+    creditCardId: card.id,
+  });
+  const currentInvoiceTotal =
+    invoice.total || invoice.items.reduce((sum, item) => sum + item.amount, 0);
+
+  return {
+    currentInvoiceTotal,
+    usedLimit: currentInvoiceTotal,
+  };
+}
+
+async function withCurrentUsage(card: CreditCard): Promise<CreditCardWithUsage> {
+  const usage = await getCreditCardUsage(card);
+
+  return {
+    ...card,
+    ...usage,
+  };
+}
+
+function withEmptyUsage(card: CreditCard): CreditCardWithUsage {
+  return {
+    ...card,
+    currentInvoiceTotal: 0,
+    usedLimit: 0,
   };
 }
 
@@ -203,8 +252,10 @@ function CreditCardsLoadingState() {
 }
 
 export function CreditCardsPage() {
-  const [cards, setCards] = useState<CreditCard[]>([]);
-  const [selectedCard, setSelectedCard] = useState<CreditCard | null>(null);
+  const [cards, setCards] = useState<CreditCardWithUsage[]>([]);
+  const [selectedCard, setSelectedCard] = useState<CreditCardWithUsage | null>(
+    null,
+  );
   const [cardSheetOpen, setCardSheetOpen] = useState(false);
   const [cardFormMode, setCardFormMode] = useState<'create' | 'edit'>('create');
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
@@ -222,7 +273,10 @@ export function CreditCardsPage() {
       setLoading(true);
       setLoadError(null);
       const creditCards = await getCreditCards();
-      setCards(creditCards);
+      const cardsWithUsage = await Promise.all(
+        creditCards.map((card) => withCurrentUsage(card)),
+      );
+      setCards(cardsWithUsage);
     } catch (error) {
       setLoadError(getApiErrorMessage(error));
     } finally {
@@ -241,7 +295,7 @@ export function CreditCardsPage() {
     setCardSheetOpen(true);
   }
 
-  function handleMenuClick(card: CreditCard) {
+  function handleMenuClick(card: CreditCardWithUsage) {
     setFeedbackMessage(null);
     setSelectedCard(card);
     setActionSheetOpen(true);
@@ -276,16 +330,22 @@ export function CreditCardsPage() {
 
       if (cardFormMode === 'create') {
         const createdCard = await createCreditCard(payload);
-        setCards((currentCards) => [...currentCards, createdCard]);
+        setCards((currentCards) => [...currentCards, withEmptyUsage(createdCard)]);
         setFeedbackMessage({
           tone: 'success',
           message: 'Cartão cadastrado com sucesso.',
         });
       } else if (selectedCard) {
         const updatedCard = await updateCreditCard(selectedCard.id, payload);
+        const updatedCardWithUsage: CreditCardWithUsage = {
+          ...updatedCard,
+          currentInvoiceTotal: selectedCard.currentInvoiceTotal,
+          usedLimit: selectedCard.usedLimit,
+        };
+
         setCards((currentCards) =>
           currentCards.map((card) =>
-            card.id === selectedCard.id ? updatedCard : card,
+            card.id === selectedCard.id ? updatedCardWithUsage : card,
           ),
         );
         setFeedbackMessage({
