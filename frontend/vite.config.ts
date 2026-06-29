@@ -1,25 +1,35 @@
-import { defineConfig } from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
-import { fileURLToPath, URL } from 'node:url';
+import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
+import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
   plugins: [
     VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      registerType: "autoUpdate",
+      includeAssets: ["icons/favicon-32x32.png", "icons/apple-touch-icon.png"],
       manifest: {
-        name: 'Finance Control',
-        short_name: 'Finance',
-        theme_color: '#14532d',
-        background_color: '#020617',
-        display: 'standalone',
-        start_url: '/',
+        name: "Finance Control",
+        short_name: "Finance",
+        background_color: "#070a09",
+        theme_color: "#2dbe67",
+        display: "standalone",
+        start_url: "/",
         icons: [
           {
-            src: '/favicon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any maskable',
+            src: "/icons/icon-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "/icons/icon-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "/icons/maskable-icon-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
           },
         ],
       },
@@ -27,7 +37,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
 });
