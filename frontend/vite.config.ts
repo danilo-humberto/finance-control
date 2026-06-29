@@ -6,14 +6,24 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icons/favicon-32x32.png", "icons/apple-touch-icon.png"],
+      injectRegister: "auto",
+      includeAssets: [
+        "icons/favicon.ico",
+        "icons/favicon-32x32.png",
+        "icons/favicon-16x16.png",
+        "icons/apple-touch-icon.png",
+      ],
       manifest: {
+        id: "/",
         name: "Finance Control",
         short_name: "Finance",
+        description: "A simple finance control app",
         background_color: "#070a09",
         theme_color: "#2dbe67",
         display: "standalone",
+        orientation: "portrait",
         start_url: "/",
+        scope: "/",
         icons: [
           {
             src: "/icons/icon-192x192.png",
