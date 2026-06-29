@@ -75,11 +75,6 @@ export function BottomNavigation() {
           {navigationItems.slice(2).map((item) => (
             <BottomNavigationItem key={item.to} {...item} />
           ))}
-
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute left-1/2 h-1 w-24 -translate-x-1/2 rounded-full bg-white/90 bottom-[calc(env(safe-area-inset-bottom)+0.375rem)]"
-          />
         </div>
       </nav>
 
