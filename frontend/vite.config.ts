@@ -7,6 +7,9 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: "auto",
+      devOptions: {
+        enabled: true,
+      },
       includeAssets: [
         "icons/favicon.ico",
         "icons/favicon-32x32.png",
@@ -17,7 +20,8 @@ export default defineConfig({
         id: "/",
         name: "Finance Control",
         short_name: "Finance",
-        description: "A simple finance control app",
+        description: "Controle financeiro pessoal",
+        lang: "pt-BR",
         background_color: "#070a09",
         theme_color: "#2dbe67",
         display: "standalone",
