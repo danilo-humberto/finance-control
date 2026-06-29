@@ -5,7 +5,7 @@ import { fileURLToPath, URL } from "node:url";
 export default defineConfig({
   plugins: [
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       injectRegister: "auto",
       devOptions: {
         enabled: true,
