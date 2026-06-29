@@ -1,8 +1,9 @@
 import { api } from '@/lib/api';
 import {
   type CreateTransactionPayload,
-  type GetTransactionsFilters,
+  type TransactionFilters,
   type Transaction,
+  type UpdateTransactionPayload,
 } from '@/types/transaction';
 
 type ApiResponse<T> = T | { data: T };
@@ -28,10 +29,38 @@ export async function createTransaction(payload: CreateTransactionPayload) {
   return unwrapResponseData(response.data);
 }
 
-export async function getTransactions(filters?: GetTransactionsFilters) {
+export async function getTransactions(filters?: TransactionFilters) {
   const response = await api.get<ApiResponse<Transaction[]>>('/transactions', {
     params: filters,
   });
+
+  return unwrapResponseData(response.data);
+}
+
+export async function getTransactionById(id: string) {
+  const response = await api.get<ApiResponse<Transaction>>(
+    `/transactions/${id}`,
+  );
+
+  return unwrapResponseData(response.data);
+}
+
+export async function updateTransaction(
+  id: string,
+  payload: UpdateTransactionPayload,
+) {
+  const response = await api.patch<ApiResponse<Transaction>>(
+    `/transactions/${id}`,
+    payload,
+  );
+
+  return unwrapResponseData(response.data);
+}
+
+export async function deleteTransaction(id: string) {
+  const response = await api.delete<ApiResponse<Transaction>>(
+    `/transactions/${id}`,
+  );
 
   return unwrapResponseData(response.data);
 }

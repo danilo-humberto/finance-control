@@ -1,10 +1,12 @@
-import { type MockTransaction } from '@/mocks/financeMocks';
-import { TransactionListItem } from './TransactionListItem';
+import {
+  TransactionListItem,
+  type TransactionListItemData,
+} from './TransactionListItem';
 
 type TransactionGroupProps = {
   label: string;
-  transactions: MockTransaction[];
-  onMenuClick: (transaction: MockTransaction) => void;
+  transactions: TransactionListItemData[];
+  onMenuClick: (transaction: TransactionListItemData) => void;
 };
 
 export function TransactionGroup({

@@ -1,9 +1,14 @@
 import { usePreferences } from '@/hooks/usePreferences';
-import { type MockTransactionsSummary } from '@/mocks/financeMocks';
 import { ArrowDown, ArrowUp, Wallet, type LucideIcon } from 'lucide-react';
 
+export type TransactionsSummaryData = {
+  income: number;
+  expense: number;
+  balance: number;
+};
+
 type TransactionsSummaryProps = {
-  summary: MockTransactionsSummary;
+  summary: TransactionsSummaryData;
 };
 
 type SummaryItem = {

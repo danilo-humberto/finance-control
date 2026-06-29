@@ -1,6 +1,6 @@
 import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
-import { type MockTransaction } from '@/mocks/financeMocks';
+import { type TransactionType } from '@/types/transaction';
 import {
   BookOpen,
   Car,
@@ -20,26 +20,46 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-type TransactionListItemProps = {
-  transaction: MockTransaction;
-  onMenuClick: (transaction: MockTransaction) => void;
+export type TransactionListItemData = {
+  id: string;
+  description: string;
+  categoryName: string;
+  categoryIcon?: string | null;
+  categoryColor?: string | null;
+  paymentLabel: string;
+  amount: number;
+  transactionType: TransactionType;
+  timeLabel: string;
 };
 
+type TransactionListItemProps = {
+  transaction: TransactionListItemData;
+  onMenuClick: (transaction: TransactionListItemData) => void;
+};
+
+const defaultColor = '#22c55e';
+
 const categoryIconMap: Record<string, LucideIcon> = {
-  BookOpen,
-  Car,
-  DollarSign,
-  Gift,
-  GraduationCap,
-  Heart,
-  Home,
-  Plane,
-  ShoppingBag,
-  ShoppingCart,
-  Tag,
-  TrendingUp,
-  Utensils,
-  User,
+  'book-open': BookOpen,
+  bookopen: BookOpen,
+  car: Car,
+  'dollar-sign': DollarSign,
+  dollarsign: DollarSign,
+  gift: Gift,
+  'graduation-cap': GraduationCap,
+  graduationcap: GraduationCap,
+  heart: Heart,
+  home: Home,
+  plane: Plane,
+  'shopping-bag': ShoppingBag,
+  shoppingbag: ShoppingBag,
+  shoppingcart: ShoppingCart,
+  'shopping-cart': ShoppingCart,
+  tag: Tag,
+  trendingup: TrendingUp,
+  'trending-up': TrendingUp,
+  utensils: Utensils,
+  user: User,
 };
 
 export function TransactionListItem({
@@ -47,19 +67,20 @@ export function TransactionListItem({
   onMenuClick,
 }: TransactionListItemProps) {
   const { formatCurrency, formatDateLabel } = usePreferences();
-  const Icon = categoryIconMap[transaction.categoryIcon] ?? Tag;
-  const isIncome = transaction.type === 'income';
+  const Icon = categoryIconMap[normalizeIconName(transaction.categoryIcon)] ?? Tag;
+  const isIncome = transaction.transactionType === 'INCOME';
   const amountLabel = `${isIncome ? '+' : '-'} ${formatCurrency(
     Math.abs(transaction.amount),
   )}`;
+  const categoryColor = transaction.categoryColor || defaultColor;
 
   return (
     <article className="grid min-h-[4.35rem] grid-cols-[2.5rem_minmax(0,1fr)_5.75rem] items-center gap-2.5 border-b border-app-border/80 px-2.5 py-2.5 last:border-b-0">
       <span
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
         style={{
-          backgroundColor: `${transaction.categoryColor}24`,
-          color: transaction.categoryColor,
+          backgroundColor: `${categoryColor}24`,
+          color: categoryColor,
         }}
       >
         <Icon aria-hidden="true" className="h-5 w-5" />
@@ -100,4 +121,15 @@ export function TransactionListItem({
       </div>
     </article>
   );
+}
+
+function normalizeIconName(icon?: string | null) {
+  if (!icon) {
+    return '';
+  }
+
+  return icon
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .toLowerCase()
+    .trim();
 }

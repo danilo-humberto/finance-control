@@ -57,11 +57,18 @@ export type TransactionInstallment = {
   updatedAt?: string;
 };
 
-export type GetTransactionsFilters = {
+export type TransactionFilters = {
   categoryId?: string;
   creditCardId?: string;
   paymentMethod?: PaymentMethod;
   transactionType?: TransactionType;
   startDate?: string;
   endDate?: string;
+};
+
+export type UpdateTransactionPayload = {
+  categoryId?: string;
+  description?: string;
+  purchaseDate?: string;
+  notes?: string;
 };

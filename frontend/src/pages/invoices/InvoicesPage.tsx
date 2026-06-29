@@ -231,11 +231,6 @@ export function InvoicesPage() {
     [invoice, month, selectedCard, year],
   );
 
-  const activeCardIndicatorIndex = Math.max(
-    cards.findIndex((card) => card.id === selectedCardId),
-    0,
-  );
-
   const loadCards = useCallback(async () => {
     try {
       setLoadingCards(true);
@@ -449,19 +444,6 @@ export function InvoicesPage() {
 
       <div className="space-y-2.5">
         <InvoiceSummaryCard invoice={invoiceSummary} />
-
-        <div className="flex justify-center gap-3" aria-label="Indicador de cartões">
-          {[0, 1, 2].map((index) => (
-            <span
-              key={index}
-              className={
-                Math.min(activeCardIndicatorIndex, 2) === index
-                  ? 'h-2 w-2 rounded-full bg-brand-500'
-                  : 'h-2 w-2 rounded-full bg-app-elevated'
-              }
-            />
-          ))}
-        </div>
       </div>
 
       <InvoiceFilters

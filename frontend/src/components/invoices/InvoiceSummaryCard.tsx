@@ -2,13 +2,7 @@ import { Badge } from '@/components/ui/Badge';
 import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
 import { type InstallmentStatus } from '@/types/invoice';
-import {
-  BarChart3,
-  ChevronDown,
-  ChevronRight,
-  Info,
-  MoreHorizontal,
-} from 'lucide-react';
+import { BarChart3, ChevronRight, Info } from 'lucide-react';
 
 export type InvoiceSummaryData = {
   cardName: string;
@@ -63,7 +57,6 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
             <h2 className="truncate text-[0.92rem] font-semibold leading-none text-app-text">
               {invoice.cardName}
             </h2>
-            <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-app-text" />
             <Badge
               variant={statusVariant[invoice.status]}
               className="ml-0.5 px-1.5 py-0 text-[0.58rem]"
@@ -72,14 +65,6 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
             </Badge>
           </div>
         </div>
-
-        <button
-          type="button"
-          aria-label={`Mais opções da fatura ${invoice.cardName}`}
-          className="rounded-full p-1 text-app-text transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-        >
-          <MoreHorizontal aria-hidden="true" className="h-4 w-4" />
-        </button>
       </div>
 
       <div className="mt-3.5 grid grid-cols-2 gap-3">
@@ -106,7 +91,9 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
       <div className="mt-3 border-t border-app-border pt-3">
         <div className="flex items-end justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[0.72rem] leading-4 text-app-muted">Total da fatura</p>
+            <p className="text-[0.72rem] leading-4 text-app-muted">
+              Total da fatura
+            </p>
             <strong className="mt-1 block truncate text-[1.54rem] font-bold leading-tight text-app-text">
               {formatCurrency(invoice.total)}
             </strong>

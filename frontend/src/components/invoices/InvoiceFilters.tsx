@@ -70,12 +70,12 @@ export function InvoiceFilters({
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2 min-[380px]:grid-cols-[1fr_0.95fr_1.55fr]">
+    <div className="grid grid-cols-2 gap-2">
       {options.map((option, index) => (
         <InvoiceFilterSelect
           key={option.ariaLabel}
           config={option}
-          className={index === 2 ? 'col-span-2 min-[380px]:col-span-1' : ''}
+          className={index === 2 ? 'col-span-2' : ''}
         />
       ))}
     </div>
