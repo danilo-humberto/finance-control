@@ -32,6 +32,13 @@ import { getInvoice } from '@/services/invoicesService';
 import { type Category } from '@/types/category';
 import { type CreditCard as CreditCardType } from '@/types/credit-card';
 import { type Invoice, type InvoiceInstallment } from '@/types/invoice';
+import {
+  addMonthsToMonthYear,
+  getCurrentInvoiceMonthYear,
+  getCurrentMonthYear,
+  getInvoiceClosingDateLabel,
+  getInvoiceDueDateLabel,
+} from '@/utils/invoiceCycle';
 
 type FeedbackMessage = {
   tone: 'error' | 'success' | 'info';
@@ -54,31 +61,13 @@ const monthLabels = [
   'Dez',
 ];
 
-function getCurrentMonthYear() {
-  const today = new Date();
-
-  return {
-    month: today.getMonth() + 1,
-    year: today.getFullYear(),
-  };
-}
-
 function getMonthKey(month: number, year: number) {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
-function addMonths(month: number, year: number, offset: number) {
-  const date = new Date(year, month - 1 + offset, 1);
-
-  return {
-    month: date.getMonth() + 1,
-    year: date.getFullYear(),
-  };
-}
-
 function getMonthOptions(month: number, year: number): InvoiceFilterOption[] {
   return Array.from({ length: 25 }, (_item, index) => {
-    const optionDate = addMonths(month, year, index - 12);
+    const optionDate = addMonthsToMonthYear({ month, year }, index - 12);
 
     return {
       id: getMonthKey(optionDate.month, optionDate.year),
@@ -105,14 +94,6 @@ function getCardLogo(name: string) {
     .map((part) => part[0])
     .join('')
     .toUpperCase();
-}
-
-function getDateLabel(day: number | undefined, month: number, year: number) {
-  if (!day) {
-    return '--/--/----';
-  }
-
-  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
 }
 
 function getApiErrorMessage(error: unknown) {
@@ -158,8 +139,13 @@ function buildInvoiceSummary(
     cardLogo: selectedCard ? getCardLogo(selectedCard.name) || 'CC' : 'FC',
     cardColor: selectedCard?.color || defaultColor,
     status: 'OPEN',
-    dueDate: getDateLabel(selectedCard?.dueDay, month, year),
-    closingDate: getDateLabel(selectedCard?.closingDay, month, year),
+    dueDate: getInvoiceDueDateLabel(selectedCard?.dueDay, month, year),
+    closingDate: getInvoiceClosingDateLabel(
+      selectedCard?.closingDay,
+      selectedCard?.dueDay,
+      month,
+      year,
+    ),
     total,
     limit,
     openAmount: total,
@@ -177,6 +163,7 @@ export function InvoicesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCardId, setSelectedCardId] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [monthManuallyChanged, setMonthManuallyChanged] = useState(false);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [selectedInstallment, setSelectedInstallment] =
     useState<InvoiceInstallment | null>(null);
@@ -296,6 +283,18 @@ export function InvoicesPage() {
   }, [cards]);
 
   useEffect(() => {
+    if (!selectedCard || monthManuallyChanged) {
+      return;
+    }
+
+    const currentInvoiceMonthYear = getCurrentInvoiceMonthYear(
+      selectedCard.dueDay,
+    );
+    setMonth(currentInvoiceMonthYear.month);
+    setYear(currentInvoiceMonthYear.year);
+  }, [monthManuallyChanged, selectedCard]);
+
+  useEffect(() => {
     setSelectedCategoryId((currentCategoryId) => {
       if (
         !currentCategoryId ||
@@ -314,8 +313,22 @@ export function InvoicesPage() {
 
   function handleMonthChange(value: string) {
     const selectedMonthYear = parseMonthKey(value);
+    setMonthManuallyChanged(true);
     setMonth(selectedMonthYear.month);
     setYear(selectedMonthYear.year);
+  }
+
+  function handleCardChange(cardId: string) {
+    setSelectedCardId(cardId);
+    setMonthManuallyChanged(false);
+
+    const card = cards.find((currentCard) => currentCard.id === cardId);
+
+    if (card) {
+      const currentInvoiceMonthYear = getCurrentInvoiceMonthYear(card.dueDay);
+      setMonth(currentInvoiceMonthYear.month);
+      setYear(currentInvoiceMonthYear.year);
+    }
   }
 
   function handleInstallmentActionClick(item: InvoiceInstallment) {
@@ -454,7 +467,7 @@ export function InvoicesPage() {
         selectedCardId={selectedCardId}
         selectedCategoryId={selectedCategoryId}
         onMonthChange={handleMonthChange}
-        onCardChange={setSelectedCardId}
+        onCardChange={handleCardChange}
         onCategoryChange={setSelectedCategoryId}
       />
 

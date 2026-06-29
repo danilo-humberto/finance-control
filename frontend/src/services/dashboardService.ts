@@ -8,6 +8,11 @@ import {
 import { type CreditCard } from '@/types/credit-card';
 import { type Invoice, type InvoiceInstallment } from '@/types/invoice';
 import { type PaymentMethod, type Transaction } from '@/types/transaction';
+import {
+  getCurrentInvoiceMonthYear,
+  getInvoiceClosingDateLabel,
+  getInvoiceDueDateLabel,
+} from '@/utils/invoiceCycle';
 
 const defaultColor = '#22c55e';
 
@@ -19,15 +24,6 @@ const paymentMethodLabel: Record<PaymentMethod, string> = {
   OTHER: 'Outro',
 };
 
-function getCurrentMonthYear() {
-  const today = new Date();
-
-  return {
-    month: today.getMonth() + 1,
-    year: today.getFullYear(),
-  };
-}
-
 function getCardLogo(name: string) {
   return name
     .split(' ')
@@ -36,10 +32,6 @@ function getCardLogo(name: string) {
     .map((part) => part[0])
     .join('')
     .toUpperCase();
-}
-
-function getDateLabel(day: number, month: number, year: number) {
-  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
 }
 
 function formatPurchaseDate(value: string) {
@@ -81,8 +73,13 @@ function toDashboardInvoice(
     openAmount: sumInstallmentsByStatus(invoice.items, 'OPEN') || total,
     paidAmount: sumInstallmentsByStatus(invoice.items, 'PAID'),
     canceledAmount: sumInstallmentsByStatus(invoice.items, 'CANCELED'),
-    dueDate: getDateLabel(card.dueDay, invoice.month, invoice.year),
-    closingDate: getDateLabel(card.closingDay, invoice.month, invoice.year),
+    dueDate: getInvoiceDueDateLabel(card.dueDay, invoice.month, invoice.year),
+    closingDate: getInvoiceClosingDateLabel(
+      card.closingDay,
+      card.dueDay,
+      invoice.month,
+      invoice.year,
+    ),
     limit,
     usedPercentage,
     month: invoice.month,
@@ -118,12 +115,12 @@ function toDashboardTransaction(
 }
 
 export async function getDashboardInvoices() {
-  const { month, year } = getCurrentMonthYear();
   const cards = await getCreditCards();
   const activeCards = cards.filter((card) => card.isActive !== false);
 
   const invoices = await Promise.all(
     activeCards.map(async (card) => {
+      const { month, year } = getCurrentInvoiceMonthYear(card.dueDay);
       const invoice = await getInvoice({
         month,
         year,

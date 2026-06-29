@@ -31,6 +31,10 @@ import { createTransaction } from '@/services/transactionsService';
 import { type Category } from '@/types/category';
 import { type CreditCard } from '@/types/credit-card';
 import { type CreateTransactionPayload } from '@/types/transaction';
+import {
+  addMonthsToMonthYear,
+  getInvoiceMonthYearForPurchaseDate,
+} from '@/utils/invoiceCycle';
 
 const noteMaxLength = 200;
 const defaultColor = '#22c55e';
@@ -85,20 +89,20 @@ function getIsoDateMonthYear(value: string) {
   };
 }
 
-function addMonths(month: number, year: number, offset: number) {
-  const date = new Date(year, month - 1 + offset, 1);
-
-  return {
-    month: date.getMonth() + 1,
-    year: date.getFullYear(),
-  };
-}
-
-function getInvoiceOptions(purchaseDate: string): PurchaseInvoiceOption[] {
-  const baseDate = getIsoDateMonthYear(purchaseDate);
+function getInvoiceOptions(
+  purchaseDate: string,
+  selectedCard?: CreditCard,
+): PurchaseInvoiceOption[] {
+  const baseDate = selectedCard
+    ? getInvoiceMonthYearForPurchaseDate(
+        purchaseDate,
+        selectedCard.closingDay,
+        selectedCard.dueDay,
+      )
+    : getIsoDateMonthYear(purchaseDate);
 
   return invoiceIds.map((id, index) => {
-    const invoiceDate = addMonths(baseDate.month, baseDate.year, index);
+    const invoiceDate = addMonthsToMonthYear(baseDate, index);
 
     return {
       id,
@@ -177,6 +181,11 @@ export function NewTransactionPage() {
   const amountValue = useMemo(() => parseCurrencyInput(amount), [amount]);
   const summaryInstallments = paymentMode === 'cash' ? 1 : installmentCount;
 
+  const selectedCard = useMemo(
+    () => cards.find((card) => card.id === selectedCardId),
+    [cards, selectedCardId],
+  );
+
   const cardOptions = useMemo<PurchaseCardOption[]>(
     () =>
       cards.map((card) => ({
@@ -205,8 +214,8 @@ export function NewTransactionPage() {
   );
 
   const invoiceOptions = useMemo(
-    () => getInvoiceOptions(purchaseDate),
-    [purchaseDate],
+    () => getInvoiceOptions(purchaseDate, selectedCard),
+    [purchaseDate, selectedCard],
   );
 
   const loadCards = useCallback(async () => {

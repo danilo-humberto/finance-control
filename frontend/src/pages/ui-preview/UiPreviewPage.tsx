@@ -14,7 +14,20 @@ import {
   CategoryFormSheet,
   type CategoryFormValues,
 } from '@/components/sheets/CategoryFormSheet';
-import { mockCategories, mockCreditCards } from '@/mocks/financeMocks';
+
+const previewCreditCard = {
+  name: 'Nubank',
+  closingDay: 5,
+  dueDay: 5,
+  limit: 5000,
+};
+
+const previewCategory = {
+  name: 'Alimentação',
+  type: 'expense' as const,
+  icon: 'Utensils',
+  color: '#22c55e',
+};
 
 export function UiPreviewPage() {
   const [cardCreateOpen, setCardCreateOpen] = useState(false);
@@ -23,9 +36,6 @@ export function UiPreviewPage() {
   const [categoryEditOpen, setCategoryEditOpen] = useState(false);
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-
-  const firstCard = mockCreditCards[0];
-  const firstCategory = mockCategories[0];
 
   function handleCardSubmit(values: CardFormValues) {
     console.log('Preview card submit', values);
@@ -94,10 +104,10 @@ export function UiPreviewPage() {
         onOpenChange={setCardEditOpen}
         mode="edit"
         initialData={{
-          name: firstCard?.name,
-          closingDay: String(firstCard?.closingDay ?? ''),
-          dueDay: String(firstCard?.dueDay ?? ''),
-          limit: String(firstCard?.limit ?? ''),
+          name: previewCreditCard.name,
+          closingDay: String(previewCreditCard.closingDay),
+          dueDay: String(previewCreditCard.dueDay),
+          limit: String(previewCreditCard.limit),
         }}
         onSubmit={handleCardSubmit}
         onDelete={() => setConfirmDialogOpen(true)}
@@ -114,10 +124,10 @@ export function UiPreviewPage() {
         onOpenChange={setCategoryEditOpen}
         mode="edit"
         initialData={{
-          name: firstCategory?.name,
-          type: firstCategory?.type,
-          icon: firstCategory?.icon,
-          color: firstCategory?.color,
+          name: previewCategory.name,
+          type: previewCategory.type,
+          icon: previewCategory.icon,
+          color: previewCategory.color,
         }}
         onSubmit={handleCategorySubmit}
         onDelete={() => setConfirmDialogOpen(true)}

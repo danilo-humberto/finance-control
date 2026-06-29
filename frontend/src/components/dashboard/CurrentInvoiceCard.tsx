@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/Badge';
 import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
 import { type DashboardCurrentInvoice } from '@/types/dashboard';
-import { ChevronRight, MoreHorizontal, ScanLine } from 'lucide-react';
+import { ChevronRight, ScanLine } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type CurrentInvoiceCardProps = {
@@ -54,14 +54,6 @@ export function CurrentInvoiceCard({ invoice }: CurrentInvoiceCardProps) {
             </div>
           </div>
         </div>
-
-        <button
-          type="button"
-          aria-label={`Mais opções da fatura ${invoice.cardName}`}
-          className="rounded-full p-1 text-app-muted transition-colors hover:bg-app-elevated hover:text-app-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-        >
-          <MoreHorizontal aria-hidden="true" className="h-4 w-4" />
-        </button>
       </div>
 
       <p className="mt-3 text-[0.82rem] text-app-muted">
