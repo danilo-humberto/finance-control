@@ -2,6 +2,7 @@ import { AuthField } from '@/components/auth/AuthField';
 import { AuthMessage } from '@/components/auth/AuthMessage';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { UserAvatar } from '@/components/user/UserAvatar';
 import { useAuth } from '@/hooks/useAuth';
 import { getFirebaseErrorMessage } from '@/utils/firebaseErrors';
 import {
@@ -235,18 +236,14 @@ export function ProfileSettingsPage() {
         className="rounded-2xl border border-app-border bg-app-surface/75 p-3 text-center shadow-lg shadow-black/15"
         aria-label="Resumo do perfil"
       >
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-brand-950 via-brand-900 to-brand-700 text-[1.45rem] font-bold text-brand-400">
-          {userPhotoUrl ? (
-            <img
-              src={userPhotoUrl}
-              alt=""
-              className="h-full w-full rounded-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            userInitials
-          )}
-        </div>
+        <UserAvatar
+          name={userName}
+          email={userEmail}
+          photoUrl={userPhotoUrl}
+          fallback={userInitials}
+          ariaLabel={`Avatar de ${userName || 'usuario'}`}
+          className="mx-auto h-20 w-20 bg-gradient-to-br from-brand-950 via-brand-900 to-brand-700 text-[1.45rem] font-bold"
+        />
 
         <h2 className="mt-3 truncate text-[1rem] font-semibold leading-5 text-app-text">
           {userName}

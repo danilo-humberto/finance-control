@@ -92,7 +92,11 @@ export function DashboardPage() {
 
   return (
     <div className="w-full space-y-5 sm:mx-auto sm:max-w-md">
-      <DashboardHeader name={user?.displayName} email={user?.email} />
+      <DashboardHeader
+        name={user?.displayName}
+        email={user?.email}
+        photoUrl={user?.photoURL}
+      />
       <InvoiceCarousel
         invoices={invoices}
         loading={loadingInvoices}

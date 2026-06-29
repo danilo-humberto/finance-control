@@ -1,13 +1,16 @@
+import { UserAvatar } from '@/components/user/UserAvatar';
+
 type DashboardHeaderProps = {
   name?: string | null;
   email?: string | null;
+  photoUrl?: string | null;
 };
 
-export function DashboardHeader({ name, email }: DashboardHeaderProps) {
+export function DashboardHeader({ name, email, photoUrl }: DashboardHeaderProps) {
   const displayName = name?.trim() || email?.split('@')[0]?.trim() || '';
   const firstName = displayName.split(' ')[0] || '';
   const avatarLabel = (firstName.charAt(0) || 'U').toUpperCase();
-  const greeting = firstName ? `Olá, ${firstName}` : 'Olá';
+  const greeting = firstName ? `Ol\u00e1, ${firstName}` : 'Ol\u00e1';
 
   return (
     <header className="flex items-start justify-between gap-4">
@@ -20,12 +23,14 @@ export function DashboardHeader({ name, email }: DashboardHeaderProps) {
         </p>
       </div>
 
-      <div
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-brand-800/60 bg-app-icon text-lg font-semibold text-brand-300 shadow-lg shadow-brand-950/25"
-        aria-label={`Avatar de ${firstName || 'usuário'}`}
-      >
-        {avatarLabel}
-      </div>
+      <UserAvatar
+        name={displayName}
+        email={email}
+        photoUrl={photoUrl}
+        fallback={avatarLabel}
+        ariaLabel={`Avatar de ${firstName || 'usuario'}`}
+        className="h-11 w-11 border border-brand-800/60 bg-app-icon text-lg font-semibold text-brand-300 shadow-lg shadow-brand-950/25"
+      />
     </header>
   );
 }
