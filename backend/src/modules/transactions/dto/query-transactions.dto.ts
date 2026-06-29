@@ -1,6 +1,14 @@
 import { PaymentMethod, TransactionType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsDate, IsEnum, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsDate,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class QueryTransactionsDto {
   @IsUUID()
@@ -28,4 +36,17 @@ export class QueryTransactionsDto {
   @IsDate()
   @IsOptional()
   endDate?: Date;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  page?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  limit?: number;
 }

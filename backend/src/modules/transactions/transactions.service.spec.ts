@@ -64,6 +64,7 @@ describe('TransactionsService', () => {
       findFirst: jest.Mock;
     };
     transaction: {
+      count: jest.Mock;
       create: jest.Mock;
       findMany: jest.Mock;
       findFirst: jest.Mock;
@@ -193,6 +194,7 @@ describe('TransactionsService', () => {
         findFirst: jest.fn(),
       },
       transaction: {
+        count: jest.fn(),
         create: jest.fn(),
         findMany: jest.fn(),
         findFirst: jest.fn(),
@@ -356,6 +358,7 @@ describe('TransactionsService', () => {
     prismaService.transaction.findMany.mockResolvedValue([
       transactionWithRelations,
     ]);
+    prismaService.transaction.count.mockResolvedValue(1);
 
     await expect(
       service.findAll(userId, {
@@ -366,7 +369,33 @@ describe('TransactionsService', () => {
         startDate,
         endDate,
       }),
-    ).resolves.toHaveLength(1);
+    ).resolves.toEqual({
+      items: [
+        expect.objectContaining({
+          id: transactionId,
+        }),
+      ],
+      meta: {
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      },
+    });
+
+    expect(prismaService.transaction.count).toHaveBeenCalledWith({
+      where: {
+        userId,
+        categoryId,
+        creditCardId,
+        paymentMethod: PaymentMethod.CREDIT_CARD,
+        transactionType: TransactionType.EXPENSE,
+        purchaseDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    });
 
     expect(prismaService.transaction.findMany).toHaveBeenCalledWith({
       where: {
@@ -382,7 +411,42 @@ describe('TransactionsService', () => {
       },
       include: transactionIncludeExpectation,
       orderBy: [{ purchaseDate: 'desc' }, { createdAt: 'desc' }],
+      skip: 0,
+      take: 20,
     });
+  });
+
+  it('applies requested transaction pagination within filters', async () => {
+    prismaService.transaction.findMany.mockResolvedValue([
+      transactionWithRelations,
+    ]);
+    prismaService.transaction.count.mockResolvedValue(45);
+
+    await expect(
+      service.findAll(userId, {
+        page: 3,
+        limit: 10,
+      }),
+    ).resolves.toMatchObject({
+      items: [
+        {
+          id: transactionId,
+        },
+      ],
+      meta: {
+        total: 45,
+        page: 3,
+        limit: 10,
+        totalPages: 5,
+      },
+    });
+
+    expect(prismaService.transaction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 20,
+        take: 10,
+      }),
+    );
   });
 
   it('throws not found when the transaction does not belong to the user', async () => {

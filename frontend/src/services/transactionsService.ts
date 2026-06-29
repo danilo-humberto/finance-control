@@ -1,6 +1,7 @@
 import { api } from '@/lib/api';
 import {
   type CreateTransactionPayload,
+  type PaginatedTransactionsResponse,
   type TransactionFilters,
   type Transaction,
   type UpdateTransactionPayload,
@@ -30,9 +31,12 @@ export async function createTransaction(payload: CreateTransactionPayload) {
 }
 
 export async function getTransactions(filters?: TransactionFilters) {
-  const response = await api.get<ApiResponse<Transaction[]>>('/transactions', {
-    params: filters,
-  });
+  const response = await api.get<ApiResponse<PaginatedTransactionsResponse>>(
+    '/transactions',
+    {
+      params: filters,
+    },
+  );
 
   return unwrapResponseData(response.data);
 }

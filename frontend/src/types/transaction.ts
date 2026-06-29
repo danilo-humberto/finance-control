@@ -64,6 +64,20 @@ export type TransactionFilters = {
   transactionType?: TransactionType;
   startDate?: string;
   endDate?: string;
+  page?: number;
+  limit?: number;
+};
+
+export type TransactionsPaginationMeta = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
+export type PaginatedTransactionsResponse = {
+  items: Transaction[];
+  meta: TransactionsPaginationMeta;
 };
 
 export type UpdateTransactionPayload = {

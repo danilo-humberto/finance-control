@@ -1,5 +1,5 @@
-import { PaymentMethod, TransactionType } from '@prisma/client';
-import { Type } from 'class-transformer';
+import { PaymentMethod, TransactionType } from "@prisma/client";
+import { Type } from "class-transformer";
 import {
   IsDate,
   IsEnum,
@@ -11,7 +11,7 @@ import {
   IsUUID,
   Max,
   Min,
-} from 'class-validator';
+} from "class-validator";
 
 export class CreateTransactionDto {
   @IsUUID()
@@ -43,6 +43,7 @@ export class CreateTransactionDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(48)
   @IsOptional()
   installmentsCount?: number;
 

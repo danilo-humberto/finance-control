@@ -18,6 +18,7 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { QueryTransactionsDto } from './dto/query-transactions.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import {
+  PaginatedTransactionsResponse,
   TransactionResponse,
   TransactionsService,
 } from './transactions.service';
@@ -39,7 +40,7 @@ export class TransactionsController {
   findAll(
     @CurrentUser() user: User,
     @Query() query: QueryTransactionsDto,
-  ): Promise<TransactionResponse[]> {
+  ): Promise<PaginatedTransactionsResponse> {
     return this.transactionsService.findAll(user.id, query);
   }
 

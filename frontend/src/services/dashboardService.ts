@@ -135,7 +135,10 @@ export async function getDashboardInvoices() {
 }
 
 export async function getDashboardRecentTransactions() {
-  const transactions = await getTransactions();
+  const transactions = await getTransactions({
+    page: 1,
+    limit: 5,
+  });
 
-  return transactions.slice(0, 5).map(toDashboardTransaction);
+  return transactions.items.map(toDashboardTransaction);
 }

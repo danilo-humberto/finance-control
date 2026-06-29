@@ -39,6 +39,16 @@ export type TransactionResponse = Omit<Transaction, 'amount'> & {
   installments: InstallmentResponse[];
 };
 
+export type PaginatedTransactionsResponse = {
+  items: TransactionResponse[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+};
+
 @Injectable()
 export class TransactionsService {
   private readonly transactionInclude = {
@@ -123,7 +133,10 @@ export class TransactionsService {
   async findAll(
     userId: string,
     query: QueryTransactionsDto,
-  ): Promise<TransactionResponse[]> {
+  ): Promise<PaginatedTransactionsResponse> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
     const where: Prisma.TransactionWhereInput = {
       userId,
       categoryId: query.categoryId,
@@ -139,15 +152,32 @@ export class TransactionsService {
       };
     }
 
-    const transactions = await this.prismaService.transaction.findMany({
-      where: {
-        ...where,
-      },
-      include: this.transactionInclude,
-      orderBy: [{ purchaseDate: 'desc' }, { createdAt: 'desc' }],
-    });
+    const [total, transactions] = await Promise.all([
+      this.prismaService.transaction.count({
+        where: {
+          ...where,
+        },
+      }),
+      this.prismaService.transaction.findMany({
+        where: {
+          ...where,
+        },
+        include: this.transactionInclude,
+        orderBy: [{ purchaseDate: 'desc' }, { createdAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    return transactions.map((transaction) => this.mapTransaction(transaction));
+    return {
+      items: transactions.map((transaction) => this.mapTransaction(transaction)),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findOne(userId: string, id: string): Promise<TransactionResponse> {

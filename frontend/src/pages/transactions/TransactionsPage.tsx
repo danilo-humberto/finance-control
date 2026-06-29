@@ -29,6 +29,7 @@ import {
   type PaymentMethod,
   type Transaction,
   type TransactionFilters as ApiTransactionFilters,
+  type TransactionsPaginationMeta,
 } from '@/types/transaction';
 import {
   Copy,
@@ -59,6 +60,7 @@ const groupOrder: TransactionGroupData['key'][] = [
   'week',
   'older',
 ];
+const transactionsPageSize = 20;
 
 const paymentMethodLabel: Record<PaymentMethod, string> = {
   CREDIT_CARD: 'Cartão',
@@ -355,6 +357,13 @@ function TransactionsLoadingState() {
 export function TransactionsPage() {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [paginationMeta, setPaginationMeta] =
+    useState<TransactionsPaginationMeta>({
+      total: 0,
+      page: 1,
+      limit: transactionsPageSize,
+      totalPages: 0,
+    });
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -363,6 +372,7 @@ export function TransactionsPage() {
   const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -386,18 +396,65 @@ export function TransactionsPage() {
     () => groupTransactions(filteredTransactions),
     [filteredTransactions],
   );
+  const hasMoreTransactions = paginationMeta.page < paginationMeta.totalPages;
 
-  const loadTransactions = useCallback(async () => {
+  const loadTransactions = useCallback(async (page = 1) => {
+    const isFirstPage = page === 1;
+
     try {
-      setLoading(true);
-      setLoadError(null);
-      const loadedTransactions = await getTransactions(getFilterParams(activeFilter));
-      setTransactions(loadedTransactions);
+      if (isFirstPage) {
+        setLoading(true);
+        setLoadError(null);
+      } else {
+        setLoadingMore(true);
+        setFeedbackMessage(null);
+      }
+
+      const loadedTransactions = await getTransactions({
+        ...getFilterParams(activeFilter),
+        page,
+        limit: transactionsPageSize,
+      });
+
+      setPaginationMeta(loadedTransactions.meta);
+      setTransactions((currentTransactions) => {
+        if (isFirstPage) {
+          return loadedTransactions.items;
+        }
+
+        const currentIds = new Set(
+          currentTransactions.map((transaction) => transaction.id),
+        );
+
+        return [
+          ...currentTransactions,
+          ...loadedTransactions.items.filter(
+            (transaction) => !currentIds.has(transaction.id),
+          ),
+        ];
+      });
     } catch (error) {
-      setTransactions([]);
-      setLoadError(getApiErrorMessage(error));
+      if (isFirstPage) {
+        setTransactions([]);
+        setPaginationMeta({
+          total: 0,
+          page: 1,
+          limit: transactionsPageSize,
+          totalPages: 0,
+        });
+        setLoadError(getApiErrorMessage(error));
+      } else {
+        setFeedbackMessage({
+          tone: 'error',
+          message: getApiErrorMessage(error),
+        });
+      }
     } finally {
-      setLoading(false);
+      if (isFirstPage) {
+        setLoading(false);
+      } else {
+        setLoadingMore(false);
+      }
     }
   }, [activeFilter]);
 
@@ -472,6 +529,15 @@ export function TransactionsPage() {
           (transaction) => transaction.id !== selectedTransaction.id,
         ),
       );
+      setPaginationMeta((currentMeta) => {
+        const total = Math.max(currentMeta.total - 1, 0);
+
+        return {
+          ...currentMeta,
+          total,
+          totalPages: Math.ceil(total / currentMeta.limit),
+        };
+      });
       setFeedbackMessage({
         tone: 'success',
         message: 'Movimentação excluída com sucesso.',
@@ -549,19 +615,17 @@ export function TransactionsPage() {
             />
           ))}
 
-          <Button
-            type="button"
-            variant="secondary"
-            className="h-10 w-full rounded-2xl border-brand-800/65 bg-brand-950/25 text-[0.8rem] font-semibold text-brand-400 hover:bg-brand-900/45"
-            onClick={() =>
-              setFeedbackMessage({
-                tone: 'info',
-                message: 'Paginação ainda não disponível no backend.',
-              })
-            }
-          >
-            Carregar mais
-          </Button>
+          {hasMoreTransactions ? (
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-10 w-full rounded-2xl border-brand-800/65 bg-brand-950/25 text-[0.8rem] font-semibold text-brand-400 hover:bg-brand-900/45"
+              disabled={loadingMore}
+              onClick={() => void loadTransactions(paginationMeta.page + 1)}
+            >
+              {loadingMore ? 'Carregando...' : 'Carregar mais'}
+            </Button>
+          ) : null}
         </div>
       ) : (
         <EmptyState

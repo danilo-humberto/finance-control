@@ -4,6 +4,8 @@ import { type ReactNode } from 'react';
 
 export type PaymentMode = 'cash' | 'installments';
 
+const maxInstallments = 48;
+
 type PaymentMethodCardProps = {
   paymentMode: PaymentMode;
   installmentCount: number;
@@ -21,7 +23,7 @@ export function PaymentMethodCard({
   const visibleInstallments = isCash ? 1 : installmentCount;
 
   function updateInstallments(nextCount: number) {
-    onInstallmentCountChange(Math.min(Math.max(nextCount, 1), 12));
+    onInstallmentCountChange(Math.min(Math.max(nextCount, 1), maxInstallments));
   }
 
   return (
@@ -74,7 +76,7 @@ export function PaymentMethodCard({
             </span>
             <StepperButton
               label="Aumentar parcelas"
-              disabled={isCash || visibleInstallments >= 12}
+              disabled={isCash || visibleInstallments >= maxInstallments}
               onClick={() => updateInstallments(visibleInstallments + 1)}
             >
               <Plus aria-hidden="true" className="h-4 w-4" />
