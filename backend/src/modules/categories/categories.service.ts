@@ -9,12 +9,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
+export type CategoryResponse = Omit<Category, 'userId'>;
+
 @Injectable()
 export class CategoriesService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  create(userId: string, dto: CreateCategoryDto): Promise<Category> {
-    return this.prismaService.category.create({
+  async create(userId: string, dto: CreateCategoryDto): Promise<CategoryResponse> {
+    const category = await this.prismaService.category.create({
       data: {
         userId,
         name: dto.name,
@@ -23,10 +25,12 @@ export class CategoriesService {
         type: dto.type,
       },
     });
+
+    return this.mapCategory(category);
   }
 
-  findAll(userId: string): Promise<Category[]> {
-    return this.prismaService.category.findMany({
+  async findAll(userId: string): Promise<CategoryResponse[]> {
+    const categories = await this.prismaService.category.findMany({
       where: {
         userId,
       },
@@ -34,26 +38,28 @@ export class CategoriesService {
         createdAt: 'desc',
       },
     });
+
+    return categories.map((category) => this.mapCategory(category));
   }
 
-  async findOne(userId: string, id: string): Promise<Category> {
+  async findOne(userId: string, id: string): Promise<CategoryResponse> {
     const category = await this.findOwnedCategory(userId, id);
 
     if (!category) {
       throw new NotFoundException('Category not found.');
     }
 
-    return category;
+    return this.mapCategory(category);
   }
 
   async update(
     userId: string,
     id: string,
     dto: UpdateCategoryDto,
-  ): Promise<Category> {
+  ): Promise<CategoryResponse> {
     await this.findOne(userId, id);
 
-    return this.prismaService.category.update({
+    const category = await this.prismaService.category.update({
       where: {
         id,
       },
@@ -64,9 +70,11 @@ export class CategoriesService {
         type: dto.type,
       },
     });
+
+    return this.mapCategory(category);
   }
 
-  async remove(userId: string, id: string): Promise<Category> {
+  async remove(userId: string, id: string): Promise<CategoryResponse> {
     await this.findOne(userId, id);
 
     const linkedTransactionsCount =
@@ -83,11 +91,13 @@ export class CategoriesService {
       );
     }
 
-    return this.prismaService.category.delete({
+    const category = await this.prismaService.category.delete({
       where: {
         id,
       },
     });
+
+    return this.mapCategory(category);
   }
 
   private findOwnedCategory(
@@ -100,5 +110,17 @@ export class CategoriesService {
         userId,
       },
     });
+  }
+
+  private mapCategory(category: Category): CategoryResponse {
+    return {
+      id: category.id,
+      name: category.name,
+      icon: category.icon,
+      color: category.color,
+      type: category.type,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
+    };
   }
 }

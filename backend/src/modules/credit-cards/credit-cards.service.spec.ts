@@ -30,6 +30,18 @@ describe('CreditCardsService', () => {
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   };
+  const creditCardResponse = {
+    id: creditCard.id,
+    name: creditCard.name,
+    lastFourDigits: creditCard.lastFourDigits,
+    limitAmount: 1500,
+    closingDay: creditCard.closingDay,
+    dueDay: creditCard.dueDay,
+    color: creditCard.color,
+    isActive: creditCard.isActive,
+    createdAt: creditCard.createdAt,
+    updatedAt: creditCard.updatedAt,
+  };
 
   beforeEach(() => {
     prismaService = {
@@ -58,7 +70,7 @@ describe('CreditCardsService', () => {
         dueDay: creditCard.dueDay,
         color: creditCard.color ?? undefined,
       }),
-    ).resolves.toEqual(creditCard);
+    ).resolves.toEqual(creditCardResponse);
 
     expect(prismaService.creditCard.create).toHaveBeenCalledWith({
       data: {
@@ -77,7 +89,9 @@ describe('CreditCardsService', () => {
   it('lists only credit cards from the authenticated user', async () => {
     prismaService.creditCard.findMany.mockResolvedValue([creditCard]);
 
-    await expect(service.findAll(userId)).resolves.toEqual([creditCard]);
+    await expect(service.findAll(userId)).resolves.toEqual([
+      creditCardResponse,
+    ]);
 
     expect(prismaService.creditCard.findMany).toHaveBeenCalledWith({
       where: {
@@ -111,13 +125,14 @@ describe('CreditCardsService', () => {
       name: 'Inter',
     });
 
-    await expect(
-      service.update(userId, creditCard.id, {
-        name: 'Inter',
-      }),
-    ).resolves.toMatchObject({
+    const updatedCreditCard = await service.update(userId, creditCard.id, {
       name: 'Inter',
     });
+
+    expect(updatedCreditCard).toMatchObject({
+      name: 'Inter',
+    });
+    expect(updatedCreditCard).not.toHaveProperty('userId');
 
     expect(prismaService.creditCard.update).toHaveBeenCalledWith({
       where: {
@@ -140,7 +155,7 @@ describe('CreditCardsService', () => {
     prismaService.creditCard.delete.mockResolvedValue(creditCard);
 
     await expect(service.remove(userId, creditCard.id)).resolves.toEqual(
-      creditCard,
+      creditCardResponse,
     );
 
     expect(prismaService.creditCard.delete).toHaveBeenCalledWith({

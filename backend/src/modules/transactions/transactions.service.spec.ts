@@ -297,6 +297,10 @@ describe('TransactionsService', () => {
     }
 
     expect(result.amount).toBe(100);
+    expect(result).not.toHaveProperty('userId');
+    expect(result.category).not.toHaveProperty('userId');
+    expect(result.creditCard).not.toHaveProperty('userId');
+    expect(result.installments[0]).not.toHaveProperty('userId');
     expect(result.creditCard?.limitAmount).toBe(1500);
     expect(
       result.installments.map((installment) => installment.amount),

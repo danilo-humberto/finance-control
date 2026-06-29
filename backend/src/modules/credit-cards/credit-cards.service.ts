@@ -5,12 +5,19 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCreditCardDto } from './dto/create-credit-card.dto';
 import { UpdateCreditCardDto } from './dto/update-credit-card.dto';
 
+export type CreditCardResponse = Omit<CreditCard, 'limitAmount' | 'userId'> & {
+  limitAmount: number;
+};
+
 @Injectable()
 export class CreditCardsService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  create(userId: string, dto: CreateCreditCardDto): Promise<CreditCard> {
-    return this.prismaService.creditCard.create({
+  async create(
+    userId: string,
+    dto: CreateCreditCardDto,
+  ): Promise<CreditCardResponse> {
+    const creditCard = await this.prismaService.creditCard.create({
       data: {
         userId,
         name: dto.name,
@@ -22,10 +29,12 @@ export class CreditCardsService {
         isActive: dto.isActive ?? true,
       },
     });
+
+    return this.mapCreditCard(creditCard);
   }
 
-  findAll(userId: string): Promise<CreditCard[]> {
-    return this.prismaService.creditCard.findMany({
+  async findAll(userId: string): Promise<CreditCardResponse[]> {
+    const creditCards = await this.prismaService.creditCard.findMany({
       where: {
         userId,
       },
@@ -33,26 +42,28 @@ export class CreditCardsService {
         createdAt: 'desc',
       },
     });
+
+    return creditCards.map((creditCard) => this.mapCreditCard(creditCard));
   }
 
-  async findOne(userId: string, id: string): Promise<CreditCard> {
+  async findOne(userId: string, id: string): Promise<CreditCardResponse> {
     const creditCard = await this.findOwnedCreditCard(userId, id);
 
     if (!creditCard) {
       throw new NotFoundException('Credit card not found.');
     }
 
-    return creditCard;
+    return this.mapCreditCard(creditCard);
   }
 
   async update(
     userId: string,
     id: string,
     dto: UpdateCreditCardDto,
-  ): Promise<CreditCard> {
+  ): Promise<CreditCardResponse> {
     await this.findOne(userId, id);
 
-    return this.prismaService.creditCard.update({
+    const creditCard = await this.prismaService.creditCard.update({
       where: {
         id,
       },
@@ -66,16 +77,20 @@ export class CreditCardsService {
         isActive: dto.isActive,
       },
     });
+
+    return this.mapCreditCard(creditCard);
   }
 
-  async remove(userId: string, id: string): Promise<CreditCard> {
+  async remove(userId: string, id: string): Promise<CreditCardResponse> {
     await this.findOne(userId, id);
 
-    return this.prismaService.creditCard.delete({
+    const creditCard = await this.prismaService.creditCard.delete({
       where: {
         id,
       },
     });
+
+    return this.mapCreditCard(creditCard);
   }
 
   private findOwnedCreditCard(
@@ -88,5 +103,20 @@ export class CreditCardsService {
         userId,
       },
     });
+  }
+
+  private mapCreditCard(creditCard: CreditCard): CreditCardResponse {
+    return {
+      id: creditCard.id,
+      name: creditCard.name,
+      lastFourDigits: creditCard.lastFourDigits,
+      limitAmount: creditCard.limitAmount.toNumber(),
+      closingDay: creditCard.closingDay,
+      dueDay: creditCard.dueDay,
+      color: creditCard.color,
+      isActive: creditCard.isActive,
+      createdAt: creditCard.createdAt,
+      updatedAt: creditCard.updatedAt,
+    };
   }
 }

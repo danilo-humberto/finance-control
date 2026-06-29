@@ -8,11 +8,11 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import type { Category, User } from '@prisma/client';
+import type { User } from '@prisma/client';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { FirebaseAuthGuard } from '../auth/guards/firebase-auth.guard';
-import { CategoriesService } from './categories.service';
+import { type CategoryResponse, CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -25,17 +25,20 @@ export class CategoriesController {
   create(
     @CurrentUser() user: User,
     @Body() dto: CreateCategoryDto,
-  ): Promise<Category> {
+  ): Promise<CategoryResponse> {
     return this.categoriesService.create(user.id, dto);
   }
 
   @Get()
-  findAll(@CurrentUser() user: User): Promise<Category[]> {
+  findAll(@CurrentUser() user: User): Promise<CategoryResponse[]> {
     return this.categoriesService.findAll(user.id);
   }
 
   @Get(':id')
-  findOne(@CurrentUser() user: User, @Param('id') id: string): Promise<Category> {
+  findOne(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+  ): Promise<CategoryResponse> {
     return this.categoriesService.findOne(user.id, id);
   }
 
@@ -44,12 +47,15 @@ export class CategoriesController {
     @CurrentUser() user: User,
     @Param('id') id: string,
     @Body() dto: UpdateCategoryDto,
-  ): Promise<Category> {
+  ): Promise<CategoryResponse> {
     return this.categoriesService.update(user.id, id, dto);
   }
 
   @Delete(':id')
-  remove(@CurrentUser() user: User, @Param('id') id: string): Promise<Category> {
+  remove(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+  ): Promise<CategoryResponse> {
     return this.categoriesService.remove(user.id, id);
   }
 }

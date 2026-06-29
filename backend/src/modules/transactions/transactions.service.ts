@@ -18,11 +18,13 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { QueryTransactionsDto } from './dto/query-transactions.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 
-type CreditCardResponse = Omit<CreditCard, 'limitAmount'> & {
+type CategoryResponse = Omit<Category, 'userId'>;
+
+type CreditCardResponse = Omit<CreditCard, 'limitAmount' | 'userId'> & {
   limitAmount: number;
 };
 
-type InstallmentResponse = Omit<Installment, 'amount'> & {
+type InstallmentResponse = Omit<Installment, 'amount' | 'userId'> & {
   amount: number;
 };
 
@@ -32,9 +34,9 @@ type TransactionWithRelations = Transaction & {
   installments: Installment[];
 };
 
-export type TransactionResponse = Omit<Transaction, 'amount'> & {
+export type TransactionResponse = Omit<Transaction, 'amount' | 'userId'> & {
   amount: number;
-  category: Category;
+  category: CategoryResponse;
   creditCard: CreditCardResponse | null;
   installments: InstallmentResponse[];
 };
@@ -366,7 +368,6 @@ export class TransactionsService {
   ): TransactionResponse {
     return {
       id: transaction.id,
-      userId: transaction.userId,
       creditCardId: transaction.creditCardId,
       categoryId: transaction.categoryId,
       description: transaction.description,
@@ -380,12 +381,23 @@ export class TransactionsService {
       notes: transaction.notes,
       createdAt: transaction.createdAt,
       updatedAt: transaction.updatedAt,
-      category: transaction.category,
+      category: this.mapCategory(transaction.category),
       creditCard: this.mapCreditCard(transaction.creditCard),
-      installments: transaction.installments.map((installment) => ({
-        ...installment,
-        amount: this.decimalToNumber(installment.amount),
-      })),
+      installments: transaction.installments.map((installment) =>
+        this.mapInstallment(installment),
+      ),
+    };
+  }
+
+  private mapCategory(category: Category): CategoryResponse {
+    return {
+      id: category.id,
+      name: category.name,
+      icon: category.icon,
+      color: category.color,
+      type: category.type,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
     };
   }
 
@@ -397,8 +409,32 @@ export class TransactionsService {
     }
 
     return {
-      ...creditCard,
+      id: creditCard.id,
+      name: creditCard.name,
+      lastFourDigits: creditCard.lastFourDigits,
       limitAmount: this.decimalToNumber(creditCard.limitAmount),
+      closingDay: creditCard.closingDay,
+      dueDay: creditCard.dueDay,
+      color: creditCard.color,
+      isActive: creditCard.isActive,
+      createdAt: creditCard.createdAt,
+      updatedAt: creditCard.updatedAt,
+    };
+  }
+
+  private mapInstallment(installment: Installment): InstallmentResponse {
+    return {
+      id: installment.id,
+      transactionId: installment.transactionId,
+      creditCardId: installment.creditCardId,
+      amount: this.decimalToNumber(installment.amount),
+      installmentNumber: installment.installmentNumber,
+      totalInstallments: installment.totalInstallments,
+      invoiceMonth: installment.invoiceMonth,
+      invoiceYear: installment.invoiceYear,
+      status: installment.status,
+      createdAt: installment.createdAt,
+      updatedAt: installment.updatedAt,
     };
   }
 

@@ -23,7 +23,6 @@ export type CreateTransactionPayload = {
 
 export type Transaction = {
   id: string;
-  userId?: string;
   description: string;
   amount: number;
   transactionType: TransactionType;
@@ -45,7 +44,6 @@ export type Transaction = {
 export type TransactionInstallment = {
   id: string;
   transactionId: string;
-  userId?: string;
   creditCardId?: string | null;
   amount: number;
   installmentNumber: number;

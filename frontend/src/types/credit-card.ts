@@ -1,6 +1,5 @@
 export type CreditCard = {
   id: string;
-  userId?: string;
   name: string;
   lastFourDigits?: string | null;
   limitAmount: number;

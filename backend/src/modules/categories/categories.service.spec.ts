@@ -30,6 +30,15 @@ describe('CategoriesService', () => {
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   };
+  const categoryResponse = {
+    id: category.id,
+    name: category.name,
+    icon: category.icon,
+    color: category.color,
+    type: category.type,
+    createdAt: category.createdAt,
+    updatedAt: category.updatedAt,
+  };
 
   beforeEach(() => {
     prismaService = {
@@ -59,7 +68,7 @@ describe('CategoriesService', () => {
         color: category.color ?? undefined,
         type: category.type,
       }),
-    ).resolves.toEqual(category);
+    ).resolves.toEqual(categoryResponse);
 
     expect(prismaService.category.create).toHaveBeenCalledWith({
       data: {
@@ -75,7 +84,9 @@ describe('CategoriesService', () => {
   it('lists only categories from the authenticated user', async () => {
     prismaService.category.findMany.mockResolvedValue([category]);
 
-    await expect(service.findAll(userId)).resolves.toEqual([category]);
+    await expect(service.findAll(userId)).resolves.toEqual([
+      categoryResponse,
+    ]);
 
     expect(prismaService.category.findMany).toHaveBeenCalledWith({
       where: {
@@ -109,13 +120,14 @@ describe('CategoriesService', () => {
       name: 'Transporte',
     });
 
-    await expect(
-      service.update(userId, category.id, {
-        name: 'Transporte',
-      }),
-    ).resolves.toMatchObject({
+    const updatedCategory = await service.update(userId, category.id, {
       name: 'Transporte',
     });
+
+    expect(updatedCategory).toMatchObject({
+      name: 'Transporte',
+    });
+    expect(updatedCategory).not.toHaveProperty('userId');
 
     expect(prismaService.category.update).toHaveBeenCalledWith({
       where: {
@@ -147,7 +159,7 @@ describe('CategoriesService', () => {
     prismaService.category.delete.mockResolvedValue(category);
 
     await expect(service.remove(userId, category.id)).resolves.toEqual(
-      category,
+      categoryResponse,
     );
 
     expect(prismaService.category.delete).toHaveBeenCalledWith({
