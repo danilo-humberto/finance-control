@@ -9,6 +9,11 @@ import {
   Min,
 } from 'class-validator';
 
+import {
+  MAX_CREDIT_CARD_LIMIT_AMOUNT,
+  MIN_CREDIT_CARD_LIMIT_AMOUNT,
+} from './credit-card-validation.constants';
+
 export class UpdateCreditCardDto {
   @IsString()
   @IsOptional()
@@ -19,7 +24,9 @@ export class UpdateCreditCardDto {
   lastFourDigits?: string;
 
   @Type(() => Number)
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(MIN_CREDIT_CARD_LIMIT_AMOUNT)
+  @Max(MAX_CREDIT_CARD_LIMIT_AMOUNT)
   @IsOptional()
   limitAmount?: number;
 
