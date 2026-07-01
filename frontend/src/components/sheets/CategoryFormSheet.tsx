@@ -11,7 +11,13 @@ import {
   Utensils,
   User,
 } from 'lucide-react';
-import { useEffect, useState, type ComponentType, type FormEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type FormEvent,
+} from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { AuthMessage } from '@/components/auth/AuthMessage';
@@ -88,11 +94,14 @@ export function CategoryFormSheet({
   submitError = null,
 }: CategoryFormSheetProps) {
   const [values, setValues] = useState<CategoryFormValues>(emptyValues);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
-    if (open) {
+    if (open && !wasOpenRef.current) {
       setValues({ ...emptyValues, ...initialData });
     }
+
+    wasOpenRef.current = open;
   }, [initialData, open]);
 
   function updateValue<K extends keyof CategoryFormValues>(

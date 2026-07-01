@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { AuthMessage } from '@/components/auth/AuthMessage';
 import { Button } from '@/components/ui/Button';
@@ -102,9 +102,10 @@ export function CardFormSheet({
 }: CardFormSheetProps) {
   const { formatCurrency } = usePreferences();
   const [values, setValues] = useState<CardFormValues>(emptyValues);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
-    if (open) {
+    if (open && !wasOpenRef.current) {
       const nextValues = { ...emptyValues, ...initialData };
 
       setValues({
@@ -112,6 +113,8 @@ export function CardFormSheet({
         limit: formatCurrencyValue(nextValues.limit, formatCurrency),
       });
     }
+
+    wasOpenRef.current = open;
   }, [formatCurrency, initialData, open]);
 
   function updateValue(field: keyof CardFormValues, value: string) {
