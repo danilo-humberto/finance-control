@@ -35,6 +35,7 @@ import {
   type CategoryType,
   type CreateCategoryPayload,
 } from '@/types/category';
+import { QUICK_CREATE_CATEGORY_CREATED_EVENT } from '@/utils/quickCreateEvents';
 
 type FeedbackMessage = {
   tone: 'error' | 'success' | 'info';
@@ -255,6 +256,24 @@ export function CategoriesPage() {
 
   useEffect(() => {
     void loadCategories();
+  }, [loadCategories]);
+
+  useEffect(() => {
+    function handleQuickCreateCategoryCreated() {
+      void loadCategories();
+    }
+
+    window.addEventListener(
+      QUICK_CREATE_CATEGORY_CREATED_EVENT,
+      handleQuickCreateCategoryCreated,
+    );
+
+    return () => {
+      window.removeEventListener(
+        QUICK_CREATE_CATEGORY_CREATED_EVENT,
+        handleQuickCreateCategoryCreated,
+      );
+    };
   }, [loadCategories]);
 
   function handleCreateClick() {

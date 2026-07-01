@@ -14,6 +14,7 @@ import {
 import { useEffect, useState, type ComponentType, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/Button';
+import { AuthMessage } from '@/components/auth/AuthMessage';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,7 @@ type CategoryFormSheetProps = {
   onDelete?: () => void;
   closeOnSubmit?: boolean;
   submitting?: boolean;
+  submitError?: string | null;
 };
 
 type IconOption = {
@@ -83,6 +85,7 @@ export function CategoryFormSheet({
   onDelete,
   closeOnSubmit = true,
   submitting = false,
+  submitError = null,
 }: CategoryFormSheetProps) {
   const [values, setValues] = useState<CategoryFormValues>(emptyValues);
 
@@ -120,6 +123,8 @@ export function CategoryFormSheet({
       title={isEdit ? 'Editar categoria' : 'Nova categoria'}
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
+        {submitError ? <AuthMessage tone="error">{submitError}</AuthMessage> : null}
+
         <Input
           label="Nome da categoria"
           value={values.name}

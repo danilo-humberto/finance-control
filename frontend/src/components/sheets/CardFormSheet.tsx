@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
+import { AuthMessage } from '@/components/auth/AuthMessage';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { usePreferences } from '@/hooks/usePreferences';
@@ -24,6 +25,7 @@ type CardFormSheetProps = {
   onDelete?: () => void;
   closeOnSubmit?: boolean;
   submitting?: boolean;
+  submitError?: string | null;
 };
 
 const emptyValues: CardFormValues = {
@@ -96,6 +98,7 @@ export function CardFormSheet({
   onDelete,
   closeOnSubmit = true,
   submitting = false,
+  submitError = null,
 }: CardFormSheetProps) {
   const { formatCurrency } = usePreferences();
   const [values, setValues] = useState<CardFormValues>(emptyValues);
@@ -140,6 +143,8 @@ export function CardFormSheet({
       title={isEdit ? 'Editar cartão' : 'Adicionar cartão'}
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
+        {submitError ? <AuthMessage tone="error">{submitError}</AuthMessage> : null}
+
         <Input
           label="Nome do cartão"
           value={values.name}

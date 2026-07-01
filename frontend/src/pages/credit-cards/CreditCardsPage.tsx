@@ -32,6 +32,7 @@ import {
   getCurrentInvoiceMonthYear,
   getInvoiceDueDateLabel,
 } from '@/utils/invoiceCycle';
+import { QUICK_CREATE_CREDIT_CARD_CREATED_EVENT } from '@/utils/quickCreateEvents';
 import {
   CreditCard as CreditCardIcon,
   Edit3,
@@ -286,6 +287,24 @@ export function CreditCardsPage() {
 
   useEffect(() => {
     void loadCreditCards();
+  }, [loadCreditCards]);
+
+  useEffect(() => {
+    function handleQuickCreateCreditCardCreated() {
+      void loadCreditCards();
+    }
+
+    window.addEventListener(
+      QUICK_CREATE_CREDIT_CARD_CREATED_EVENT,
+      handleQuickCreateCreditCardCreated,
+    );
+
+    return () => {
+      window.removeEventListener(
+        QUICK_CREATE_CREDIT_CARD_CREATED_EVENT,
+        handleQuickCreateCreditCardCreated,
+      );
+    };
   }, [loadCreditCards]);
 
   function handleCreateClick() {

@@ -5,8 +5,9 @@ import {
   Plus,
   Settings,
 } from 'lucide-react';
+import { isAxiosError } from 'axios';
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import {
   CardFormSheet,
@@ -18,7 +19,14 @@ import {
 } from '@/components/sheets/CategoryFormSheet';
 import { QuickCreateSheet } from '@/components/sheets/QuickCreateSheet';
 import { cn } from '@/lib/utils';
-import { useLocation } from 'react-router-dom';
+import { createCategory } from '@/services/categoriesService';
+import { createCreditCard } from '@/services/creditCardsService';
+import { type CreateCategoryPayload } from '@/types/category';
+import { type CreateCreditCardPayload } from '@/types/credit-card';
+import {
+  QUICK_CREATE_CATEGORY_CREATED_EVENT,
+  QUICK_CREATE_CREDIT_CARD_CREATED_EVENT,
+} from '@/utils/quickCreateEvents';
 
 const navigationItems = [
   { label: 'Início', to: '/', icon: Home },
@@ -27,20 +35,162 @@ const navigationItems = [
   { label: 'Config.', to: '/settings', icon: Settings },
 ];
 
+const defaultCardColor = '#22c55e';
+const defaultCategoryColor = '#22c55e';
+const defaultCategoryIcon = 'utensils';
+
+const apiIconByFormIcon: Record<string, string> = {
+  BookOpen: 'book-open',
+  Car: 'car',
+  DollarSign: 'dollar-sign',
+  Gift: 'gift',
+  GraduationCap: 'graduation-cap',
+  Heart: 'heart',
+  Home: 'home',
+  Plane: 'plane',
+  ShoppingBag: 'shopping-bag',
+  Utensils: 'utensils',
+  User: 'user',
+};
+
+function getApiErrorMessage(error: unknown) {
+  if (isAxiosError(error)) {
+    const responseMessage = error.response?.data?.message;
+
+    if (!error.response) {
+      return 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
+    }
+
+    if (Array.isArray(responseMessage)) {
+      return responseMessage.join(' ');
+    }
+
+    if (typeof responseMessage === 'string' && responseMessage.trim()) {
+      return responseMessage;
+    }
+
+    if (error.response?.status === 401) {
+      return 'Sua sessão expirou. Entre novamente para continuar.';
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return 'Não foi possível concluir a ação. Tente novamente em instantes.';
+}
+
+function parseMoneyValue(value: string) {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return 0;
+  }
+
+  if (/^\d+(?:\.\d+)?$/.test(trimmedValue)) {
+    return Number.parseFloat(trimmedValue);
+  }
+
+  const digits = trimmedValue.replace(/\D/g, '');
+
+  return digits ? Number.parseInt(digits, 10) / 100 : 0;
+}
+
+function parseDay(value: string, label: string) {
+  const day = Number.parseInt(value, 10);
+
+  if (!Number.isInteger(day) || day < 1 || day > 31) {
+    throw new Error(`${label} deve ser um número entre 1 e 31.`);
+  }
+
+  return day;
+}
+
+function buildCreditCardPayload(values: CardFormValues): CreateCreditCardPayload {
+  const name = values.name.trim();
+
+  if (name.length < 2) {
+    throw new Error('Informe o nome do cartão.');
+  }
+
+  const limitAmount = parseMoneyValue(values.limit);
+
+  if (!Number.isFinite(limitAmount) || limitAmount <= 0) {
+    throw new Error('Informe um limite válido para o cartão.');
+  }
+
+  return {
+    name,
+    limitAmount,
+    closingDay: parseDay(values.closingDay, 'Data de fechamento'),
+    dueDay: parseDay(values.dueDay, 'Data de vencimento'),
+    color: values.color || defaultCardColor,
+    isActive: true,
+  };
+}
+
+function buildCategoryPayload(
+  values: CategoryFormValues,
+): CreateCategoryPayload {
+  const name = values.name.trim();
+
+  if (name.length < 2) {
+    throw new Error('Informe o nome da categoria.');
+  }
+
+  return {
+    name,
+    icon: apiIconByFormIcon[values.icon] ?? (values.icon || defaultCategoryIcon),
+    color: values.color || defaultCategoryColor,
+    type: values.type === 'income' ? 'INCOME' : 'EXPENSE',
+  };
+}
+
 export function BottomNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [cardSheetOpen, setCardSheetOpen] = useState(false);
   const [categorySheetOpen, setCategorySheetOpen] = useState(false);
+  const [cardSubmitError, setCardSubmitError] = useState<string | null>(null);
+  const [categorySubmitError, setCategorySubmitError] = useState<string | null>(
+    null,
+  );
+  const [submittingCard, setSubmittingCard] = useState(false);
+  const [submittingCategory, setSubmittingCategory] = useState(false);
   const isNewPurchaseRoute = location.pathname === '/transactions/new';
 
-  function handleCardSubmit(values: CardFormValues) {
-    console.log('Card form submit', values);
+  async function handleCardSubmit(values: CardFormValues) {
+    setCardSubmitError(null);
+
+    try {
+      setSubmittingCard(true);
+      await createCreditCard(buildCreditCardPayload(values));
+      window.dispatchEvent(new Event(QUICK_CREATE_CREDIT_CARD_CREATED_EVENT));
+      setCardSheetOpen(false);
+      navigate('/credit-cards');
+    } catch (error) {
+      setCardSubmitError(getApiErrorMessage(error));
+    } finally {
+      setSubmittingCard(false);
+    }
   }
 
-  function handleCategorySubmit(values: CategoryFormValues) {
-    console.log('Category form submit', values);
+  async function handleCategorySubmit(values: CategoryFormValues) {
+    setCategorySubmitError(null);
+
+    try {
+      setSubmittingCategory(true);
+      await createCategory(buildCategoryPayload(values));
+      window.dispatchEvent(new Event(QUICK_CREATE_CATEGORY_CREATED_EVENT));
+      setCategorySheetOpen(false);
+      navigate('/categories');
+    } catch (error) {
+      setCategorySubmitError(getApiErrorMessage(error));
+    } finally {
+      setSubmittingCategory(false);
+    }
   }
 
   return (
@@ -88,15 +238,27 @@ export function BottomNavigation() {
 
       <CardFormSheet
         open={cardSheetOpen}
-        onOpenChange={setCardSheetOpen}
+        onOpenChange={(open) => {
+          setCardSheetOpen(open);
+          setCardSubmitError(null);
+        }}
         mode="create"
+        closeOnSubmit={false}
+        submitting={submittingCard}
+        submitError={cardSubmitError}
         onSubmit={handleCardSubmit}
       />
 
       <CategoryFormSheet
         open={categorySheetOpen}
-        onOpenChange={setCategorySheetOpen}
+        onOpenChange={(open) => {
+          setCategorySheetOpen(open);
+          setCategorySubmitError(null);
+        }}
         mode="create"
+        closeOnSubmit={false}
+        submitting={submittingCategory}
+        submitError={categorySubmitError}
         onSubmit={handleCategorySubmit}
       />
     </>
