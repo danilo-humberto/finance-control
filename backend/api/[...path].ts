@@ -52,15 +52,31 @@ async function bootstrapServer(): Promise<HttpHandler> {
 function normalizeVercelRequest(req: VercelRequest): void {
   const originalUrl = req.url || '/';
   const url = new URL(originalUrl, 'http://localhost');
+  const rewritePath = getRewritePath(req, url);
 
-  url.pathname = url.pathname.replace(/^\/api(?=\/|$)/, '') || '/';
+  url.pathname = rewritePath
+    ? `/${rewritePath}`
+    : url.pathname.replace(/^\/api(?=\/|$)/, '') || '/';
+  url.searchParams.delete('path');
   url.searchParams.delete('...path');
 
   req.url = `${url.pathname}${url.search}`;
 
   if (req.query && typeof req.query === 'object') {
+    delete req.query.path;
     delete req.query['...path'];
   }
+}
+
+function getRewritePath(req: VercelRequest, url: URL): string | null {
+  const rawPath = req.query?.path ?? url.searchParams.get('path');
+  const path = Array.isArray(rawPath) ? rawPath.join('/') : rawPath;
+
+  if (typeof path !== 'string' || !path.trim()) {
+    return null;
+  }
+
+  return path.replace(/^\/+/, '');
 }
 
 export default async function handler(
