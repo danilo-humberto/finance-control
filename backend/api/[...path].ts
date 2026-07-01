@@ -11,6 +11,9 @@ import {
 } from '../src/common/config/cors-options';
 
 type HttpHandler = (req: IncomingMessage, res: ServerResponse) => void;
+type VercelRequest = IncomingMessage & {
+  query?: Record<string, unknown>;
+};
 
 let cachedServer: HttpHandler | null = null;
 
@@ -46,16 +49,27 @@ async function bootstrapServer(): Promise<HttpHandler> {
   return cachedServer;
 }
 
+function normalizeVercelRequest(req: VercelRequest): void {
+  const originalUrl = req.url || '/';
+  const url = new URL(originalUrl, 'http://localhost');
+
+  url.pathname = url.pathname.replace(/^\/api(?=\/|$)/, '') || '/';
+  url.searchParams.delete('...path');
+
+  req.url = `${url.pathname}${url.search}`;
+
+  if (req.query && typeof req.query === 'object') {
+    delete req.query['...path'];
+  }
+}
+
 export default async function handler(
-  req: IncomingMessage,
+  req: VercelRequest,
   res: ServerResponse,
 ) {
   const server = await bootstrapServer();
 
-  if (req.url?.startsWith('/api')) {
-    const rewrittenUrl = req.url.replace(/^\/api(?=\/|\?|$)/, '') || '/';
-    req.url = rewrittenUrl.startsWith('?') ? `/${rewrittenUrl}` : rewrittenUrl;
-  }
+  normalizeVercelRequest(req);
 
   return server(req, res);
 }
