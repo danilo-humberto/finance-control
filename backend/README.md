@@ -24,6 +24,31 @@ npm run start:dev
 
 Por padrao, a API sobe em `http://localhost:3000`.
 
+## Deploy na Vercel
+
+Crie um projeto separado para a API com estas configuracoes:
+
+- Root Directory: `backend`
+- Framework Preset: `Other`
+- Build Command: `npm install && npx prisma generate && npm run build`
+- Output Directory: deixe vazio
+
+A Vercel usa `api/[...path].ts` como function serverless. O handler remove o prefixo `/api` antes de encaminhar a requisicao ao NestJS, entao `GET /api/health` chega no controller como `GET /health`.
+
+Variaveis esperadas na Vercel da API:
+
+```env
+NODE_ENV=production
+DATABASE_URL=
+DIRECT_URL=
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+CORS_ORIGIN=https://finance-control-bay.vercel.app,http://localhost:5173
+```
+
+No frontend, depois que a API subir, configure `VITE_API_URL` apontando para `https://URL-DA-API-VERCEL.vercel.app/api`.
+
 ## Variaveis de ambiente
 
 Copie `.env.example` para `.env` e ajuste os valores locais quando necessario.
