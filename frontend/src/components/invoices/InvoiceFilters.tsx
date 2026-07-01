@@ -1,11 +1,11 @@
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 import {
   CalendarDays,
   ChevronDown,
   CreditCard,
   Tag,
   type LucideIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
 export type InvoiceFilterOption = {
   id: string;
@@ -49,14 +49,14 @@ export function InvoiceFilters({
       value: selectedMonthId,
       options: monthOptions,
       icon: CalendarDays,
-      ariaLabel: 'Filtrar por mês',
+      ariaLabel: "Filtrar por mês",
       onChange: onMonthChange,
     },
     {
       value: selectedCardId,
       options: cardOptions,
       icon: CreditCard,
-      ariaLabel: 'Filtrar por cartão',
+      ariaLabel: "Filtrar por cartão",
       disabled: cardOptions.length === 0,
       onChange: onCardChange,
     },
@@ -64,7 +64,7 @@ export function InvoiceFilters({
       value: selectedCategoryId,
       options: categoryOptions,
       icon: Tag,
-      ariaLabel: 'Filtrar por categoria',
+      ariaLabel: "Filtrar por categoria",
       onChange: onCategoryChange,
     },
   ];
@@ -75,7 +75,7 @@ export function InvoiceFilters({
         <InvoiceFilterSelect
           key={option.ariaLabel}
           config={option}
-          className={index === 2 ? 'col-span-2' : ''}
+          className={index === 2 ? "col-span-2" : ""}
         />
       ))}
     </div>
@@ -96,17 +96,20 @@ function InvoiceFilterSelect({ config, className }: InvoiceFilterSelectProps) {
   return (
     <label
       className={cn(
-        'relative flex h-9 min-w-0 items-center gap-1.5 rounded-xl border border-app-border bg-app-surface/70 px-2.5 text-[0.68rem] font-medium text-app-text shadow-sm shadow-black/10 transition-colors',
-        'hover:bg-app-elevated focus-within:outline-none focus-within:ring-2 focus-within:ring-brand-500',
-        config.disabled && 'opacity-60',
+        "relative flex h-11 min-w-0 items-center gap-1.5 rounded-xl border border-app-border bg-app-surface/70 px-2.5 text-[0.68rem] font-medium text-app-text shadow-sm shadow-black/10 transition-colors",
+        "hover:bg-app-elevated focus-within:outline-none focus-within:ring-2 focus-within:ring-brand-500",
+        config.disabled && "opacity-60",
         className,
       )}
     >
       <Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-app-muted" />
       <span className="min-w-0 flex-1 truncate text-left">
-        {selectedOption?.label ?? 'Selecione'}
+        {selectedOption?.label ?? "Selecione"}
       </span>
-      <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-app-muted" />
+      <ChevronDown
+        aria-hidden="true"
+        className="h-4 w-4 shrink-0 text-app-muted"
+      />
       <select
         aria-label={config.ariaLabel}
         value={config.value}

@@ -27,6 +27,9 @@ const statusVariant: Record<
 export function CurrentInvoiceCard({ invoice }: CurrentInvoiceCardProps) {
   const { formatCurrency, formatDateLabel } = usePreferences();
   const progress = Math.min(Math.max(invoice.usedPercentage, 0), 100);
+  const invoiceUrl = `/invoices?creditCardId=${encodeURIComponent(
+    invoice.creditCardId,
+  )}&month=${invoice.month}&year=${invoice.year}`;
 
   return (
     <article className="w-[min(19rem,calc(100vw-5.5rem))] shrink-0 snap-start rounded-2xl border border-brand-800/65 bg-[radial-gradient(circle_at_top_left,rgba(49,214,103,0.12),transparent_43%),#141517] p-3.5 shadow-lg shadow-black/20">
@@ -86,7 +89,7 @@ export function CurrentInvoiceCard({ invoice }: CurrentInvoiceCardProps) {
       </div>
 
       <Link
-        to="/invoices"
+        to={invoiceUrl}
         className={cn(
           'mt-4 flex h-10 items-center justify-center gap-2 rounded-xl border border-app-border bg-brand-950/35 px-3 text-[0.82rem] font-semibold text-app-text transition-colors',
           'hover:border-brand-700/70 hover:bg-app-icon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',

@@ -7,7 +7,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AuthMessage } from '@/components/auth/AuthMessage';
 import {
@@ -86,6 +86,25 @@ function parseMonthKey(value: string) {
   return { month, year };
 }
 
+function parseInvoiceMonthYearParams(
+  monthParam: string | null,
+  yearParam: string | null,
+) {
+  const month = Number(monthParam);
+  const year = Number(yearParam);
+
+  if (
+    !Number.isInteger(month) ||
+    month < 1 ||
+    month > 12 ||
+    !Number.isInteger(year)
+  ) {
+    return null;
+  }
+
+  return { month, year };
+}
+
 function getCardLogo(name: string) {
   return name
     .split(' ')
@@ -156,14 +175,30 @@ function buildInvoiceSummary(
 
 export function InvoicesPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const currentMonthYear = useMemo(() => getCurrentMonthYear(), []);
-  const [month, setMonth] = useState(currentMonthYear.month);
-  const [year, setYear] = useState(currentMonthYear.year);
+  const initialInvoiceMonthYear = useMemo(
+    () =>
+      parseInvoiceMonthYearParams(
+        searchParams.get('month'),
+        searchParams.get('year'),
+      ),
+    [searchParams],
+  );
+  const initialCreditCardId = searchParams.get('creditCardId') ?? '';
+  const [month, setMonth] = useState(
+    initialInvoiceMonthYear?.month ?? currentMonthYear.month,
+  );
+  const [year, setYear] = useState(
+    initialInvoiceMonthYear?.year ?? currentMonthYear.year,
+  );
   const [cards, setCards] = useState<CreditCardType[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCardId, setSelectedCardId] = useState('');
+  const [selectedCardId, setSelectedCardId] = useState(initialCreditCardId);
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
-  const [monthManuallyChanged, setMonthManuallyChanged] = useState(false);
+  const [monthManuallyChanged, setMonthManuallyChanged] = useState(
+    Boolean(initialInvoiceMonthYear),
+  );
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [selectedInstallment, setSelectedInstallment] =
     useState<InvoiceInstallment | null>(null);
@@ -273,6 +308,33 @@ export function InvoicesPage() {
   }, [loadCards, loadCategories]);
 
   useEffect(() => {
+    const invoiceMonthYear = parseInvoiceMonthYearParams(
+      searchParams.get('month'),
+      searchParams.get('year'),
+    );
+    const creditCardId = searchParams.get('creditCardId');
+
+    if (creditCardId) {
+      setSelectedCardId(creditCardId);
+    }
+
+    if (invoiceMonthYear) {
+      setMonth(invoiceMonthYear.month);
+      setYear(invoiceMonthYear.year);
+      setMonthManuallyChanged(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (loadingCards) {
+      return;
+    }
+
+    if (cards.length === 0) {
+      setSelectedCardId('');
+      return;
+    }
+
     setSelectedCardId((currentCardId) => {
       if (cards.some((card) => card.id === currentCardId)) {
         return currentCardId;
@@ -280,7 +342,7 @@ export function InvoicesPage() {
 
       return cards[0]?.id ?? '';
     });
-  }, [cards]);
+  }, [cards, loadingCards]);
 
   useEffect(() => {
     if (!selectedCard || monthManuallyChanged) {
