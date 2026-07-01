@@ -8,14 +8,10 @@ export class FirebaseAdminService {
   constructor(private readonly configService: ConfigService) {}
 
   async verifyIdToken(token: string): Promise<DecodedIdToken> {
-    try {
-      const { getAuth } = await import('firebase-admin/auth');
-      const firebaseApp = await this.getFirebaseApp();
+    const firebaseApp = await this.getFirebaseApp();
+    const { getAuth } = await import('firebase-admin/auth');
 
-      return await getAuth(firebaseApp).verifyIdToken(token);
-    } catch {
-      throw new UnauthorizedException('Invalid Firebase authentication token.');
-    }
+    return getAuth(firebaseApp).verifyIdToken(token);
   }
 
   private async getFirebaseApp(): Promise<App> {

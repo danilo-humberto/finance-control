@@ -7,7 +7,8 @@ import { FirebaseAuthGuard } from './firebase-auth.guard';
 
 type RequestStub = {
   headers: {
-    authorization?: string;
+    Authorization?: string | string[];
+    authorization?: string | string[];
   };
   user?: User;
 };
@@ -58,6 +59,13 @@ describe('FirebaseAuthGuard', () => {
       firebaseAdminService as unknown as FirebaseAdminService,
       prismaService as unknown as PrismaService,
     );
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('rejects requests without an authorization token', async () => {
@@ -67,6 +75,13 @@ describe('FirebaseAuthGuard', () => {
 
     expect(firebaseAdminService.verifyIdToken).not.toHaveBeenCalled();
     expect(prismaService.user.findUnique).not.toHaveBeenCalled();
+    expect(jest.mocked(console.warn)).toHaveBeenCalledWith(
+      '[AuthGuard] Missing or invalid Authorization header',
+      {
+        hasAuthorizationLower: false,
+        hasAuthorizationUpper: false,
+      },
+    );
   });
 
   it('rejects authorization headers without the bearer format', async () => {
@@ -104,6 +119,13 @@ describe('FirebaseAuthGuard', () => {
     expect(firebaseAdminService.verifyIdToken).toHaveBeenCalledWith(
       'valid-token',
     );
+    expect(jest.mocked(console.log)).toHaveBeenCalledWith(
+      '[AuthGuard] Authorization header received',
+      {
+        hasHeader: true,
+        headerPrefix: 'Bearer val',
+      },
+    );
     expect(prismaService.user.findUnique).toHaveBeenCalledWith({
       where: {
         firebaseUid: user.firebaseUid,
@@ -112,6 +134,77 @@ describe('FirebaseAuthGuard', () => {
     expect(prismaService.user.create).not.toHaveBeenCalled();
     expect(prismaService.user.update).not.toHaveBeenCalled();
     expect(request.user).toEqual(user);
+  });
+
+  it('accepts authorization headers with uppercase key', async () => {
+    const request: RequestStub = {
+      headers: {
+        Authorization: 'Bearer valid-token',
+      },
+    };
+
+    firebaseAdminService.verifyIdToken.mockResolvedValue({
+      uid: user.firebaseUid,
+      email: user.email,
+    });
+    prismaService.user.findUnique.mockResolvedValue(user);
+
+    await expect(guard.canActivate(createContext(request))).resolves.toBe(true);
+
+    expect(firebaseAdminService.verifyIdToken).toHaveBeenCalledWith(
+      'valid-token',
+    );
+    expect(request.user).toEqual(user);
+  });
+
+  it('accepts authorization headers sent as an array', async () => {
+    const request: RequestStub = {
+      headers: {
+        authorization: ['Bearer valid-token'],
+      },
+    };
+
+    firebaseAdminService.verifyIdToken.mockResolvedValue({
+      uid: user.firebaseUid,
+      email: user.email,
+    });
+    prismaService.user.findUnique.mockResolvedValue(user);
+
+    await expect(guard.canActivate(createContext(request))).resolves.toBe(true);
+
+    expect(firebaseAdminService.verifyIdToken).toHaveBeenCalledWith(
+      'valid-token',
+    );
+    expect(request.user).toEqual(user);
+  });
+
+  it('logs firebase validation failures without exposing the token', async () => {
+    const firebaseError = Object.assign(new Error('Token expired'), {
+      code: 'auth/id-token-expired',
+    });
+
+    firebaseAdminService.verifyIdToken.mockRejectedValue(firebaseError);
+
+    await expect(
+      guard.canActivate(
+        createContext({
+          headers: {
+            authorization: 'Bearer invalid-token',
+          },
+        }),
+      ),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(firebaseAdminService.verifyIdToken).toHaveBeenCalledWith(
+      'invalid-token',
+    );
+    expect(jest.mocked(console.error)).toHaveBeenCalledWith(
+      '[AuthGuard] Firebase token validation failed',
+      {
+        code: 'auth/id-token-expired',
+        message: 'Token expired',
+      },
+    );
   });
 
   it('updates an existing user with fresh firebase claims', async () => {

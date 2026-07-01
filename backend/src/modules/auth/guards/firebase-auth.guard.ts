@@ -10,6 +10,50 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { FirebaseAdminService } from '../firebase-admin.service';
 import type { AuthenticatedRequest } from '../types/authenticated-request';
 
+type AuthorizationHeader = string | string[] | undefined;
+
+function getAuthorizationHeader(
+  request: AuthenticatedRequest,
+): string | undefined {
+  const rawHeader: AuthorizationHeader =
+    request.headers?.authorization ?? request.headers?.Authorization;
+  const header = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
+
+  return typeof header === 'string' ? header : undefined;
+}
+
+function extractBearerToken(request: AuthenticatedRequest): string | null {
+  const header = getAuthorizationHeader(request);
+
+  if (!header) {
+    return null;
+  }
+
+  const [scheme, token, ...extraParts] = header.trim().split(/\s+/);
+
+  if (scheme !== 'Bearer' || !token || extraParts.length > 0) {
+    return null;
+  }
+
+  return token;
+}
+
+function getErrorLogData(error: unknown): {
+  code?: unknown;
+  message?: unknown;
+} {
+  if (!error || typeof error !== 'object') {
+    return {};
+  }
+
+  const errorRecord = error as Record<string, unknown>;
+
+  return {
+    code: errorRecord.code,
+    message: errorRecord.message,
+  };
+}
+
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
   constructor(
@@ -19,8 +63,44 @@ export class FirebaseAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const token = this.extractBearerToken(request.headers.authorization);
-    const decodedToken = await this.firebaseAdminService.verifyIdToken(token);
+    const authorizationHeader = getAuthorizationHeader(request);
+
+    console.log('[AuthGuard] Authorization header received', {
+      hasHeader: Boolean(
+        request.headers?.authorization ?? request.headers?.Authorization,
+      ),
+      headerPrefix: authorizationHeader?.slice(0, 10),
+    });
+
+    const token = extractBearerToken(request);
+
+    if (!token) {
+      console.warn('[AuthGuard] Missing or invalid Authorization header', {
+        hasAuthorizationLower: Boolean(request.headers?.authorization),
+        hasAuthorizationUpper: Boolean(request.headers?.Authorization),
+      });
+
+      throw new UnauthorizedException('Missing authorization token');
+    }
+
+    let decodedToken: Awaited<
+      ReturnType<FirebaseAdminService['verifyIdToken']>
+    >;
+
+    try {
+      decodedToken = await this.firebaseAdminService.verifyIdToken(token);
+    } catch (error) {
+      console.error(
+        '[AuthGuard] Firebase token validation failed',
+        getErrorLogData(error),
+      );
+
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      throw new UnauthorizedException('Invalid Firebase authentication token.');
+    }
 
     request.user = await this.findOrCreateUser({
       email: decodedToken.email,
@@ -30,24 +110,6 @@ export class FirebaseAuthGuard implements CanActivate {
     });
 
     return true;
-  }
-
-  private extractBearerToken(authorization?: string | string[]): string {
-    const headerValue = Array.isArray(authorization)
-      ? authorization[0]
-      : authorization;
-
-    if (!headerValue) {
-      throw new UnauthorizedException('Authorization token is required.');
-    }
-
-    const [type, token, ...extraParts] = headerValue.trim().split(/\s+/);
-
-    if (type !== 'Bearer' || !token || extraParts.length > 0) {
-      throw new UnauthorizedException('Authorization must use Bearer token.');
-    }
-
-    return token;
   }
 
   private getOptionalStringClaim(
