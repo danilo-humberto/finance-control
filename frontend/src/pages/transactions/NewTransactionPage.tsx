@@ -18,7 +18,6 @@ import {
   PurchaseDetailsCard,
   type PurchaseCardOption,
   type PurchaseCategoryOption,
-  type PurchaseInvoiceOption,
 } from '@/components/transactions/PurchaseDetailsCard';
 import { PurchaseInfoCard } from '@/components/transactions/PurchaseInfoCard';
 import { PurchaseNoteCard } from '@/components/transactions/PurchaseNoteCard';
@@ -40,97 +39,17 @@ import {
   type Transaction,
 } from '@/types/transaction';
 import {
-  addMonthsToMonthYear,
-  getInvoiceMonthYearForPurchaseDate,
-} from '@/utils/invoiceCycle';
+  formatCurrencyInput,
+  getCardLogo,
+  getInvoiceOptions,
+  getTodayIsoDate,
+  isIsoDate,
+  parseCurrencyInput,
+  toIsoDate,
+} from '@/utils/transactionForm';
 
 const noteMaxLength = 200;
 const defaultColor = '#22c55e';
-
-const invoiceIds = ['current', 'next', 'second-next'] as const;
-const invoiceLabels = ['Fatura atual', 'Próxima fatura', 'Segunda próxima'];
-
-function parseCurrencyInput(value: string) {
-  const digits = value.replace(/\D/g, '');
-  const parsedValue = Number.parseInt(digits, 10);
-
-  return Number.isFinite(parsedValue) ? parsedValue / 100 : 0;
-}
-
-function formatCurrencyInput(
-  value: string,
-  formatCurrency: (value: number) => string,
-) {
-  const digits = value.replace(/\D/g, '');
-
-  if (!digits || /^0+$/.test(digits)) {
-    return '';
-  }
-
-  return formatCurrency(Number.parseInt(digits, 10) / 100);
-}
-
-function getTodayIsoDate() {
-  const today = new Date();
-  const localDate = new Date(
-    today.getTime() - today.getTimezoneOffset() * 60_000,
-  );
-
-  return localDate.toISOString().slice(0, 10);
-}
-
-function getIsoDateMonthYear(value: string) {
-  const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(value);
-
-  if (!match) {
-    const [year, month] = getTodayIsoDate().split('-');
-
-    return {
-      month: Number(month),
-      year: Number(year),
-    };
-  }
-
-  return {
-    month: Number(match[2]),
-    year: Number(match[1]),
-  };
-}
-
-function getInvoiceOptions(
-  purchaseDate: string,
-  selectedCard?: CreditCard,
-): PurchaseInvoiceOption[] {
-  const baseDate = selectedCard
-    ? getInvoiceMonthYearForPurchaseDate(
-        purchaseDate,
-        selectedCard.closingDay,
-        selectedCard.dueDay,
-      )
-    : getIsoDateMonthYear(purchaseDate);
-
-  return invoiceIds.map((id, index) => {
-    const invoiceDate = addMonthsToMonthYear(baseDate, index);
-
-    return {
-      id,
-      label: invoiceLabels[index],
-      detail: `${String(invoiceDate.month).padStart(2, '0')}/${invoiceDate.year}`,
-      month: invoiceDate.month,
-      year: invoiceDate.year,
-    };
-  });
-}
-
-function getCardLogo(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
-}
 
 function getApiErrorMessage(error: unknown) {
   if (isAxiosError(error)) {
@@ -158,14 +77,6 @@ function getApiErrorMessage(error: unknown) {
   }
 
   return 'Não foi possível concluir a ação. Tente novamente em instantes.';
-}
-
-function isIsoDate(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
-function toIsoDate(value: string) {
-  return value.split('T')[0];
 }
 
 export function NewTransactionPage() {
