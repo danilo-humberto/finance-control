@@ -16,6 +16,10 @@ export type VercelRequest = IncomingMessage & {
   query?: Record<string, unknown>;
 };
 
+type VercelRouteOptions = {
+  routePath?: string;
+};
+
 let cachedServer: HttpHandler | null = null;
 
 async function bootstrapServer(): Promise<HttpHandler> {
@@ -50,14 +54,20 @@ async function bootstrapServer(): Promise<HttpHandler> {
   return cachedServer;
 }
 
-function normalizeVercelRequest(req: VercelRequest): void {
+function normalizeVercelRequest(
+  req: VercelRequest,
+  options: VercelRouteOptions,
+): void {
   const originalUrl = req.url || '/';
   const url = new URL(originalUrl, 'http://localhost');
   const rewritePath = getRewritePath(req, url);
+  const routePath = options.routePath?.replace(/^\/+/, '');
 
-  url.pathname = rewritePath
-    ? `/${rewritePath}`
-    : url.pathname.replace(/^\/api(?=\/|$)/, '') || '/';
+  url.pathname = routePath
+    ? `/${routePath}`
+    : rewritePath
+      ? `/${rewritePath}`
+      : url.pathname.replace(/^\/api(?=\/|$)/, '') || '/';
   url.searchParams.delete('path');
   url.searchParams.delete('...path');
 
@@ -83,10 +93,24 @@ function getRewritePath(req: VercelRequest, url: URL): string | null {
 export async function handleVercelRequest(
   req: VercelRequest,
   res: ServerResponse,
+  options: VercelRouteOptions = {},
 ) {
   const server = await bootstrapServer();
 
-  normalizeVercelRequest(req);
+  normalizeVercelRequest(req, options);
 
   return server(req, res);
+}
+
+export function getVercelRouteParam(
+  req: VercelRequest,
+  name: string,
+): string {
+  const value = req.query?.[name];
+
+  if (Array.isArray(value)) {
+    return String(value[0] ?? '');
+  }
+
+  return typeof value === 'string' ? value : '';
 }
