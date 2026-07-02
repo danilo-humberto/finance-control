@@ -20,19 +20,16 @@ import {
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
-  createTransaction,
   deleteTransaction,
   getTransactions,
 } from '@/services/transactionsService';
 import {
-  type CreateTransactionPayload,
   type PaymentMethod,
   type Transaction,
   type TransactionFilters as ApiTransactionFilters,
   type TransactionsPaginationMeta,
 } from '@/types/transaction';
 import {
-  Copy,
   CreditCard,
   Edit3,
   LayoutGrid,
@@ -288,45 +285,6 @@ function groupTransactions(transactions: Transaction[]) {
     .filter((group) => group.transactions.length > 0);
 }
 
-function toIsoDate(value: string) {
-  return value.split('T')[0];
-}
-
-function buildDuplicatePayload(transaction: Transaction): CreateTransactionPayload {
-  if (!transaction.categoryId) {
-    throw new Error('Não foi possível duplicar: categoria ausente.');
-  }
-
-  if (
-    transaction.paymentMethod === 'CREDIT_CARD' &&
-    (!transaction.creditCardId ||
-      !transaction.invoiceStartMonth ||
-      !transaction.invoiceStartYear)
-  ) {
-    throw new Error('Não foi possível duplicar: dados da fatura ausentes.');
-  }
-
-  return {
-    description: `${transaction.description} (cópia)`,
-    amount: transaction.amount,
-    transactionType: transaction.transactionType,
-    paymentMethod: transaction.paymentMethod,
-    purchaseDate: toIsoDate(transaction.purchaseDate),
-    categoryId: transaction.categoryId,
-    ...(transaction.creditCardId
-      ? { creditCardId: transaction.creditCardId }
-      : {}),
-    installmentsCount: transaction.installmentsCount || 1,
-    ...(transaction.invoiceStartMonth
-      ? { invoiceStartMonth: transaction.invoiceStartMonth }
-      : {}),
-    ...(transaction.invoiceStartYear
-      ? { invoiceStartYear: transaction.invoiceStartYear }
-      : {}),
-    ...(transaction.notes?.trim() ? { notes: transaction.notes.trim() } : {}),
-  };
-}
-
 function TransactionsLoadingState() {
   return (
     <div className="space-y-4" aria-label="Carregando movimentações">
@@ -374,7 +332,6 @@ export function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [duplicating, setDuplicating] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [feedbackMessage, setFeedbackMessage] =
     useState<FeedbackMessage>(null);
@@ -485,31 +442,6 @@ export function TransactionsPage() {
     }
 
     navigate(`/transactions/${selectedTransaction.id}/edit`);
-  }
-
-  async function handleDuplicateClick() {
-    if (!selectedTransaction) {
-      return;
-    }
-
-    try {
-      setDuplicating(true);
-      setFeedbackMessage(null);
-      await createTransaction(buildDuplicatePayload(selectedTransaction));
-      setFeedbackMessage({
-        tone: 'success',
-        message: 'Movimentação duplicada com sucesso.',
-      });
-      await loadTransactions();
-    } catch (error) {
-      setFeedbackMessage({
-        tone: 'error',
-        message: getApiErrorMessage(error),
-      });
-    } finally {
-      setDuplicating(false);
-      setSelectedTransaction(null);
-    }
   }
 
   function handleDeleteClick() {
@@ -651,14 +583,6 @@ export function TransactionsPage() {
             description: 'Alterar dados desta movimentação',
             icon: Edit3,
             onClick: handleEditClick,
-          },
-          {
-            label: duplicating
-              ? 'Duplicando movimentação...'
-              : 'Duplicar movimentação',
-            description: 'Criar uma nova movimentação com os mesmos dados',
-            icon: Copy,
-            onClick: () => void handleDuplicateClick(),
           },
           {
             label: 'Excluir movimentação',
