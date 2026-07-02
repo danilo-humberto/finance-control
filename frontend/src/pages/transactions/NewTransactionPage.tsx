@@ -17,7 +17,7 @@ import {
   updateTransaction,
 } from '@/services/transactionsService';
 import { type CreateTransactionPayload } from '@/types/transaction';
-import { isIsoDate } from '@/utils/transactionForm';
+import { buildTransactionPayload } from '@/utils/transactionPayload';
 
 const noteMaxLength = 200;
 
@@ -99,65 +99,6 @@ export function NewTransactionPage() {
     navigate('/');
   }
 
-  function buildTransactionPayload(): CreateTransactionPayload {
-    const trimmedDescription = description.trim();
-    const trimmedNote = note.trim();
-    const selectedInvoice = invoiceOptions.find(
-      (invoice) => invoice.id === selectedInvoiceId,
-    );
-
-    if (!trimmedDescription) {
-      throw new Error('Informe a descrição da compra.');
-    }
-
-    if (!Number.isFinite(amountValue) || amountValue <= 0) {
-      throw new Error('Informe um valor válido.');
-    }
-
-    if (!isIsoDate(purchaseDate)) {
-      throw new Error('Selecione a data da compra.');
-    }
-
-    if (!selectedCategoryId) {
-      throw new Error('Selecione uma categoria.');
-    }
-
-    if (!selectedCardId) {
-      throw new Error('Selecione um cartão.');
-    }
-
-    if (!selectedInvoice) {
-      throw new Error('Selecione a fatura de destino.');
-    }
-
-    if (!Number.isInteger(summaryInstallments) || summaryInstallments < 1) {
-      throw new Error('Informe uma quantidade válida de parcelas.');
-    }
-
-    if (!selectedInvoice.month || !selectedInvoice.year) {
-      throw new Error('Selecione a fatura de destino.');
-    }
-
-    const payload: CreateTransactionPayload = {
-      description: trimmedDescription,
-      amount: amountValue,
-      transactionType: 'EXPENSE',
-      paymentMethod: 'CREDIT_CARD',
-      purchaseDate,
-      categoryId: selectedCategoryId,
-      creditCardId: selectedCardId,
-      installmentsCount: summaryInstallments,
-      invoiceStartMonth: selectedInvoice.month,
-      invoiceStartYear: selectedInvoice.year,
-    };
-
-    if (trimmedNote || isEditMode) {
-      payload.notes = trimmedNote;
-    }
-
-    return payload;
-  }
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitError(null);
@@ -165,7 +106,18 @@ export function NewTransactionPage() {
     let payload: CreateTransactionPayload;
 
     try {
-      payload = buildTransactionPayload();
+      payload = buildTransactionPayload({
+        amountValue,
+        description,
+        invoiceOptions,
+        isEditMode,
+        note,
+        purchaseDate,
+        selectedCardId,
+        selectedCategoryId,
+        selectedInvoiceId,
+        summaryInstallments,
+      });
     } catch (error) {
       setSubmitError(getApiErrorMessage(error));
       return;
