@@ -1,14 +1,9 @@
 import { isAxiosError } from 'axios';
-import { ArrowLeft, CircleHelp, Save } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { AuthMessage } from '@/components/auth/AuthMessage';
-import { PaymentMethodCard } from '@/components/transactions/PaymentMethodCard';
-import { PurchaseDetailsCard } from '@/components/transactions/PurchaseDetailsCard';
-import { PurchaseInfoCard } from '@/components/transactions/PurchaseInfoCard';
-import { PurchaseNoteCard } from '@/components/transactions/PurchaseNoteCard';
-import { PurchaseSummaryCard } from '@/components/transactions/PurchaseSummaryCard';
+import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionFormSkeleton } from '@/components/transactions/TransactionFormSkeleton';
 import { Button } from '@/components/ui/Button';
 import { useTransactionForm } from '@/hooks/useTransactionForm';
@@ -18,8 +13,6 @@ import {
 } from '@/services/transactionsService';
 import { type CreateTransactionPayload } from '@/types/transaction';
 import { buildTransactionPayload } from '@/utils/transactionPayload';
-
-const noteMaxLength = 200;
 
 function getApiErrorMessage(error: unknown) {
   if (isAxiosError(error)) {
@@ -154,96 +147,39 @@ export function NewTransactionPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-md space-y-4">
-      <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center gap-3">
-        <button
-          type="button"
-          aria-label="Voltar"
-          onClick={handleBack}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text shadow-lg shadow-black/15 transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-        >
-          <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-        </button>
-
-        <div className="min-w-0 text-center">
-          <h1 className="truncate text-[1.36rem] font-bold leading-tight text-app-text">
-            {isEditMode ? 'Editar compra' : 'Nova compra'}
-          </h1>
-          <p className="mt-1 truncate text-[0.8rem] leading-5 text-app-muted">
-            {isEditMode
-              ? 'Atualize os dados desta compra'
-              : 'Adicione uma nova compra ao seu cartão'}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          aria-label={isEditMode ? 'Ajuda sobre edição' : 'Ajuda sobre nova compra'}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-brand-800/60 bg-app-icon text-brand-400 shadow-lg shadow-brand-950/25 transition-colors hover:bg-brand-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-        >
-          <CircleHelp aria-hidden="true" className="h-4 w-4" />
-        </button>
-      </header>
-
-      {submitError ? <AuthMessage tone="error">{submitError}</AuthMessage> : null}
-
-      <PurchaseInfoCard
-        description={description}
-        amount={amount}
-        purchaseDate={purchaseDate}
-        onDescriptionChange={setDescription}
-        onAmountChange={handleAmountChange}
-        onPurchaseDateChange={setPurchaseDate}
-      />
-
-      <PurchaseDetailsCard
-        cards={cardOptions}
-        categories={categoryOptions}
-        invoices={invoiceOptions}
-        selectedCardId={selectedCardId}
-        selectedCategoryId={selectedCategoryId}
-        selectedInvoiceId={selectedInvoiceId}
-        loadingCards={loadingCards}
-        loadingCategories={loadingCategories}
-        errorCards={errorCards}
-        errorCategories={errorCategories}
-        onCardChange={setSelectedCardId}
-        onCategoryChange={setSelectedCategoryId}
-        onInvoiceChange={setSelectedInvoiceId}
-      />
-
-      <PaymentMethodCard
-        paymentMode={paymentMode}
-        installmentCount={installmentCount}
-        onPaymentModeChange={handlePaymentModeChange}
-        onInstallmentCountChange={setInstallmentCount}
-      />
-
-      <PurchaseNoteCard
-        note={note}
-        maxLength={noteMaxLength}
-        onNoteChange={setNote}
-      />
-
-      <PurchaseSummaryCard
-        amount={amountValue}
-        installmentCount={summaryInstallments}
-      />
-
-      <Button
-        type="submit"
-        size="lg"
-        loading={isSubmitting}
-        disabled={loadingCards || loadingCategories}
-        leftIcon={<Save aria-hidden="true" className="h-4 w-4" />}
-        className="h-11 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.86rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400"
-      >
-        {isSubmitting
-          ? 'Salvando...'
-          : isEditMode
-            ? 'Salvar alterações'
-            : 'Salvar compra'}
-      </Button>
-    </form>
+    <TransactionForm
+      amount={amount}
+      amountValue={amountValue}
+      cardOptions={cardOptions}
+      categoryOptions={categoryOptions}
+      description={description}
+      errorCards={errorCards}
+      errorCategories={errorCategories}
+      installmentCount={installmentCount}
+      invoiceOptions={invoiceOptions}
+      isEditMode={isEditMode}
+      isSubmitting={isSubmitting}
+      loadingCards={loadingCards}
+      loadingCategories={loadingCategories}
+      note={note}
+      paymentMode={paymentMode}
+      purchaseDate={purchaseDate}
+      selectedCardId={selectedCardId}
+      selectedCategoryId={selectedCategoryId}
+      selectedInvoiceId={selectedInvoiceId}
+      submitError={submitError}
+      summaryInstallments={summaryInstallments}
+      onAmountChange={handleAmountChange}
+      onBack={handleBack}
+      onCardChange={setSelectedCardId}
+      onCategoryChange={setSelectedCategoryId}
+      onDescriptionChange={setDescription}
+      onInstallmentCountChange={setInstallmentCount}
+      onInvoiceChange={setSelectedInvoiceId}
+      onNoteChange={setNote}
+      onPaymentModeChange={handlePaymentModeChange}
+      onPurchaseDateChange={setPurchaseDate}
+      onSubmit={handleSubmit}
+    />
   );
 }
