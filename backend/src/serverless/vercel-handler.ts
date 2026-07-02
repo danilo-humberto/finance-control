@@ -21,12 +21,26 @@ type VercelRouteOptions = {
 };
 
 let cachedServer: HttpHandler | null = null;
+let cachedServerPromise: Promise<HttpHandler> | null = null;
 
 async function bootstrapServer(): Promise<HttpHandler> {
   if (cachedServer) {
     return cachedServer;
   }
 
+  cachedServerPromise ??= createServer().catch((error: unknown) => {
+    cachedServerPromise = null;
+    console.error(
+      '[VercelHandler] Failed to bootstrap server',
+      getErrorLogData(error),
+    );
+    throw error;
+  });
+
+  return cachedServerPromise;
+}
+
+async function createServer(): Promise<HttpHandler> {
   const server = express();
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
   const allowedOrigins = parseCorsOrigins(process.env.CORS_ORIGIN);
@@ -113,4 +127,53 @@ export function getVercelRouteParam(
   }
 
   return typeof value === 'string' ? value : '';
+}
+
+function getErrorLogData(error: unknown): Record<string, unknown> {
+  if (error instanceof Error) {
+    const logData: Record<string, unknown> = {
+      name: error.name,
+      message: redactSensitiveData(error.message),
+    };
+
+    if (process.env.NODE_ENV !== 'production' && error.stack) {
+      logData.stack = redactSensitiveData(error.stack);
+    }
+
+    return logData;
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    const errorRecord = error as Record<string, unknown>;
+
+    return {
+      code: toSafeLogValue(errorRecord.code),
+      name: toSafeLogValue(errorRecord.name),
+      message: toSafeLogValue(errorRecord.message),
+    };
+  }
+
+  return {
+    error,
+  };
+}
+
+function toSafeLogValue(value: unknown): unknown {
+  return typeof value === 'string' ? redactSensitiveData(value) : value;
+}
+
+function redactSensitiveData(value: string): string {
+  return value
+    .replace(
+      /(postgres(?:ql)?:\/\/[^:\s]+:)[^@\s]+(@)/gi,
+      '$1[REDACTED]$2',
+    )
+    .replace(
+      /(password|senha|secret|token|authorization|api[_-]?key|database_url)\s*[:=]\s*([^\s,;]+)/gi,
+      '$1=[REDACTED]',
+    )
+    .replace(
+      /\b(password|senha|secret|token|authorization|api[_-]?key|database_url)\b/gi,
+      '[REDACTED]',
+    );
 }

@@ -43,6 +43,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
     path: string,
   ): StandardErrorResponse {
     if (!(exception instanceof HttpException)) {
+      this.logUnhandledException(exception, path);
+
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         code: 'INTERNAL_SERVER_ERROR',
@@ -161,5 +163,67 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
   private isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
+  }
+
+  private logUnhandledException(exception: unknown, path: string): void {
+    console.error(
+      '[HttpExceptionFilter] Unhandled exception',
+      this.getLogData(exception, path),
+    );
+  }
+
+  private getLogData(
+    exception: unknown,
+    path: string,
+  ): Record<string, unknown> {
+    if (exception instanceof Error) {
+      const logData: Record<string, unknown> = {
+        path,
+        name: exception.name,
+        message: this.redactSensitiveData(exception.message),
+      };
+
+      if (process.env.NODE_ENV !== 'production' && exception.stack) {
+        logData.stack = this.redactSensitiveData(exception.stack);
+      }
+
+      return logData;
+    }
+
+    if (this.isRecord(exception)) {
+      return {
+        path,
+        code: this.toSafeLogValue(exception.code),
+        name: this.toSafeLogValue(exception.name),
+        message: this.toSafeLogValue(exception.message),
+      };
+    }
+
+    return {
+      path,
+      exception,
+    };
+  }
+
+  private toSafeLogValue(value: unknown): unknown {
+    return typeof value === 'string'
+      ? this.redactSensitiveData(value)
+      : value;
+  }
+
+  private redactSensitiveData(value: string): string {
+    return value
+      .replace(
+        /(postgres(?:ql)?:\/\/[^:\s]+:)[^@\s]+(@)/gi,
+        '$1[REDACTED]$2',
+      )
+      .replace(
+        /(password|senha|secret|token|authorization|api[_-]?key|database_url)\s*[:=]\s*([^\s,;]+)/gi,
+        '$1=[REDACTED]',
+      )
+      .replace(
+        /\b(password|senha|secret|token|authorization|api[_-]?key|database_url)\b/gi,
+        '[REDACTED]',
+      );
   }
 }

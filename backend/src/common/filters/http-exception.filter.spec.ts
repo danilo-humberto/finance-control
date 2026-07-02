@@ -42,6 +42,17 @@ function createArgumentsHost(path = '/test'): {
 
 describe('HttpExceptionFilter', () => {
   const filter = new HttpExceptionFilter();
+  let consoleErrorSpy: jest.SpiedFunction<typeof console.error>;
+
+  beforeEach(() => {
+    consoleErrorSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
 
   it('formats known HTTP exceptions', () => {
     const { host, json, status } = createArgumentsHost('/auth/me');
@@ -101,6 +112,17 @@ describe('HttpExceptionFilter', () => {
         message: 'Internal server error.',
         path: '/credit-cards',
       }) as StandardErrorResponse,
+    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[HttpExceptionFilter] Unhandled exception',
+      expect.objectContaining({
+        path: '/credit-cards',
+        name: 'Error',
+        message: 'database [REDACTED] leaked',
+      }) as Record<string, unknown>,
+    );
+    expect(JSON.stringify(consoleErrorSpy.mock.calls)).not.toContain(
+      'database password leaked',
     );
   });
 
