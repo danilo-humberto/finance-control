@@ -21,8 +21,12 @@ export function AppLayout() {
     '/categories',
     '/settings',
   ];
+  const isTransactionEditRoute = /^\/transactions\/[^/]+\/edit$/.test(
+    location.pathname,
+  );
   const showAppHeader =
     !hideAppHeaderRoutes.includes(location.pathname) &&
+    !isTransactionEditRoute &&
     !location.pathname.startsWith('/settings/');
 
   async function handleLogout() {
