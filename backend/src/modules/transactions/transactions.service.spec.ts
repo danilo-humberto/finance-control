@@ -464,9 +464,9 @@ describe('TransactionsService', () => {
   it('updates only simple transaction fields', async () => {
     const updatedPurchaseDate = new Date('2026-06-24T00:00:00.000Z');
 
-    prismaService.transaction.findFirst.mockResolvedValue({
-      id: transactionId,
-    });
+    prismaService.transaction.findFirst.mockResolvedValue(
+      transactionWithRelations,
+    );
     prismaService.category.findFirst.mockResolvedValue({ id: categoryId });
     prismaService.transaction.update.mockResolvedValue({
       ...transactionWithRelations,
@@ -486,18 +486,116 @@ describe('TransactionsService', () => {
       purchaseDate: updatedPurchaseDate,
     });
 
-    expect(prismaService.transaction.update).toHaveBeenCalledWith({
-      where: {
-        id: transactionId,
-      },
+    const updateArgs = firstMockArg<{
+      where: { id: string };
       data: {
-        categoryId,
-        description: 'Mercado atualizado',
-        purchaseDate: updatedPurchaseDate,
-        notes: 'Nova observacao',
-      },
-      include: transactionIncludeExpectation,
+        amount: Prisma.Decimal;
+        categoryId: string;
+        creditCardId: string | null;
+        description?: string;
+        installments?: unknown;
+        installmentsCount: number;
+        invoiceStartMonth: number | null;
+        invoiceStartYear: number | null;
+        notes?: string;
+        paymentMethod: PaymentMethod;
+        purchaseDate?: Date;
+      };
+      include: unknown;
+    }>(prismaService.transaction.update);
+
+    expect(updateArgs.where).toEqual({ id: transactionId });
+    expect(updateArgs.include).toEqual(transactionIncludeExpectation);
+    expect(updateArgs.data).toMatchObject({
+      categoryId,
+      creditCardId,
+      description: 'Mercado atualizado',
+      amount: transaction.amount,
+      paymentMethod: PaymentMethod.CREDIT_CARD,
+      purchaseDate: updatedPurchaseDate,
+      installmentsCount: transaction.installmentsCount,
+      invoiceStartMonth: transaction.invoiceStartMonth,
+      invoiceStartYear: transaction.invoiceStartYear,
+      notes: 'Nova observacao',
     });
+    expect(updateArgs.data.installments).toBeUndefined();
+  });
+
+  it('rebuilds installments when invoice-related transaction fields change', async () => {
+    const updatedTransaction = {
+      ...transactionWithRelations,
+      amount: new Prisma.Decimal(240),
+      installmentsCount: 2,
+      invoiceStartMonth: 12,
+      invoiceStartYear: 2026,
+      installments: [
+        {
+          ...installments[0],
+          amount: new Prisma.Decimal(120),
+          installmentNumber: 1,
+          totalInstallments: 2,
+          invoiceMonth: 12,
+          invoiceYear: 2026,
+        },
+        {
+          ...installments[1],
+          amount: new Prisma.Decimal(120),
+          installmentNumber: 2,
+          totalInstallments: 2,
+          invoiceMonth: 1,
+          invoiceYear: 2027,
+        },
+      ],
+    };
+
+    prismaService.transaction.findFirst.mockResolvedValue(
+      transactionWithRelations,
+    );
+    prismaService.category.findFirst.mockResolvedValue({ id: categoryId });
+    prismaService.creditCard.findFirst.mockResolvedValue({ id: creditCardId });
+    prismaService.transaction.update.mockResolvedValue(updatedTransaction);
+
+    await expect(
+      service.update(userId, transactionId, {
+        amount: 240,
+        categoryId,
+        creditCardId,
+        installmentsCount: 2,
+        invoiceStartMonth: 12,
+        invoiceStartYear: 2026,
+        paymentMethod: PaymentMethod.CREDIT_CARD,
+      }),
+    ).resolves.toMatchObject({
+      amount: 240,
+      installmentsCount: 2,
+    });
+
+    const updateArgs = firstMockArg<{
+      data: {
+        installments?: {
+          deleteMany: Record<string, never>;
+          create: Array<{
+            amount: Prisma.Decimal;
+            installmentNumber: number;
+            totalInstallments: number;
+            invoiceMonth: number;
+            invoiceYear: number;
+          }>;
+        };
+      };
+    }>(prismaService.transaction.update);
+
+    expect(updateArgs.data.installments?.deleteMany).toEqual({});
+    expect(updateArgs.data.installments?.create).toHaveLength(2);
+    expect(updateArgs.data.installments?.create[0]).toMatchObject({
+      installmentNumber: 1,
+      totalInstallments: 2,
+      invoiceMonth: 12,
+      invoiceYear: 2026,
+    });
+    expect(
+      updateArgs.data.installments?.create[0]?.amount.toNumber(),
+    ).toBe(120);
   });
 
   it('deletes owned transactions and relies on Prisma cascade for installments', async () => {

@@ -197,10 +197,76 @@ export class TransactionsService {
     id: string,
     dto: UpdateTransactionDto,
   ): Promise<TransactionResponse> {
-    await this.ensureTransactionBelongsToUser(userId, id);
+    const existingTransaction = await this.findOwnedTransaction(userId, id);
+
+    if (!existingTransaction) {
+      throw new NotFoundException('Transaction not found.');
+    }
 
     if (dto.categoryId) {
       await this.ensureCategoryBelongsToUser(userId, dto.categoryId);
+    }
+
+    const amount =
+      dto.amount !== undefined
+        ? this.toMoneyDecimal(dto.amount)
+        : existingTransaction.amount;
+    const paymentMethod =
+      dto.paymentMethod ?? existingTransaction.paymentMethod;
+    const isCreditCard = paymentMethod === PaymentMethod.CREDIT_CARD;
+    const installmentsCount = isCreditCard
+      ? (dto.installmentsCount ?? existingTransaction.installmentsCount ?? 1)
+      : 1;
+    let creditCardId: string | null = null;
+    let invoiceStartMonth: number | null = null;
+    let invoiceStartYear: number | null = null;
+
+    if (isCreditCard) {
+      creditCardId = dto.creditCardId ?? existingTransaction.creditCardId;
+      invoiceStartMonth =
+        dto.invoiceStartMonth ?? existingTransaction.invoiceStartMonth;
+      invoiceStartYear =
+        dto.invoiceStartYear ?? existingTransaction.invoiceStartYear;
+
+      if (
+        !creditCardId ||
+        invoiceStartMonth === null ||
+        invoiceStartYear === null
+      ) {
+        throw new BadRequestException(
+          'Credit card transactions require creditCardId, invoiceStartMonth and invoiceStartYear.',
+        );
+      }
+
+      if (
+        dto.creditCardId !== undefined ||
+        creditCardId !== existingTransaction.creditCardId
+      ) {
+        await this.ensureCreditCardBelongsToUser(userId, creditCardId);
+      }
+    }
+
+    const shouldRebuildInstallments = this.shouldRebuildInstallments(
+      existingTransaction,
+      {
+        amount,
+        creditCardId,
+        installmentsCount,
+        invoiceStartMonth,
+        invoiceStartYear,
+        paymentMethod,
+      },
+    );
+
+    if (
+      shouldRebuildInstallments &&
+      existingTransaction.installments.some(
+        (installment) => installment.status !== InstallmentStatus.OPEN,
+      )
+    ) {
+      throw new BadRequestException(
+        'Transaction installments with paid or canceled status cannot be recalculated.',
+      );
     }
 
     const transaction = await this.prismaService.transaction.update({
@@ -208,10 +274,37 @@ export class TransactionsService {
         id,
       },
       data: {
-        categoryId: dto.categoryId,
+        creditCardId,
+        categoryId: dto.categoryId ?? existingTransaction.categoryId,
         description: dto.description,
+        amount,
+        transactionType: dto.transactionType,
+        paymentMethod,
         purchaseDate: dto.purchaseDate,
+        installmentsCount,
+        invoiceStartMonth,
+        invoiceStartYear,
         notes: dto.notes,
+        installments: shouldRebuildInstallments
+          ? isCreditCard &&
+            creditCardId !== null &&
+            invoiceStartMonth !== null &&
+            invoiceStartYear !== null
+            ? {
+                deleteMany: {},
+                create: this.buildInstallments({
+                  userId,
+                  creditCardId,
+                  amount,
+                  installmentsCount,
+                  invoiceStartMonth,
+                  invoiceStartYear,
+                }),
+              }
+            : {
+                deleteMany: {},
+              }
+          : undefined,
       },
       include: this.transactionInclude,
     });
@@ -297,6 +390,27 @@ export class TransactionsService {
     if (!creditCard) {
       throw new NotFoundException('Credit card not found.');
     }
+  }
+
+  private shouldRebuildInstallments(
+    transaction: TransactionWithRelations,
+    params: {
+      amount: Prisma.Decimal;
+      creditCardId: string | null;
+      installmentsCount: number;
+      invoiceStartMonth: number | null;
+      invoiceStartYear: number | null;
+      paymentMethod: PaymentMethod;
+    },
+  ): boolean {
+    return (
+      transaction.paymentMethod !== params.paymentMethod ||
+      !transaction.amount.equals(params.amount) ||
+      transaction.creditCardId !== params.creditCardId ||
+      transaction.installmentsCount !== params.installmentsCount ||
+      transaction.invoiceStartMonth !== params.invoiceStartMonth ||
+      transaction.invoiceStartYear !== params.invoiceStartYear
+    );
   }
 
   private buildInstallments(params: {

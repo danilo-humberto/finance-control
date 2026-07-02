@@ -7,7 +7,7 @@ import {
   useState,
   type FormEvent,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { AuthMessage } from '@/components/auth/AuthMessage';
 import {
@@ -27,10 +27,17 @@ import { Button } from '@/components/ui/Button';
 import { usePreferences } from '@/hooks/usePreferences';
 import { getCategories } from '@/services/categoriesService';
 import { getCreditCards } from '@/services/creditCardsService';
-import { createTransaction } from '@/services/transactionsService';
+import {
+  createTransaction,
+  getTransactionById,
+  updateTransaction,
+} from '@/services/transactionsService';
 import { type Category } from '@/types/category';
 import { type CreditCard } from '@/types/credit-card';
-import { type CreateTransactionPayload } from '@/types/transaction';
+import {
+  type CreateTransactionPayload,
+  type Transaction,
+} from '@/types/transaction';
 import {
   addMonthsToMonthYear,
   getInvoiceMonthYearForPurchaseDate,
@@ -156,15 +163,22 @@ function isIsoDate(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
+function toIsoDate(value: string) {
+  return value.split('T')[0];
+}
+
 export function NewTransactionPage() {
   const navigate = useNavigate();
+  const { transactionId } = useParams<{ transactionId: string }>();
   const { formatCurrency } = usePreferences();
+  const isEditMode = Boolean(transactionId);
   const [cards, setCards] = useState<CreditCard[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [transactionToEdit, setTransactionToEdit] =
+    useState<Transaction | null>(null);
   const [selectedCardId, setSelectedCardId] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
-  const [selectedInvoiceId, setSelectedInvoiceId] =
-    useState<(typeof invoiceIds)[number]>('current');
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string>('current');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [purchaseDate, setPurchaseDate] = useState(getTodayIsoDate);
@@ -173,10 +187,14 @@ export function NewTransactionPage() {
   const [note, setNote] = useState('');
   const [loadingCards, setLoadingCards] = useState(true);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingTransaction, setLoadingTransaction] = useState(false);
   const [errorCards, setErrorCards] = useState<string | null>(null);
   const [errorCategories, setErrorCategories] = useState<string | null>(null);
+  const [transactionError, setTransactionError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasHydratedTransaction, setHasHydratedTransaction] = useState(false);
+  const [hasHydratedInvoice, setHasHydratedInvoice] = useState(false);
 
   const amountValue = useMemo(() => parseCurrencyInput(amount), [amount]);
   const summaryInstallments = paymentMode === 'cash' ? 1 : installmentCount;
@@ -213,10 +231,35 @@ export function NewTransactionPage() {
     [expenseCategories],
   );
 
-  const invoiceOptions = useMemo(
-    () => getInvoiceOptions(purchaseDate, selectedCard),
-    [purchaseDate, selectedCard],
-  );
+  const invoiceOptions = useMemo(() => {
+    const options = getInvoiceOptions(purchaseDate, selectedCard);
+    const originalInvoiceMonth = transactionToEdit?.invoiceStartMonth;
+    const originalInvoiceYear = transactionToEdit?.invoiceStartYear;
+
+    if (
+      !isEditMode ||
+      !originalInvoiceMonth ||
+      !originalInvoiceYear ||
+      options.some(
+        (option) =>
+          option.month === originalInvoiceMonth &&
+          option.year === originalInvoiceYear,
+      )
+    ) {
+      return options;
+    }
+
+    return [
+      ...options,
+      {
+        id: 'original',
+        label: 'Fatura original',
+        detail: `${String(originalInvoiceMonth).padStart(2, '0')}/${originalInvoiceYear}`,
+        month: originalInvoiceMonth,
+        year: originalInvoiceYear,
+      },
+    ];
+  }, [isEditMode, purchaseDate, selectedCard, transactionToEdit]);
 
   const loadCards = useCallback(async () => {
     try {
@@ -244,30 +287,113 @@ export function NewTransactionPage() {
     }
   }, []);
 
+  const loadTransaction = useCallback(async () => {
+    if (!transactionId) {
+      setTransactionToEdit(null);
+      setTransactionError(null);
+      setHasHydratedTransaction(false);
+      setHasHydratedInvoice(false);
+      return;
+    }
+
+    try {
+      setLoadingTransaction(true);
+      setTransactionError(null);
+      setHasHydratedTransaction(false);
+      setHasHydratedInvoice(false);
+      const loadedTransaction = await getTransactionById(transactionId);
+      setTransactionToEdit(loadedTransaction);
+    } catch (error) {
+      setTransactionToEdit(null);
+      setTransactionError(getApiErrorMessage(error));
+    } finally {
+      setLoadingTransaction(false);
+    }
+  }, [transactionId]);
+
   useEffect(() => {
     void loadCards();
     void loadCategories();
   }, [loadCards, loadCategories]);
 
   useEffect(() => {
+    void loadTransaction();
+  }, [loadTransaction]);
+
+  useEffect(() => {
+    if (!isEditMode || !transactionToEdit || hasHydratedTransaction) {
+      return;
+    }
+
+    setDescription(transactionToEdit.description);
+    setAmount(formatCurrency(Math.abs(transactionToEdit.amount)));
+    setPurchaseDate(toIsoDate(transactionToEdit.purchaseDate));
+    setPaymentMode(
+      transactionToEdit.installmentsCount > 1 ? 'installments' : 'cash',
+    );
+    setInstallmentCount(Math.max(transactionToEdit.installmentsCount || 1, 1));
+    setSelectedCardId(transactionToEdit.creditCardId ?? '');
+    setSelectedCategoryId(transactionToEdit.categoryId);
+    setSelectedInvoiceId('current');
+    setNote(transactionToEdit.notes ?? '');
+    setHasHydratedTransaction(true);
+  }, [
+    formatCurrency,
+    hasHydratedTransaction,
+    isEditMode,
+    transactionToEdit,
+  ]);
+
+  useEffect(() => {
+    if (
+      !isEditMode ||
+      !transactionToEdit ||
+      hasHydratedInvoice ||
+      invoiceOptions.length === 0
+    ) {
+      return;
+    }
+
+    const originalInvoice = invoiceOptions.find(
+      (invoice) =>
+        invoice.month === transactionToEdit.invoiceStartMonth &&
+        invoice.year === transactionToEdit.invoiceStartYear,
+    );
+
+    if (originalInvoice) {
+      setSelectedInvoiceId(originalInvoice.id);
+    }
+
+    setHasHydratedInvoice(true);
+  }, [hasHydratedInvoice, invoiceOptions, isEditMode, transactionToEdit]);
+
+  useEffect(() => {
     setSelectedCardId((currentCardId) => {
+      if (isEditMode && cards.length === 0) {
+        return currentCardId;
+      }
+
       if (cards.some((card) => card.id === currentCardId)) {
         return currentCardId;
       }
 
       return cards[0]?.id ?? '';
     });
-  }, [cards]);
+  }, [cards, isEditMode]);
 
   useEffect(() => {
     setSelectedCategoryId((currentCategoryId) => {
+      if (isEditMode && expenseCategories.length === 0) {
+        return currentCategoryId;
+      }
+
       if (expenseCategories.some((category) => category.id === currentCategoryId)) {
         return currentCategoryId;
       }
 
       return expenseCategories[0]?.id ?? '';
     });
-  }, [expenseCategories]);
+  }, [expenseCategories, isEditMode]);
 
   function handleBack() {
     if (window.history.length > 1) {
@@ -329,7 +455,7 @@ export function NewTransactionPage() {
       throw new Error('Selecione a fatura de destino.');
     }
 
-    return {
+    const payload: CreateTransactionPayload = {
       description: trimmedDescription,
       amount: amountValue,
       transactionType: 'EXPENSE',
@@ -340,8 +466,13 @@ export function NewTransactionPage() {
       installmentsCount: summaryInstallments,
       invoiceStartMonth: selectedInvoice.month,
       invoiceStartYear: selectedInvoice.year,
-      ...(trimmedNote ? { notes: trimmedNote } : {}),
     };
+
+    if (trimmedNote || isEditMode) {
+      payload.notes = trimmedNote;
+    }
+
+    return payload;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -359,13 +490,36 @@ export function NewTransactionPage() {
 
     try {
       setIsSubmitting(true);
-      await createTransaction(payload);
+      if (isEditMode && transactionId) {
+        await updateTransaction(transactionId, payload);
+      } else {
+        await createTransaction(payload);
+      }
       navigate('/transactions');
     } catch (error) {
       setSubmitError(getApiErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (isEditMode && loadingTransaction) {
+    return (
+      <div className="mx-auto w-full max-w-md space-y-4">
+        <AuthMessage tone="info">Carregando movimentação...</AuthMessage>
+      </div>
+    );
+  }
+
+  if (isEditMode && transactionError) {
+    return (
+      <div className="mx-auto w-full max-w-md space-y-4">
+        <AuthMessage tone="error">{transactionError}</AuthMessage>
+        <Button type="button" variant="secondary" onClick={handleBack}>
+          Voltar
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -382,16 +536,18 @@ export function NewTransactionPage() {
 
         <div className="min-w-0 text-center">
           <h1 className="truncate text-[1.36rem] font-bold leading-tight text-app-text">
-            Nova compra
+            {isEditMode ? 'Editar compra' : 'Nova compra'}
           </h1>
           <p className="mt-1 truncate text-[0.8rem] leading-5 text-app-muted">
-            Adicione uma nova compra ao seu cartão
+            {isEditMode
+              ? 'Atualize os dados desta compra'
+              : 'Adicione uma nova compra ao seu cartão'}
           </p>
         </div>
 
         <button
           type="button"
-          aria-label="Ajuda sobre nova compra"
+          aria-label={isEditMode ? 'Ajuda sobre edição' : 'Ajuda sobre nova compra'}
           className="flex h-10 w-10 items-center justify-center rounded-full border border-brand-800/60 bg-app-icon text-brand-400 shadow-lg shadow-brand-950/25 transition-colors hover:bg-brand-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
           <CircleHelp aria-hidden="true" className="h-4 w-4" />
@@ -422,13 +578,7 @@ export function NewTransactionPage() {
         errorCategories={errorCategories}
         onCardChange={setSelectedCardId}
         onCategoryChange={setSelectedCategoryId}
-        onInvoiceChange={(value) =>
-          setSelectedInvoiceId(
-            invoiceIds.includes(value as (typeof invoiceIds)[number])
-              ? (value as (typeof invoiceIds)[number])
-              : 'current',
-          )
-        }
+        onInvoiceChange={setSelectedInvoiceId}
       />
 
       <PaymentMethodCard
@@ -457,7 +607,11 @@ export function NewTransactionPage() {
         leftIcon={<Save aria-hidden="true" className="h-4 w-4" />}
         className="h-11 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.86rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400"
       >
-        {isSubmitting ? 'Salvando...' : 'Salvar compra'}
+        {isSubmitting
+          ? 'Salvando...'
+          : isEditMode
+            ? 'Salvar alterações'
+            : 'Salvar compra'}
       </Button>
     </form>
   );

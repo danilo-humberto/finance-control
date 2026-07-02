@@ -78,9 +78,4 @@ export type PaginatedTransactionsResponse = {
   meta: TransactionsPaginationMeta;
 };
 
-export type UpdateTransactionPayload = {
-  categoryId?: string;
-  description?: string;
-  purchaseDate?: string;
-  notes?: string;
-};
+export type UpdateTransactionPayload = Partial<CreateTransactionPayload>;

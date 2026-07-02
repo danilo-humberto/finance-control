@@ -480,10 +480,11 @@ export function TransactionsPage() {
   }
 
   function handleEditClick() {
-    setFeedbackMessage({
-      tone: 'info',
-      message: 'Edição de movimentação ainda não disponível nesta tela.',
-    });
+    if (!selectedTransaction) {
+      return;
+    }
+
+    navigate(`/transactions/${selectedTransaction.id}/edit`);
   }
 
   async function handleDuplicateClick() {
@@ -647,7 +648,7 @@ export function TransactionsPage() {
         actions={[
           {
             label: 'Editar movimentação',
-            description: 'A edição será liberada em um fluxo próprio',
+            description: 'Alterar dados desta movimentação',
             icon: Edit3,
             onClick: handleEditClick,
           },

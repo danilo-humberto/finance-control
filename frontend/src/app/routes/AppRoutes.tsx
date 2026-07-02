@@ -34,6 +34,10 @@ export function AppRoutes() {
             <Route path="/invoices" element={<InvoicesPage />} />
             <Route path="/transactions" element={<TransactionsPage />} />
             <Route path="/transactions/new" element={<NewTransactionPage />} />
+            <Route
+              path="/transactions/:transactionId/edit"
+              element={<NewTransactionPage />}
+            />
             <Route path="/credit-cards" element={<CreditCardsPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
