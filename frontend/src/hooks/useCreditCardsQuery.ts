@@ -52,6 +52,9 @@ export function useCreateCreditCardMutation() {
         queryKeys.creditCards.withUsage(),
         (currentCards = []) => [...currentCards, withEmptyUsage(createdCard)],
       );
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
     },
   });
 }
@@ -91,6 +94,9 @@ export function useUpdateCreditCardMutation() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.creditCards.withUsage(),
       });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
     },
   });
 }
@@ -111,6 +117,9 @@ export function useDeleteCreditCardMutation() {
         (currentCards = []) =>
           currentCards.filter((card) => card.id !== deletedCardId),
       );
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
     },
   });
 }

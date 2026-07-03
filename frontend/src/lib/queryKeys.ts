@@ -15,6 +15,12 @@ export const queryKeys = {
     list: () => [...queryKeys.creditCards.all, 'list'] as const,
     withUsage: () => [...queryKeys.creditCards.all, 'withUsage'] as const,
   },
+  dashboard: {
+    all: ['dashboard'] as const,
+    invoices: () => [...queryKeys.dashboard.all, 'invoices'] as const,
+    recentTransactions: () =>
+      [...queryKeys.dashboard.all, 'recentTransactions'] as const,
+  },
   invoices: {
     all: ['invoices'] as const,
     detail: (filters: InvoiceFilters) =>

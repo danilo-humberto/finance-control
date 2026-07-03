@@ -51,6 +51,9 @@ export function useInstallmentActionMutation() {
         queryClient.invalidateQueries({
           queryKey: queryKeys.creditCards.all,
         }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboard.all,
+        }),
       ]);
     },
   });

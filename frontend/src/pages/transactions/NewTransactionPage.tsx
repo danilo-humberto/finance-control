@@ -135,6 +135,9 @@ export function NewTransactionPage() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.creditCards.all,
       });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
       navigate('/transactions');
     } catch (error) {
       setSubmitError(getApiErrorMessage(error));

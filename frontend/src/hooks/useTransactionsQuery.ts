@@ -111,6 +111,9 @@ export function useDeleteTransactionMutation() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.creditCards.all,
       });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
     },
   });
 }

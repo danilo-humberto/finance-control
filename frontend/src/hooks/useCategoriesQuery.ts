@@ -33,6 +33,9 @@ export function useCreateCategoryMutation() {
         queryKeys.categories.list(),
         (currentCategories = []) => [...currentCategories, createdCategory],
       );
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
     },
   });
 }
@@ -56,6 +59,9 @@ export function useUpdateCategoryMutation() {
             category.id === updatedCategory.id ? updatedCategory : category,
           ),
       );
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
     },
   });
 }
@@ -73,6 +79,9 @@ export function useDeleteCategoryMutation() {
             (category) => category.id !== deletedCategoryId,
           ),
       );
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
     },
   });
 }

@@ -1,5 +1,4 @@
 import { isAxiosError } from 'axios';
-import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
@@ -7,13 +6,9 @@ import { InvoiceCarousel } from '@/components/dashboard/InvoiceCarousel';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  getDashboardInvoices,
-  getDashboardRecentTransactions,
-} from '@/services/dashboardService';
-import {
-  type DashboardCurrentInvoice,
-  type DashboardRecentTransaction,
-} from '@/types/dashboard';
+  useDashboardInvoicesQuery,
+  useDashboardRecentTransactionsQuery,
+} from '@/hooks/useDashboardQuery';
 
 function getApiErrorMessage(error: unknown) {
   if (isAxiosError(error)) {
@@ -46,49 +41,17 @@ function getApiErrorMessage(error: unknown) {
 export function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [invoices, setInvoices] = useState<DashboardCurrentInvoice[]>([]);
-  const [transactions, setTransactions] = useState<DashboardRecentTransaction[]>(
-    [],
-  );
-  const [loadingInvoices, setLoadingInvoices] = useState(true);
-  const [loadingTransactions, setLoadingTransactions] = useState(true);
-  const [invoiceError, setInvoiceError] = useState<string | null>(null);
-  const [transactionsError, setTransactionsError] = useState<string | null>(
-    null,
-  );
+  const invoicesQuery = useDashboardInvoicesQuery();
+  const recentTransactionsQuery = useDashboardRecentTransactionsQuery();
 
-  const loadInvoices = useCallback(async () => {
-    try {
-      setLoadingInvoices(true);
-      setInvoiceError(null);
-      const dashboardInvoices = await getDashboardInvoices();
-      setInvoices(dashboardInvoices);
-    } catch (error) {
-      setInvoices([]);
-      setInvoiceError(getApiErrorMessage(error));
-    } finally {
-      setLoadingInvoices(false);
-    }
-  }, []);
-
-  const loadTransactions = useCallback(async () => {
-    try {
-      setLoadingTransactions(true);
-      setTransactionsError(null);
-      const recentTransactions = await getDashboardRecentTransactions();
-      setTransactions(recentTransactions);
-    } catch (error) {
-      setTransactions([]);
-      setTransactionsError(getApiErrorMessage(error));
-    } finally {
-      setLoadingTransactions(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadInvoices();
-    void loadTransactions();
-  }, [loadInvoices, loadTransactions]);
+  const invoices = invoicesQuery.data ?? [];
+  const transactions = recentTransactionsQuery.data ?? [];
+  const invoiceError = invoicesQuery.isError
+    ? getApiErrorMessage(invoicesQuery.error)
+    : null;
+  const transactionsError = recentTransactionsQuery.isError
+    ? getApiErrorMessage(recentTransactionsQuery.error)
+    : null;
 
   return (
     <div className="w-full space-y-5 sm:mx-auto sm:max-w-md">
@@ -99,16 +62,16 @@ export function DashboardPage() {
       />
       <InvoiceCarousel
         invoices={invoices}
-        loading={loadingInvoices}
+        loading={invoicesQuery.isPending}
         error={invoiceError}
-        onRetry={() => void loadInvoices()}
+        onRetry={() => void invoicesQuery.refetch()}
         onAddCard={() => navigate('/credit-cards')}
       />
       <RecentTransactions
         transactions={transactions}
-        loading={loadingTransactions}
+        loading={recentTransactionsQuery.isPending}
         error={transactionsError}
-        onRetry={() => void loadTransactions()}
+        onRetry={() => void recentTransactionsQuery.refetch()}
       />
     </div>
   );
