@@ -6,7 +6,7 @@ import {
   RotateCcw,
   SlidersHorizontal,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AuthMessage } from '@/components/auth/AuthMessage';
@@ -21,15 +21,13 @@ import {
 } from '@/components/invoices/InvoiceSummaryCard';
 import { ActionSheet, type ActionSheetAction } from '@/components/modals/ActionSheet';
 import { Button } from '@/components/ui/Button';
-import { getCategories } from '@/services/categoriesService';
-import { getCreditCards } from '@/services/creditCardsService';
 import {
-  cancelInstallment,
-  markInstallmentAsPaid,
-  reopenInstallment,
-} from '@/services/installmentsService';
-import { getInvoice } from '@/services/invoicesService';
-import { type Category } from '@/types/category';
+  type InstallmentAction,
+  useInstallmentActionMutation,
+  useInvoiceQuery,
+} from '@/hooks/useInvoicesQuery';
+import { useCategoriesQuery } from '@/hooks/useCategoriesQuery';
+import { useCreditCardsQuery } from '@/hooks/useCreditCardsQuery';
 import { type CreditCard as CreditCardType } from '@/types/credit-card';
 import { type Invoice, type InvoiceInstallment } from '@/types/invoice';
 import {
@@ -192,26 +190,31 @@ export function InvoicesPage() {
   const [year, setYear] = useState(
     initialInvoiceMonthYear?.year ?? currentMonthYear.year,
   );
-  const [cards, setCards] = useState<CreditCardType[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCardId, setSelectedCardId] = useState(initialCreditCardId);
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [monthManuallyChanged, setMonthManuallyChanged] = useState(
     Boolean(initialInvoiceMonthYear),
   );
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [selectedInstallment, setSelectedInstallment] =
     useState<InvoiceInstallment | null>(null);
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
-  const [loadingCards, setLoadingCards] = useState(true);
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const [loadingInvoice, setLoadingInvoice] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [errorCards, setErrorCards] = useState<string | null>(null);
-  const [errorCategories, setErrorCategories] = useState<string | null>(null);
-  const [errorInvoice, setErrorInvoice] = useState<string | null>(null);
   const [feedbackMessage, setFeedbackMessage] =
     useState<FeedbackMessage>(null);
+
+  const cardsQuery = useCreditCardsQuery();
+  const categoriesQuery = useCategoriesQuery();
+  const installmentActionMutation = useInstallmentActionMutation();
+
+  const cards = cardsQuery.data ?? [];
+  const categories = categoriesQuery.data ?? [];
+  const loadingCards = cardsQuery.isPending;
+  const loadingCategories = categoriesQuery.isPending;
+  const errorCards = cardsQuery.isError
+    ? getApiErrorMessage(cardsQuery.error)
+    : null;
+  const errorCategories = categoriesQuery.isError
+    ? getApiErrorMessage(categoriesQuery.error)
+    : null;
 
   const selectedMonthId = getMonthKey(month, year);
   const monthOptions = useMemo(
@@ -248,64 +251,30 @@ export function InvoicesPage() {
     [categories],
   );
 
+  const invoiceFilters = useMemo(
+    () => ({
+      month,
+      year,
+      ...(selectedCardId ? { creditCardId: selectedCardId } : {}),
+      ...(selectedCategoryId ? { categoryId: selectedCategoryId } : {}),
+    }),
+    [month, selectedCardId, selectedCategoryId, year],
+  );
+  const waitingForDefaultCard =
+    !loadingCards && cards.length > 0 && !selectedCardId;
+  const invoiceQueryEnabled = !loadingCards && !waitingForDefaultCard;
+  const invoiceQuery = useInvoiceQuery(invoiceFilters, invoiceQueryEnabled);
+  const invoice = invoiceQuery.data ?? null;
+  const loadingInvoice = waitingForDefaultCard || invoiceQuery.isPending;
+  const errorInvoice = invoiceQuery.isError
+    ? getApiErrorMessage(invoiceQuery.error)
+    : null;
+  const actionLoading = installmentActionMutation.isPending;
+
   const invoiceSummary = useMemo(
     () => buildInvoiceSummary(invoice, selectedCard, month, year),
     [invoice, month, selectedCard, year],
   );
-
-  const loadCards = useCallback(async () => {
-    try {
-      setLoadingCards(true);
-      setErrorCards(null);
-      const loadedCards = await getCreditCards();
-      setCards(loadedCards);
-    } catch (error) {
-      setErrorCards(getApiErrorMessage(error));
-    } finally {
-      setLoadingCards(false);
-    }
-  }, []);
-
-  const loadCategories = useCallback(async () => {
-    try {
-      setLoadingCategories(true);
-      setErrorCategories(null);
-      const loadedCategories = await getCategories();
-      setCategories(loadedCategories);
-    } catch (error) {
-      setErrorCategories(getApiErrorMessage(error));
-    } finally {
-      setLoadingCategories(false);
-    }
-  }, []);
-
-  const loadInvoice = useCallback(async () => {
-    if (loadingCards || (cards.length > 0 && !selectedCardId)) {
-      return;
-    }
-
-    try {
-      setLoadingInvoice(true);
-      setErrorInvoice(null);
-      const loadedInvoice = await getInvoice({
-        month,
-        year,
-        ...(selectedCardId ? { creditCardId: selectedCardId } : {}),
-        ...(selectedCategoryId ? { categoryId: selectedCategoryId } : {}),
-      });
-      setInvoice(loadedInvoice);
-    } catch (error) {
-      setInvoice(null);
-      setErrorInvoice(getApiErrorMessage(error));
-    } finally {
-      setLoadingInvoice(false);
-    }
-  }, [cards.length, loadingCards, month, selectedCardId, selectedCategoryId, year]);
-
-  useEffect(() => {
-    void loadCards();
-    void loadCategories();
-  }, [loadCards, loadCategories]);
 
   useEffect(() => {
     const invoiceMonthYear = parseInvoiceMonthYearParams(
@@ -370,10 +339,6 @@ export function InvoicesPage() {
     });
   }, [categories]);
 
-  useEffect(() => {
-    void loadInvoice();
-  }, [loadInvoice]);
-
   function handleMonthChange(value: string) {
     const selectedMonthYear = parseMonthKey(value);
     setMonthManuallyChanged(true);
@@ -403,42 +368,39 @@ export function InvoicesPage() {
   }
 
   async function handleInstallmentAction(
-    action: 'pay' | 'reopen' | 'cancel',
+    action: InstallmentAction,
     installment: InvoiceInstallment,
   ) {
     setFeedbackMessage(null);
 
     try {
-      setActionLoading(true);
+      await installmentActionMutation.mutateAsync({
+        action,
+        installmentId: installment.id,
+      });
 
       if (action === 'pay') {
-        await markInstallmentAsPaid(installment.id);
         setFeedbackMessage({
           tone: 'success',
           message: 'Parcela marcada como paga.',
         });
       } else if (action === 'reopen') {
-        await reopenInstallment(installment.id);
         setFeedbackMessage({
           tone: 'success',
           message: 'Parcela reaberta com sucesso.',
         });
       } else {
-        await cancelInstallment(installment.id);
         setFeedbackMessage({
           tone: 'success',
           message: 'Parcela cancelada com sucesso.',
         });
       }
-
-      await loadInvoice();
     } catch (error) {
       setFeedbackMessage({
         tone: 'error',
         message: getApiErrorMessage(error),
       });
     } finally {
-      setActionLoading(false);
       setSelectedInstallment(null);
     }
   }
@@ -542,7 +504,7 @@ export function InvoicesPage() {
         total={invoice?.total ?? 0}
         loading={loadingInvoice || loadingCards || loadingCategories}
         error={errorInvoice}
-        onRetry={() => void loadInvoice()}
+        onRetry={() => void invoiceQuery.refetch()}
         onNewPurchase={() => navigate('/transactions/new')}
         onItemActionClick={handleInstallmentActionClick}
       />
