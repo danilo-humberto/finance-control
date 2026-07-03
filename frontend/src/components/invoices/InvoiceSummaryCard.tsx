@@ -20,6 +20,7 @@ export type InvoiceSummaryData = {
 
 type InvoiceSummaryCardProps = {
   invoice: InvoiceSummaryData;
+  loadingCardInfo?: boolean;
 };
 
 const statusLabel: Record<InstallmentStatus, string> = {
@@ -37,7 +38,10 @@ const statusVariant: Record<
   CANCELED: 'danger',
 };
 
-export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
+export function InvoiceSummaryCard({
+  invoice,
+  loadingCardInfo = false,
+}: InvoiceSummaryCardProps) {
   const { formatCurrency, formatDateLabel } = usePreferences();
   const progress = Math.min(Math.max(invoice.usedPercentage, 0), 100);
 
@@ -45,18 +49,26 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
     <article className="rounded-2xl border border-brand-800/65 bg-[radial-gradient(circle_at_top_left,rgba(49,214,103,0.12),transparent_46%),linear-gradient(135deg,rgba(12,25,20,0.94),rgba(12,15,17,0.98))] p-3 shadow-lg shadow-black/25">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white shadow-lg shadow-black/25"
-            style={{ backgroundColor: invoice.cardColor }}
-            aria-hidden="true"
-          >
-            {invoice.cardLogo}
-          </div>
+          {loadingCardInfo ? (
+            <SkeletonBlock className="h-8 w-8 rounded-lg" />
+          ) : (
+            <div
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white shadow-lg shadow-black/25"
+              style={{ backgroundColor: invoice.cardColor }}
+              aria-hidden="true"
+            >
+              {invoice.cardLogo}
+            </div>
+          )}
 
           <div className="flex min-w-0 items-center gap-2">
-            <h2 className="truncate text-[0.92rem] font-semibold leading-none text-app-text">
-              {invoice.cardName}
-            </h2>
+            {loadingCardInfo ? (
+              <SkeletonBlock className="h-4 w-24 rounded-full" />
+            ) : (
+              <h2 className="truncate text-[0.92rem] font-semibold leading-none text-app-text">
+                {invoice.cardName}
+              </h2>
+            )}
             <Badge
               variant={statusVariant[invoice.status]}
               className="ml-0.5 px-1.5 py-0 text-[0.58rem]"
@@ -70,9 +82,13 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
       <div className="mt-3.5 grid grid-cols-2 gap-3">
         <div className="min-w-0">
           <p className="text-[0.72rem] leading-4 text-app-muted">Vencimento</p>
-          <p className="mt-0.5 truncate text-[1rem] font-bold leading-tight text-brand-400">
-            {formatDateLabel(invoice.dueDate)}
-          </p>
+          {loadingCardInfo ? (
+            <SkeletonBlock className="mt-1 h-5 w-16 rounded-full" />
+          ) : (
+            <p className="mt-0.5 truncate text-[1rem] font-bold leading-tight text-brand-400">
+              {formatDateLabel(invoice.dueDate)}
+            </p>
+          )}
         </div>
 
         <div className="min-w-0 border-l border-app-border pl-3">
@@ -80,10 +96,16 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
             Fechamento
           </p>
           <div className="mt-0.5 flex items-center gap-1.5">
-            <p className="truncate text-[0.82rem] font-semibold leading-tight text-app-text">
-              {formatDateLabel(invoice.closingDate)}
-            </p>
-            <Info aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-app-muted" />
+            {loadingCardInfo ? (
+              <SkeletonBlock className="h-4 w-16 rounded-full" />
+            ) : (
+              <>
+                <p className="truncate text-[0.82rem] font-semibold leading-tight text-app-text">
+                  {formatDateLabel(invoice.closingDate)}
+                </p>
+                <Info aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-app-muted" />
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -101,9 +123,13 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
 
           <div className="shrink-0 text-right">
             <p className="text-[0.72rem] leading-4 text-app-muted">Limite</p>
-            <p className="mt-1 text-[0.82rem] font-semibold leading-tight text-brand-400">
-              {formatCurrency(invoice.limit)}
-            </p>
+            {loadingCardInfo ? (
+              <SkeletonBlock className="ml-auto mt-1 h-4 w-20 rounded-full" />
+            ) : (
+              <p className="mt-1 text-[0.82rem] font-semibold leading-tight text-brand-400">
+                {formatCurrency(invoice.limit)}
+              </p>
+            )}
           </div>
         </div>
 
@@ -141,5 +167,14 @@ export function InvoiceSummaryCard({ invoice }: InvoiceSummaryCardProps) {
         <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0 text-brand-400" />
       </button>
     </article>
+  );
+}
+
+function SkeletonBlock({ className }: { className: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn('block animate-pulse bg-app-elevated', className)}
+    />
   );
 }

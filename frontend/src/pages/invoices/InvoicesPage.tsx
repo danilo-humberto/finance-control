@@ -484,7 +484,10 @@ export function InvoicesPage() {
       ) : null}
 
       <div className="space-y-2.5">
-        <InvoiceSummaryCard invoice={invoiceSummary} />
+        <InvoiceSummaryCard
+          invoice={invoiceSummary}
+          loadingCardInfo={loadingCards || waitingForDefaultCard}
+        />
       </div>
 
       <InvoiceFilters
