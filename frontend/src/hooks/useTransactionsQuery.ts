@@ -7,14 +7,19 @@ import {
 } from '@tanstack/react-query';
 
 import {
+  createTransaction,
   deleteTransaction,
   getTransactionById,
   getTransactions,
+  updateTransaction,
 } from '@/services/transactionsService';
 import { queryKeys } from '@/lib/queryKeys';
 import {
+  type CreateTransactionPayload,
   type PaginatedTransactionsResponse,
+  type Transaction,
   type TransactionFilters,
+  type UpdateTransactionPayload,
 } from '@/types/transaction';
 
 export const transactionsPageSize = 20;
@@ -52,6 +57,39 @@ export function useTransactionQuery(transactionId?: string) {
     },
     enabled: Boolean(transactionId),
     staleTime: transactionDetailStaleTime,
+  });
+}
+
+export function useCreateTransactionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createTransaction,
+    onSuccess: () => {
+      invalidateTransactionDependencies(queryClient);
+    },
+  });
+}
+
+export function useUpdateTransactionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateTransactionPayload;
+    }) => updateTransaction(id, payload),
+    onSuccess: (updatedTransaction) => {
+      queryClient.setQueryData<Transaction>(
+        queryKeys.transactions.detail(updatedTransaction.id),
+        updatedTransaction,
+      );
+      updateTransactionInLists(queryClient, updatedTransaction);
+      invalidateTransactionDependencies(queryClient);
+    },
   });
 }
 
@@ -102,18 +140,52 @@ export function useDeleteTransactionMutation() {
       queryClient.removeQueries({
         queryKey: queryKeys.transactions.detail(deletedTransactionId),
       });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.transactions.lists(),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.invoices.all,
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.creditCards.all,
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboard.all,
-      });
+      invalidateTransactionDependencies(queryClient);
     },
   });
 }
+
+function updateTransactionInLists(
+  queryClient: ReturnType<typeof useQueryClient>,
+  updatedTransaction: Transaction,
+) {
+  queryClient.setQueriesData<InfiniteData<PaginatedTransactionsResponse, number>>(
+    { queryKey: queryKeys.transactions.lists() },
+    (currentData) => {
+      if (!currentData) {
+        return currentData;
+      }
+
+      return {
+        ...currentData,
+        pages: currentData.pages.map((page) => ({
+          ...page,
+          items: page.items.map((transaction) =>
+            transaction.id === updatedTransaction.id
+              ? updatedTransaction
+              : transaction,
+          ),
+        })),
+      };
+    },
+  );
+}
+
+function invalidateTransactionDependencies(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.transactions.lists(),
+  });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.invoices.all,
+  });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.creditCards.all,
+  });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.dashboard.all,
+  });
+}
+
+export type TransactionMutationPayload = CreateTransactionPayload;

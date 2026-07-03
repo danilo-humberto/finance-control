@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -8,11 +7,10 @@ import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionFormSkeleton } from '@/components/transactions/TransactionFormSkeleton';
 import { Button } from '@/components/ui/Button';
 import { useTransactionForm } from '@/hooks/useTransactionForm';
-import { queryKeys } from '@/lib/queryKeys';
 import {
-  createTransaction,
-  updateTransaction,
-} from '@/services/transactionsService';
+  useCreateTransactionMutation,
+  useUpdateTransactionMutation,
+} from '@/hooks/useTransactionsQuery';
 import { type CreateTransactionPayload } from '@/types/transaction';
 import { buildTransactionPayload } from '@/utils/transactionPayload';
 
@@ -46,8 +44,9 @@ function getApiErrorMessage(error: unknown) {
 
 export function NewTransactionPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { transactionId } = useParams<{ transactionId: string }>();
+  const createTransactionMutation = useCreateTransactionMutation();
+  const updateTransactionMutation = useUpdateTransactionMutation();
   const {
     amount,
     amountValue,
@@ -84,7 +83,8 @@ export function NewTransactionPage() {
     getErrorMessage: getApiErrorMessage,
   });
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmitting =
+    createTransactionMutation.isPending || updateTransactionMutation.isPending;
 
   function handleBack() {
     if (window.history.length > 1) {
@@ -120,29 +120,17 @@ export function NewTransactionPage() {
     }
 
     try {
-      setIsSubmitting(true);
       if (isEditMode && transactionId) {
-        await updateTransaction(transactionId, payload);
+        await updateTransactionMutation.mutateAsync({
+          id: transactionId,
+          payload,
+        });
       } else {
-        await createTransaction(payload);
+        await createTransactionMutation.mutateAsync(payload);
       }
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.transactions.all,
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.invoices.all,
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.creditCards.all,
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboard.all,
-      });
       navigate('/transactions');
     } catch (error) {
       setSubmitError(getApiErrorMessage(error));
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
