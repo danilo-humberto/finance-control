@@ -23,6 +23,7 @@ export const queryKeys = {
   transactions: {
     all: ['transactions'] as const,
     detail: (id: string) => [...queryKeys.transactions.all, 'detail', id] as const,
+    lists: () => [...queryKeys.transactions.all, 'list'] as const,
     list: (filters?: TransactionFilters) =>
       [...queryKeys.transactions.all, 'list', filters ?? {}] as const,
   },

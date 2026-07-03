@@ -1,5 +1,5 @@
 import { isAxiosError } from 'axios';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { AuthMessage } from '@/components/auth/AuthMessage';
@@ -20,14 +20,14 @@ import {
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
-  deleteTransaction,
-  getTransactions,
-} from '@/services/transactionsService';
+  transactionsPageSize,
+  useDeleteTransactionMutation,
+  useTransactionsInfiniteQuery,
+} from '@/hooks/useTransactionsQuery';
 import {
   type PaymentMethod,
   type Transaction,
   type TransactionFilters as ApiTransactionFilters,
-  type TransactionsPaginationMeta,
 } from '@/types/transaction';
 import {
   CreditCard,
@@ -57,7 +57,6 @@ const groupOrder: TransactionGroupData['key'][] = [
   'week',
   'older',
 ];
-const transactionsPageSize = 20;
 
 const paymentMethodLabel: Record<PaymentMethod, string> = {
   CREDIT_CARD: 'Cartão',
@@ -314,14 +313,6 @@ function TransactionsLoadingState() {
 
 export function TransactionsPage() {
   const navigate = useNavigate();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [paginationMeta, setPaginationMeta] =
-    useState<TransactionsPaginationMeta>({
-      total: 0,
-      page: 1,
-      limit: transactionsPageSize,
-      totalPages: 0,
-    });
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -329,12 +320,36 @@ export function TransactionsPage() {
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [feedbackMessage, setFeedbackMessage] =
     useState<FeedbackMessage>(null);
+
+  const activeFilterParams = useMemo(
+    () => getFilterParams(activeFilter),
+    [activeFilter],
+  );
+  const transactionsQuery = useTransactionsInfiniteQuery(activeFilterParams);
+  const deleteTransactionMutation = useDeleteTransactionMutation();
+
+  const transactions = useMemo(
+    () =>
+      transactionsQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [transactionsQuery.data],
+  );
+  const paginationMeta = transactionsQuery.data?.pages[
+    transactionsQuery.data.pages.length - 1
+  ]?.meta ?? {
+    total: 0,
+    page: 1,
+    limit: transactionsPageSize,
+    totalPages: 0,
+  };
+  const loading = transactionsQuery.isPending;
+  const loadingMore = transactionsQuery.isFetchingNextPage;
+  const deleting = deleteTransactionMutation.isPending;
+  const loadError =
+    transactions.length === 0 && transactionsQuery.isError
+      ? getApiErrorMessage(transactionsQuery.error)
+      : null;
 
   const filteredTransactions = useMemo(
     () =>
@@ -355,69 +370,25 @@ export function TransactionsPage() {
   );
   const hasMoreTransactions = paginationMeta.page < paginationMeta.totalPages;
 
-  const loadTransactions = useCallback(async (page = 1) => {
-    const isFirstPage = page === 1;
+  async function handleLoadMoreClick() {
+    setFeedbackMessage(null);
 
     try {
-      if (isFirstPage) {
-        setLoading(true);
-        setLoadError(null);
-      } else {
-        setLoadingMore(true);
-        setFeedbackMessage(null);
-      }
+      const result = await transactionsQuery.fetchNextPage();
 
-      const loadedTransactions = await getTransactions({
-        ...getFilterParams(activeFilter),
-        page,
-        limit: transactionsPageSize,
-      });
-
-      setPaginationMeta(loadedTransactions.meta);
-      setTransactions((currentTransactions) => {
-        if (isFirstPage) {
-          return loadedTransactions.items;
-        }
-
-        const currentIds = new Set(
-          currentTransactions.map((transaction) => transaction.id),
-        );
-
-        return [
-          ...currentTransactions,
-          ...loadedTransactions.items.filter(
-            (transaction) => !currentIds.has(transaction.id),
-          ),
-        ];
-      });
-    } catch (error) {
-      if (isFirstPage) {
-        setTransactions([]);
-        setPaginationMeta({
-          total: 0,
-          page: 1,
-          limit: transactionsPageSize,
-          totalPages: 0,
-        });
-        setLoadError(getApiErrorMessage(error));
-      } else {
+      if (result.isError) {
         setFeedbackMessage({
           tone: 'error',
-          message: getApiErrorMessage(error),
+          message: getApiErrorMessage(result.error),
         });
       }
-    } finally {
-      if (isFirstPage) {
-        setLoading(false);
-      } else {
-        setLoadingMore(false);
-      }
+    } catch (error) {
+      setFeedbackMessage({
+        tone: 'error',
+        message: getApiErrorMessage(error),
+      });
     }
-  }, [activeFilter]);
-
-  useEffect(() => {
-    void loadTransactions();
-  }, [loadTransactions]);
+  }
 
   function handleCreateClick() {
     navigate('/transactions/new');
@@ -454,23 +425,8 @@ export function TransactionsPage() {
     }
 
     try {
-      setDeleting(true);
       setFeedbackMessage(null);
-      await deleteTransaction(selectedTransaction.id);
-      setTransactions((currentTransactions) =>
-        currentTransactions.filter(
-          (transaction) => transaction.id !== selectedTransaction.id,
-        ),
-      );
-      setPaginationMeta((currentMeta) => {
-        const total = Math.max(currentMeta.total - 1, 0);
-
-        return {
-          ...currentMeta,
-          total,
-          totalPages: Math.ceil(total / currentMeta.limit),
-        };
-      });
+      await deleteTransactionMutation.mutateAsync(selectedTransaction.id);
       setFeedbackMessage({
         tone: 'success',
         message: 'Movimentação excluída com sucesso.',
@@ -481,8 +437,6 @@ export function TransactionsPage() {
         tone: 'error',
         message: getApiErrorMessage(error),
       });
-    } finally {
-      setDeleting(false);
     }
   }
 
@@ -532,7 +486,11 @@ export function TransactionsPage() {
           description={loadError}
           icon={<LoaderCircle aria-hidden="true" className="h-5 w-5" />}
           action={
-            <Button type="button" size="sm" onClick={() => void loadTransactions()}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void transactionsQuery.refetch()}
+            >
               Tentar novamente
             </Button>
           }
@@ -554,7 +512,7 @@ export function TransactionsPage() {
               variant="secondary"
               className="h-10 w-full rounded-2xl border-brand-800/65 bg-brand-950/25 text-[0.8rem] font-semibold text-brand-400 hover:bg-brand-900/45"
               disabled={loadingMore}
-              onClick={() => void loadTransactions(paginationMeta.page + 1)}
+              onClick={() => void handleLoadMoreClick()}
             >
               {loadingMore ? 'Carregando...' : 'Carregar mais'}
             </Button>
