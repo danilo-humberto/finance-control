@@ -17,11 +17,13 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
 
 import { auth } from '../config/firebase';
+import { queryClient } from '../lib/queryClient';
 
 type AuthContextValue = {
   user: User | null;
@@ -51,9 +53,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [authRevision, setAuthRevision] = useState(0);
+  const previousUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      const nextUserId = currentUser?.uid ?? null;
+
+      if (previousUserIdRef.current !== nextUserId) {
+        queryClient.clear();
+        previousUserIdRef.current = nextUserId;
+      }
+
       setUser(currentUser);
       setLoading(false);
     });

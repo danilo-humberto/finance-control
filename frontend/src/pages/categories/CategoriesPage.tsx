@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { Edit3, LoaderCircle, Plus, Search, Trash2 } from 'lucide-react';
 
@@ -25,11 +26,12 @@ import {
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
-  createCategory,
-  deleteCategory,
-  getCategories,
-  updateCategory,
-} from '@/services/categoriesService';
+  useCategoriesQuery,
+  useCreateCategoryMutation,
+  useDeleteCategoryMutation,
+  useUpdateCategoryMutation,
+} from '@/hooks/useCategoriesQuery';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   type Category,
   type CategoryType,
@@ -207,7 +209,11 @@ function CategoriesLoadingState() {
 }
 
 export function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const queryClient = useQueryClient();
+  const categoriesQuery = useCategoriesQuery();
+  const createCategoryMutation = useCreateCategoryMutation();
+  const updateCategoryMutation = useUpdateCategoryMutation();
+  const deleteCategoryMutation = useDeleteCategoryMutation();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null,
   );
@@ -219,11 +225,15 @@ export function CategoriesPage() {
   );
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [submittingCategory, setSubmittingCategory] = useState(false);
-  const [deletingCategory, setDeletingCategory] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage>(null);
+  const categories = categoriesQuery.data ?? [];
+  const loading = categoriesQuery.isPending;
+  const loadError = categoriesQuery.isError
+    ? getApiErrorMessage(categoriesQuery.error)
+    : null;
+  const submittingCategory =
+    createCategoryMutation.isPending || updateCategoryMutation.isPending;
+  const deletingCategory = deleteCategoryMutation.isPending;
 
   const summary = useMemo(() => getCategoriesSummary(categories), [categories]);
 
@@ -241,26 +251,11 @@ export function CategoriesPage() {
     });
   }, [activeFilter, categories, searchTerm]);
 
-  const loadCategories = useCallback(async () => {
-    try {
-      setLoading(true);
-      setLoadError(null);
-      const loadedCategories = await getCategories();
-      setCategories(loadedCategories);
-    } catch (error) {
-      setLoadError(getApiErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadCategories();
-  }, [loadCategories]);
-
   useEffect(() => {
     function handleQuickCreateCategoryCreated() {
-      void loadCategories();
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.all,
+      });
     }
 
     window.addEventListener(
@@ -274,7 +269,7 @@ export function CategoriesPage() {
         handleQuickCreateCategoryCreated,
       );
     };
-  }, [loadCategories]);
+  }, [queryClient]);
 
   function handleCreateClick() {
     setFeedbackMessage(null);
@@ -314,28 +309,17 @@ export function CategoriesPage() {
     }
 
     try {
-      setSubmittingCategory(true);
-
       if (categoryFormMode === 'create') {
-        const createdCategory = await createCategory(payload);
-        setCategories((currentCategories) => [
-          ...currentCategories,
-          createdCategory,
-        ]);
+        await createCategoryMutation.mutateAsync(payload);
         setFeedbackMessage({
           tone: 'success',
           message: 'Categoria cadastrada com sucesso.',
         });
       } else if (selectedCategory) {
-        const updatedCategory = await updateCategory(
-          selectedCategory.id,
+        await updateCategoryMutation.mutateAsync({
+          id: selectedCategory.id,
           payload,
-        );
-        setCategories((currentCategories) =>
-          currentCategories.map((category) =>
-            category.id === selectedCategory.id ? updatedCategory : category,
-          ),
-        );
+        });
         setFeedbackMessage({
           tone: 'success',
           message: 'Categoria atualizada com sucesso.',
@@ -349,8 +333,6 @@ export function CategoriesPage() {
         tone: 'error',
         message: getApiErrorMessage(error),
       });
-    } finally {
-      setSubmittingCategory(false);
     }
   }
 
@@ -360,13 +342,7 @@ export function CategoriesPage() {
     }
 
     try {
-      setDeletingCategory(true);
-      await deleteCategory(selectedCategory.id);
-      setCategories((currentCategories) =>
-        currentCategories.filter(
-          (category) => category.id !== selectedCategory.id,
-        ),
-      );
+      await deleteCategoryMutation.mutateAsync(selectedCategory.id);
       setFeedbackMessage({
         tone: 'success',
         message: 'Categoria excluída com sucesso.',
@@ -377,8 +353,6 @@ export function CategoriesPage() {
         tone: 'error',
         message: getDeleteCategoryErrorMessage(error),
       });
-    } finally {
-      setDeletingCategory(false);
     }
   }
 
@@ -437,7 +411,11 @@ export function CategoriesPage() {
               />
             }
             action={
-              <Button type="button" size="sm" onClick={() => void loadCategories()}>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => void categoriesQuery.refetch()}
+              >
                 Tentar novamente
               </Button>
             }

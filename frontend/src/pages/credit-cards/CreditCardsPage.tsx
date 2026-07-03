@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
   CardsSummary,
@@ -18,12 +19,13 @@ import {
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
-  createCreditCard,
-  deleteCreditCard,
-  getCreditCards,
-  updateCreditCard,
-} from '@/services/creditCardsService';
-import { getInvoice } from '@/services/invoicesService';
+  type CreditCardWithUsage,
+  useCreateCreditCardMutation,
+  useCreditCardsWithUsageQuery,
+  useDeleteCreditCardMutation,
+  useUpdateCreditCardMutation,
+} from '@/hooks/useCreditCardsQuery';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   type CreateCreditCardPayload,
   type CreditCard,
@@ -46,11 +48,6 @@ type FeedbackMessage = {
   tone: 'error' | 'success' | 'info';
   message: string;
 } | null;
-
-type CreditCardWithUsage = CreditCard & {
-  currentInvoiceTotal: number;
-  usedLimit: number;
-};
 
 const defaultCardColor = '#22c55e';
 
@@ -195,42 +192,6 @@ function getCardsSummary(cards: CreditCardWithUsage[]): CardsSummaryData {
   };
 }
 
-async function getCreditCardUsage(card: CreditCard) {
-  const { month, year } = getCurrentInvoiceMonthYear(
-    card.closingDay,
-    card.dueDay,
-  );
-  const invoice = await getInvoice({
-    month,
-    year,
-    creditCardId: card.id,
-  });
-  const currentInvoiceTotal =
-    invoice.total || invoice.items.reduce((sum, item) => sum + item.amount, 0);
-
-  return {
-    currentInvoiceTotal,
-    usedLimit: currentInvoiceTotal,
-  };
-}
-
-async function withCurrentUsage(card: CreditCard): Promise<CreditCardWithUsage> {
-  const usage = await getCreditCardUsage(card);
-
-  return {
-    ...card,
-    ...usage,
-  };
-}
-
-function withEmptyUsage(card: CreditCard): CreditCardWithUsage {
-  return {
-    ...card,
-    currentInvoiceTotal: 0,
-    usedLimit: 0,
-  };
-}
-
 function CreditCardsLoadingState() {
   return (
     <div className="space-y-2.5" aria-label="Carregando cartões">
@@ -253,7 +214,11 @@ function CreditCardsLoadingState() {
 }
 
 export function CreditCardsPage() {
-  const [cards, setCards] = useState<CreditCardWithUsage[]>([]);
+  const queryClient = useQueryClient();
+  const creditCardsQuery = useCreditCardsWithUsageQuery();
+  const createCreditCardMutation = useCreateCreditCardMutation();
+  const updateCreditCardMutation = useUpdateCreditCardMutation();
+  const deleteCreditCardMutation = useDeleteCreditCardMutation();
   const [selectedCard, setSelectedCard] = useState<CreditCardWithUsage | null>(
     null,
   );
@@ -261,37 +226,23 @@ export function CreditCardsPage() {
   const [cardFormMode, setCardFormMode] = useState<'create' | 'edit'>('create');
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [submittingCard, setSubmittingCard] = useState(false);
-  const [deletingCard, setDeletingCard] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage>(null);
+  const cards = creditCardsQuery.data ?? [];
+  const loading = creditCardsQuery.isPending;
+  const loadError = creditCardsQuery.isError
+    ? getApiErrorMessage(creditCardsQuery.error)
+    : null;
+  const submittingCard =
+    createCreditCardMutation.isPending || updateCreditCardMutation.isPending;
+  const deletingCard = deleteCreditCardMutation.isPending;
 
   const summary = useMemo(() => getCardsSummary(cards), [cards]);
 
-  const loadCreditCards = useCallback(async () => {
-    try {
-      setLoading(true);
-      setLoadError(null);
-      const creditCards = await getCreditCards();
-      const cardsWithUsage = await Promise.all(
-        creditCards.map((card) => withCurrentUsage(card)),
-      );
-      setCards(cardsWithUsage);
-    } catch (error) {
-      setLoadError(getApiErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadCreditCards();
-  }, [loadCreditCards]);
-
   useEffect(() => {
     function handleQuickCreateCreditCardCreated() {
-      void loadCreditCards();
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.creditCards.all,
+      });
     }
 
     window.addEventListener(
@@ -305,7 +256,7 @@ export function CreditCardsPage() {
         handleQuickCreateCreditCardCreated,
       );
     };
-  }, [loadCreditCards]);
+  }, [queryClient]);
 
   function handleCreateClick() {
     setFeedbackMessage(null);
@@ -345,28 +296,17 @@ export function CreditCardsPage() {
     }
 
     try {
-      setSubmittingCard(true);
-
       if (cardFormMode === 'create') {
-        const createdCard = await createCreditCard(payload);
-        setCards((currentCards) => [...currentCards, withEmptyUsage(createdCard)]);
+        await createCreditCardMutation.mutateAsync(payload);
         setFeedbackMessage({
           tone: 'success',
           message: 'Cartão cadastrado com sucesso.',
         });
       } else if (selectedCard) {
-        const updatedCard = await updateCreditCard(selectedCard.id, payload);
-        const updatedCardWithUsage: CreditCardWithUsage = {
-          ...updatedCard,
-          currentInvoiceTotal: selectedCard.currentInvoiceTotal,
-          usedLimit: selectedCard.usedLimit,
-        };
-
-        setCards((currentCards) =>
-          currentCards.map((card) =>
-            card.id === selectedCard.id ? updatedCardWithUsage : card,
-          ),
-        );
+        await updateCreditCardMutation.mutateAsync({
+          id: selectedCard.id,
+          payload,
+        });
         setFeedbackMessage({
           tone: 'success',
           message: 'Cartão atualizado com sucesso.',
@@ -380,8 +320,6 @@ export function CreditCardsPage() {
         tone: 'error',
         message: getApiErrorMessage(error),
       });
-    } finally {
-      setSubmittingCard(false);
     }
   }
 
@@ -391,11 +329,7 @@ export function CreditCardsPage() {
     }
 
     try {
-      setDeletingCard(true);
-      await deleteCreditCard(selectedCard.id);
-      setCards((currentCards) =>
-        currentCards.filter((card) => card.id !== selectedCard.id),
-      );
+      await deleteCreditCardMutation.mutateAsync(selectedCard.id);
       setFeedbackMessage({
         tone: 'success',
         message: 'Cartão excluído com sucesso.',
@@ -406,8 +340,6 @@ export function CreditCardsPage() {
         tone: 'error',
         message: getApiErrorMessage(error),
       });
-    } finally {
-      setDeletingCard(false);
     }
   }
 
@@ -462,7 +394,10 @@ export function CreditCardsPage() {
             title="Não foi possível carregar os cartões"
             description={loadError}
             action={
-              <Button type="button" onClick={() => void loadCreditCards()}>
+              <Button
+                type="button"
+                onClick={() => void creditCardsQuery.refetch()}
+              >
                 Tentar novamente
               </Button>
             }
