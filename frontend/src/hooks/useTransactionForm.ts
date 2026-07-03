@@ -5,13 +5,10 @@ import {
   type PurchaseCardOption,
   type PurchaseCategoryOption,
 } from '@/components/transactions/PurchaseDetailsCard';
+import { useCategoriesQuery } from '@/hooks/useCategoriesQuery';
+import { useCreditCardsQuery } from '@/hooks/useCreditCardsQuery';
 import { usePreferences } from '@/hooks/usePreferences';
-import { getCategories } from '@/services/categoriesService';
-import { getCreditCards } from '@/services/creditCardsService';
-import { getTransactionById } from '@/services/transactionsService';
-import { type Category } from '@/types/category';
-import { type CreditCard } from '@/types/credit-card';
-import { type Transaction } from '@/types/transaction';
+import { useTransactionQuery } from '@/hooks/useTransactionsQuery';
 import {
   formatCurrencyInput,
   getCardLogo,
@@ -34,10 +31,12 @@ export function useTransactionForm({
 }: UseTransactionFormParams) {
   const { formatCurrency } = usePreferences();
   const isEditMode = Boolean(transactionId);
-  const [cards, setCards] = useState<CreditCard[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [transactionToEdit, setTransactionToEdit] =
-    useState<Transaction | null>(null);
+  const categoriesQuery = useCategoriesQuery();
+  const creditCardsQuery = useCreditCardsQuery();
+  const transactionQuery = useTransactionQuery(transactionId);
+  const cards = creditCardsQuery.data ?? [];
+  const categories = categoriesQuery.data ?? [];
+  const transactionToEdit = transactionQuery.data ?? null;
   const [selectedCardId, setSelectedCardId] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string>('current');
@@ -47,14 +46,24 @@ export function useTransactionForm({
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash');
   const [installmentCount, setInstallmentCount] = useState(1);
   const [note, setNote] = useState('');
-  const [loadingCards, setLoadingCards] = useState(true);
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const [loadingTransaction, setLoadingTransaction] = useState(false);
-  const [errorCards, setErrorCards] = useState<string | null>(null);
-  const [errorCategories, setErrorCategories] = useState<string | null>(null);
-  const [transactionError, setTransactionError] = useState<string | null>(null);
-  const [hasHydratedTransaction, setHasHydratedTransaction] = useState(false);
-  const [hasHydratedInvoice, setHasHydratedInvoice] = useState(false);
+  const [hydratedTransactionId, setHydratedTransactionId] = useState<
+    string | null
+  >(null);
+  const [hydratedInvoiceTransactionId, setHydratedInvoiceTransactionId] =
+    useState<string | null>(null);
+  const loadingCards = creditCardsQuery.isPending;
+  const loadingCategories = categoriesQuery.isPending;
+  const loadingTransaction = isEditMode && transactionQuery.isPending;
+  const errorCards = creditCardsQuery.isError
+    ? getErrorMessage(creditCardsQuery.error)
+    : null;
+  const errorCategories = categoriesQuery.isError
+    ? getErrorMessage(categoriesQuery.error)
+    : null;
+  const transactionError =
+    isEditMode && transactionQuery.isError
+      ? getErrorMessage(transactionQuery.error)
+      : null;
 
   const amountValue = useMemo(() => parseCurrencyInput(amount), [amount]);
   const summaryInstallments = paymentMode === 'cash' ? 1 : installmentCount;
@@ -121,67 +130,12 @@ export function useTransactionForm({
     ];
   }, [isEditMode, purchaseDate, selectedCard, transactionToEdit]);
 
-  const loadCards = useCallback(async () => {
-    try {
-      setLoadingCards(true);
-      setErrorCards(null);
-      const loadedCards = await getCreditCards();
-      setCards(loadedCards);
-    } catch (error) {
-      setErrorCards(getErrorMessage(error));
-    } finally {
-      setLoadingCards(false);
-    }
-  }, [getErrorMessage]);
-
-  const loadCategories = useCallback(async () => {
-    try {
-      setLoadingCategories(true);
-      setErrorCategories(null);
-      const loadedCategories = await getCategories();
-      setCategories(loadedCategories);
-    } catch (error) {
-      setErrorCategories(getErrorMessage(error));
-    } finally {
-      setLoadingCategories(false);
-    }
-  }, [getErrorMessage]);
-
-  const loadTransaction = useCallback(async () => {
-    if (!transactionId) {
-      setTransactionToEdit(null);
-      setTransactionError(null);
-      setHasHydratedTransaction(false);
-      setHasHydratedInvoice(false);
-      return;
-    }
-
-    try {
-      setLoadingTransaction(true);
-      setTransactionError(null);
-      setHasHydratedTransaction(false);
-      setHasHydratedInvoice(false);
-      const loadedTransaction = await getTransactionById(transactionId);
-      setTransactionToEdit(loadedTransaction);
-    } catch (error) {
-      setTransactionToEdit(null);
-      setTransactionError(getErrorMessage(error));
-    } finally {
-      setLoadingTransaction(false);
-    }
-  }, [getErrorMessage, transactionId]);
-
   useEffect(() => {
-    void loadCards();
-    void loadCategories();
-  }, [loadCards, loadCategories]);
-
-  useEffect(() => {
-    void loadTransaction();
-  }, [loadTransaction]);
-
-  useEffect(() => {
-    if (!isEditMode || !transactionToEdit || hasHydratedTransaction) {
+    if (
+      !isEditMode ||
+      !transactionToEdit ||
+      hydratedTransactionId === transactionToEdit.id
+    ) {
       return;
     }
 
@@ -196,10 +150,11 @@ export function useTransactionForm({
     setSelectedCategoryId(transactionToEdit.categoryId);
     setSelectedInvoiceId('current');
     setNote(transactionToEdit.notes ?? '');
-    setHasHydratedTransaction(true);
+    setHydratedTransactionId(transactionToEdit.id);
+    setHydratedInvoiceTransactionId(null);
   }, [
     formatCurrency,
-    hasHydratedTransaction,
+    hydratedTransactionId,
     isEditMode,
     transactionToEdit,
   ]);
@@ -208,7 +163,7 @@ export function useTransactionForm({
     if (
       !isEditMode ||
       !transactionToEdit ||
-      hasHydratedInvoice ||
+      hydratedInvoiceTransactionId === transactionToEdit.id ||
       invoiceOptions.length === 0
     ) {
       return;
@@ -224,8 +179,13 @@ export function useTransactionForm({
       setSelectedInvoiceId(originalInvoice.id);
     }
 
-    setHasHydratedInvoice(true);
-  }, [hasHydratedInvoice, invoiceOptions, isEditMode, transactionToEdit]);
+    setHydratedInvoiceTransactionId(transactionToEdit.id);
+  }, [
+    hydratedInvoiceTransactionId,
+    invoiceOptions,
+    isEditMode,
+    transactionToEdit,
+  ]);
 
   useEffect(() => {
     setSelectedCardId((currentCardId) => {
