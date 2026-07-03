@@ -88,6 +88,9 @@ export function useUpdateCreditCardMutation() {
               : card,
           ),
       );
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.creditCards.withUsage(),
+      });
     },
   });
 }
