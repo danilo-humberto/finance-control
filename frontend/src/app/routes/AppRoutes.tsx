@@ -17,10 +17,12 @@ import { NewTransactionPage } from '../../pages/transactions/NewTransactionPage'
 import { TransactionsPage } from '../../pages/transactions/TransactionsPage';
 import { UiPreviewPage } from '../../pages/ui-preview/UiPreviewPage';
 import { PrivateRoute } from './PrivateRoute';
+import { ScrollToTop } from './ScrollToTop';
 
 export function AppRoutes() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
