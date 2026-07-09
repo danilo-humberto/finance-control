@@ -197,7 +197,7 @@ export function BottomNavigation() {
     <>
       <nav
         aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-40 h-[calc(78px+env(safe-area-inset-bottom))] w-full overflow-visible rounded-t-[18px] border-t border-white/[0.06] bg-[#101113] pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_26px_rgba(0,0,0,0.42)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 h-[calc(78px+env(safe-area-inset-bottom))] w-full overflow-visible rounded-t-[18px] border-t border-white/[0.06] bg-[#101113] pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_26px_rgba(0,0,0,0.42)] lg:hidden"
       >
         <div className="relative mx-auto grid h-[78px] max-w-md grid-cols-5 items-start px-3.5 pt-7">
           {navigationItems.slice(0, 2).map((item) => (
