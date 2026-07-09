@@ -55,6 +55,7 @@ export function useDashboardPageData() {
     invoiceError,
     invoicesLoading: invoicesQuery.isPending,
     onAddCard: () => navigate('/credit-cards'),
+    onNewPurchase: () => navigate('/transactions/new'),
     onRetryInvoices: () => void invoicesQuery.refetch(),
     onRetryTransactions: () => void recentTransactionsQuery.refetch(),
     photoUrl: user?.photoURL,
@@ -65,3 +66,5 @@ export function useDashboardPageData() {
     userName: user?.displayName,
   };
 }
+
+export type DashboardPageData = ReturnType<typeof useDashboardPageData>;
