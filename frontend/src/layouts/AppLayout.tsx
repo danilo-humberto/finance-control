@@ -153,9 +153,12 @@ function DesktopSidebar({
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 border-r border-app-border bg-app-surface/95 px-4 py-5 shadow-2xl shadow-black/20 lg:flex lg:flex-col">
       <div className="flex items-center gap-3 px-2">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500 text-sm font-bold text-slate-950">
-          FC
-        </span>
+        <img
+          src="/icons/icon-96x96.png"
+          alt=""
+          aria-hidden="true"
+          className="h-10 w-10 shrink-0 rounded-xl"
+        />
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-app-text">
             Finance Control
