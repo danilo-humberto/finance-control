@@ -365,13 +365,15 @@ function RecentTransactionsDesktopTable({
           <table className="w-full table-fixed text-left text-sm">
             <thead className="bg-app-elevated/45 text-xs uppercase text-app-muted">
               <tr>
-                <th className="w-[34%] px-4 py-3 font-semibold">Descrição</th>
+                <th className="w-[28%] px-4 py-3 font-semibold 2xl:w-[34%]">
+                  Descrição
+                </th>
                 <th className="w-[20%] px-4 py-3 font-semibold">Categoria</th>
                 <th className="w-[22%] px-4 py-3 font-semibold">
                   Cartão / Conta
                 </th>
                 <th className="w-[12%] px-4 py-3 font-semibold">Data</th>
-                <th className="w-[12%] px-4 py-3 text-right font-semibold">
+                <th className="w-[18%] px-4 py-3 text-right font-semibold 2xl:w-[12%]">
                   Valor
                 </th>
               </tr>
