@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 
@@ -199,6 +199,9 @@ export function useCategoriesPageData() {
   const [categoryFormMode, setCategoryFormMode] = useState<'create' | 'edit'>(
     'create',
   );
+  const [categorySubmitError, setCategorySubmitError] = useState<string | null>(
+    null,
+  );
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage>(null);
@@ -263,6 +266,7 @@ export function useCategoriesPageData() {
 
   function handleCreateClick() {
     setFeedbackMessage(null);
+    setCategorySubmitError(null);
     setSelectedCategory(null);
     setCategoryFormMode('create');
     setCategorySheetOpen(true);
@@ -282,6 +286,7 @@ export function useCategoriesPageData() {
     }
 
     setFeedbackMessage(null);
+    setCategorySubmitError(null);
     setSelectedCategory(categoryToEdit);
     setCategoryFormMode('edit');
     setActionSheetOpen(false);
@@ -303,16 +308,14 @@ export function useCategoriesPageData() {
 
   async function handleCategorySubmit(values: CategoryFormValues) {
     setFeedbackMessage(null);
+    setCategorySubmitError(null);
 
     let payload: CreateCategoryPayload;
 
     try {
       payload = toCategoryPayload(values);
     } catch (error) {
-      setFeedbackMessage({
-        tone: 'error',
-        message: getApiErrorMessage(error),
-      });
+      setCategorySubmitError(getApiErrorMessage(error));
       return;
     }
 
@@ -337,12 +340,17 @@ export function useCategoriesPageData() {
 
       setCategorySheetOpen(false);
     } catch (error) {
-      setFeedbackMessage({
-        tone: 'error',
-        message: getApiErrorMessage(error),
-      });
+      setCategorySubmitError(getApiErrorMessage(error));
     }
   }
+
+  const handleCategoryFormOpenChange = useCallback((open: boolean) => {
+    setCategorySheetOpen(open);
+
+    if (!open) {
+      setCategorySubmitError(null);
+    }
+  }, []);
 
   async function handleConfirmDelete() {
     if (!selectedCategory) {
@@ -372,6 +380,7 @@ export function useCategoriesPageData() {
     categoryFormMode,
     categoryItems,
     categorySheetOpen,
+    categorySubmitError,
     deletingCategory,
     deleteDialogOpen,
     feedbackMessage,
@@ -380,11 +389,11 @@ export function useCategoriesPageData() {
     onActionSheetOpenChange: setActionSheetOpen,
     onActiveFilterChange: setActiveFilter,
     onCategoryFormDelete: () => {
-      setCategorySheetOpen(false);
+      handleCategoryFormOpenChange(false);
       setDeleteDialogOpen(true);
     },
     onCategoryMenuClick: handleCategoryMenuClick,
-    onCategorySheetOpenChange: setCategorySheetOpen,
+    onCategorySheetOpenChange: handleCategoryFormOpenChange,
     onCategorySubmit: handleCategorySubmit,
     onConfirmDelete: handleConfirmDelete,
     onCreateClick: handleCreateClick,
