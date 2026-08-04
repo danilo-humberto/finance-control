@@ -62,29 +62,52 @@ const categoryIconMap: Record<string, LucideIcon> = {
   user: User,
 };
 
+type TransactionCategoryIconProps = {
+  color?: string | null;
+  icon?: string | null;
+  className?: string;
+};
+
+export function TransactionCategoryIcon({
+  color,
+  icon,
+  className,
+}: TransactionCategoryIconProps) {
+  const Icon = categoryIconMap[normalizeIconName(icon)] ?? Tag;
+  const categoryColor = color || defaultColor;
+
+  return (
+    <span
+      className={cn(
+        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+        className,
+      )}
+      style={{
+        backgroundColor: `${categoryColor}24`,
+        color: categoryColor,
+      }}
+    >
+      <Icon aria-hidden="true" className="h-5 w-5" />
+    </span>
+  );
+}
+
 export function TransactionListItem({
   transaction,
   onMenuClick,
 }: TransactionListItemProps) {
   const { formatCurrency, formatDateLabel } = usePreferences();
-  const Icon = categoryIconMap[normalizeIconName(transaction.categoryIcon)] ?? Tag;
   const isIncome = transaction.transactionType === 'INCOME';
   const amountLabel = `${isIncome ? '+' : '-'} ${formatCurrency(
     Math.abs(transaction.amount),
   )}`;
-  const categoryColor = transaction.categoryColor || defaultColor;
 
   return (
     <article className="grid min-h-[4.35rem] grid-cols-[2.5rem_minmax(0,1fr)_5.75rem] items-center gap-2.5 border-b border-app-border/80 px-2.5 py-2.5 last:border-b-0">
-      <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-        style={{
-          backgroundColor: `${categoryColor}24`,
-          color: categoryColor,
-        }}
-      >
-        <Icon aria-hidden="true" className="h-5 w-5" />
-      </span>
+      <TransactionCategoryIcon
+        color={transaction.categoryColor}
+        icon={transaction.categoryIcon}
+      />
 
       <div className="min-w-0">
         <h3 className="truncate text-[0.86rem] font-semibold leading-5 text-app-text">

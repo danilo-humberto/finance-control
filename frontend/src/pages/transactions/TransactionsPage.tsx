@@ -29,6 +29,7 @@ import {
   type Transaction,
   type TransactionFilters as ApiTransactionFilters,
 } from '@/types/transaction';
+import { TransactionsDesktopView } from './TransactionsDesktopView';
 import {
   CreditCard,
   Edit3,
@@ -404,6 +405,31 @@ export function TransactionsPage() {
     setActionSheetOpen(true);
   }
 
+  function handleDesktopEditClick(transactionItem: TransactionListItemData) {
+    const transaction = transactions.find(
+      (currentTransaction) => currentTransaction.id === transactionItem.id,
+    );
+
+    if (!transaction) {
+      return;
+    }
+
+    navigate(`/transactions/${transaction.id}/edit`);
+  }
+
+  function handleDesktopDeleteClick(transactionItem: TransactionListItemData) {
+    const transaction = transactions.find(
+      (currentTransaction) => currentTransaction.id === transactionItem.id,
+    );
+
+    if (!transaction) {
+      return;
+    }
+
+    setSelectedTransaction(transaction);
+    setDeleteDialogOpen(true);
+  }
+
   function handleEditClick() {
     if (!selectedTransaction) {
       return;
@@ -438,95 +464,121 @@ export function TransactionsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-4">
-      <header className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-[1.36rem] font-bold leading-tight text-app-text">
-            Movimentações
-          </h1>
-          <p className="mt-1 text-[0.8rem] leading-5 text-app-muted">
-            Todas as suas entradas e saídas
-          </p>
-        </div>
+    <>
+      <div className="lg:hidden">
+        <div className="mx-auto w-full max-w-md space-y-4">
+          <header className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-[1.36rem] font-bold leading-tight text-app-text">
+                Movimentações
+              </h1>
+              <p className="mt-1 text-[0.8rem] leading-5 text-app-muted">
+                Todas as suas entradas e saídas
+              </p>
+            </div>
 
-        <button
-          type="button"
-          aria-label="Nova compra"
-          onClick={handleCreateClick}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-300 via-brand-500 to-brand-700 text-white shadow-[0_0_0_5px_rgba(34,197,94,0.1),0_10px_24px_rgba(34,197,94,0.45)] transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-        >
-          <Plus aria-hidden="true" className="h-5 w-5" />
-        </button>
-      </header>
-
-      {feedbackMessage ? (
-        <AuthMessage tone={feedbackMessage.tone}>
-          {feedbackMessage.message}
-        </AuthMessage>
-      ) : null}
-
-      <TransactionsSummary summary={summary} />
-
-      <TransactionsFilters
-        searchTerm={searchTerm}
-        activeFilter={activeFilter}
-        onSearchChange={setSearchTerm}
-        onFilterChange={setActiveFilter}
-        onAdvancedFiltersClick={() => setFiltersSheetOpen(true)}
-      />
-
-      {loading ? (
-        <TransactionsLoadingState />
-      ) : loadError ? (
-        <EmptyState
-          title="Não foi possível carregar as movimentações"
-          description={loadError}
-          icon={<LoaderCircle aria-hidden="true" className="h-5 w-5" />}
-          action={
-            <Button
+            <button
               type="button"
-              size="sm"
-              onClick={() => void transactionsQuery.refetch()}
+              aria-label="Nova compra"
+              onClick={handleCreateClick}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-300 via-brand-500 to-brand-700 text-white shadow-[0_0_0_5px_rgba(34,197,94,0.1),0_10px_24px_rgba(34,197,94,0.45)] transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
             >
-              Tentar novamente
-            </Button>
-          }
-        />
-      ) : transactionGroups.length > 0 ? (
-        <div className="space-y-4">
-          {transactionGroups.map((group) => (
-            <TransactionGroup
-              key={group.key}
-              label={group.label}
-              transactions={group.transactions}
-              onMenuClick={handleMenuClick}
-            />
-          ))}
+              <Plus aria-hidden="true" className="h-5 w-5" />
+            </button>
+          </header>
 
-          {hasMoreTransactions ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="h-10 w-full rounded-2xl border-brand-800/65 bg-brand-950/25 text-[0.8rem] font-semibold text-brand-400 hover:bg-brand-900/45"
-              disabled={loadingMore}
-              onClick={() => void handleLoadMoreClick()}
-            >
-              {loadingMore ? 'Carregando...' : 'Carregar mais'}
-            </Button>
+          {feedbackMessage ? (
+            <AuthMessage tone={feedbackMessage.tone}>
+              {feedbackMessage.message}
+            </AuthMessage>
           ) : null}
+
+          <TransactionsSummary summary={summary} />
+
+          <TransactionsFilters
+            searchTerm={searchTerm}
+            activeFilter={activeFilter}
+            onSearchChange={setSearchTerm}
+            onFilterChange={setActiveFilter}
+            onAdvancedFiltersClick={() => setFiltersSheetOpen(true)}
+          />
+
+          {loading ? (
+            <TransactionsLoadingState />
+          ) : loadError ? (
+            <EmptyState
+              title="Não foi possível carregar as movimentações"
+              description={loadError}
+              icon={<LoaderCircle aria-hidden="true" className="h-5 w-5" />}
+              action={
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => void transactionsQuery.refetch()}
+                >
+                  Tentar novamente
+                </Button>
+              }
+            />
+          ) : transactionGroups.length > 0 ? (
+            <div className="space-y-4">
+              {transactionGroups.map((group) => (
+                <TransactionGroup
+                  key={group.key}
+                  label={group.label}
+                  transactions={group.transactions}
+                  onMenuClick={handleMenuClick}
+                />
+              ))}
+
+              {hasMoreTransactions ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-10 w-full rounded-2xl border-brand-800/65 bg-brand-950/25 text-[0.8rem] font-semibold text-brand-400 hover:bg-brand-900/45"
+                  disabled={loadingMore}
+                  onClick={() => void handleLoadMoreClick()}
+                >
+                  {loadingMore ? 'Carregando...' : 'Carregar mais'}
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <EmptyState
+              title="Nenhuma movimentação encontrada"
+              description="Registre sua primeira compra para começar."
+              icon={<Search aria-hidden="true" className="h-5 w-5" />}
+              action={
+                <Button type="button" size="sm" onClick={handleCreateClick}>
+                  Nova compra
+                </Button>
+              }
+            />
+          )}
         </div>
-      ) : (
-        <EmptyState
-          title="Nenhuma movimentação encontrada"
-          description="Registre sua primeira compra para começar."
-          icon={<Search aria-hidden="true" className="h-5 w-5" />}
-          action={
-            <Button type="button" size="sm" onClick={handleCreateClick}>
-              Nova compra
-            </Button>
-          }
+      </div>
+
+      <div className="hidden lg:block">
+        <TransactionsDesktopView
+          activeFilter={activeFilter}
+          feedbackMessage={feedbackMessage}
+          groups={transactionGroups}
+          hasMoreTransactions={hasMoreTransactions}
+          loadError={loadError}
+          loading={loading}
+          loadingMore={loadingMore}
+          searchTerm={searchTerm}
+          summary={summary}
+          onAdvancedFiltersClick={() => setFiltersSheetOpen(true)}
+          onCreateClick={handleCreateClick}
+          onDeleteTransaction={handleDesktopDeleteClick}
+          onEditTransaction={handleDesktopEditClick}
+          onFilterChange={setActiveFilter}
+          onLoadMore={() => void handleLoadMoreClick()}
+          onRetry={() => void transactionsQuery.refetch()}
+          onSearchChange={setSearchTerm}
         />
-      )}
+      </div>
 
       <ActionSheet
         open={actionSheetOpen}
@@ -586,6 +638,6 @@ export function TransactionsPage() {
         confirming={deleting}
         onConfirm={handleConfirmDelete}
       />
-    </div>
+    </>
   );
 }
