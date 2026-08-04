@@ -17,7 +17,13 @@ import {
   Utensils,
   type LucideIcon,
 } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
+
+const PurchaseDesktopSelect = lazy(() =>
+  import('./PurchaseDesktopSelect').then((module) => ({
+    default: module.PurchaseDesktopSelect,
+  })),
+);
 
 export type PurchaseCardOption = {
   id: string;
@@ -52,6 +58,7 @@ type PurchaseDetailsCardProps = {
   loadingCategories: boolean;
   errorCards: string | null;
   errorCategories: string | null;
+  useDesktopControls?: boolean;
   onCardChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onInvoiceChange: (value: string) => void;
@@ -95,6 +102,7 @@ export function PurchaseDetailsCard({
   loadingCategories,
   errorCards,
   errorCategories,
+  useDesktopControls = false,
   onCardChange,
   onCategoryChange,
   onInvoiceChange,
@@ -147,6 +155,7 @@ export function PurchaseDetailsCard({
               : null)
           }
           disabled={loadingCards || cards.length === 0}
+          useDesktopControl={useDesktopControls}
           onChange={onCardChange}
         />
 
@@ -176,6 +185,7 @@ export function PurchaseDetailsCard({
               : null)
           }
           disabled={loadingCategories || categories.length === 0}
+          useDesktopControl={useDesktopControls}
           onChange={onCategoryChange}
         />
 
@@ -193,6 +203,7 @@ export function PurchaseDetailsCard({
             selectedInvoice ? formatDateLabel(selectedInvoice.detail) : undefined
           }
           disabled={invoices.length === 0}
+          useDesktopControl={useDesktopControls}
           onChange={onInvoiceChange}
         />
       </div>
@@ -209,6 +220,7 @@ type PurchaseSelectRowProps = {
   helper?: string | null;
   selectedDetail?: string;
   disabled?: boolean;
+  useDesktopControl?: boolean;
   onChange: (value: string) => void;
 };
 
@@ -221,6 +233,7 @@ function PurchaseSelectRow({
   helper,
   selectedDetail,
   disabled = false,
+  useDesktopControl = false,
   onChange,
 }: PurchaseSelectRowProps) {
   const selectedOption = options.find((option) => option.id === value);
@@ -231,38 +244,92 @@ function PurchaseSelectRow({
       <p className="text-[0.72rem] font-medium leading-none text-app-muted">
         {label}
       </p>
-      <label className="relative flex h-10 w-full items-center gap-2.5 rounded-xl border border-app-border bg-app-bg/35 px-3 text-left transition-colors hover:bg-app-elevated focus-within:outline-none focus-within:ring-2 focus-within:ring-brand-500">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center">
-          {leading}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-[0.8rem] font-semibold text-app-text">
-          {selectedOption?.label ?? placeholder}
-          {detail ? (
-            <span className="ml-1 font-medium text-app-muted">({detail})</span>
-          ) : null}
-        </span>
-        <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-app-muted" />
-        <select
-          aria-label={label}
-          value={value}
-          disabled={disabled}
-          onChange={(event) => onChange(event.target.value)}
-          className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
+      {useDesktopControl ? (
+        <Suspense
+          fallback={
+            <PurchaseSelectControlFallback
+              detail={detail}
+              label={selectedOption?.label ?? placeholder}
+              leading={leading}
+            />
+          }
         >
-          <option value="">{placeholder}</option>
-          {options.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-              {option.detail ? ` (${option.detail})` : ''}
-            </option>
-          ))}
-        </select>
-      </label>
+          <PurchaseDesktopSelect
+            ariaLabel={label}
+            value={value}
+            placeholder={placeholder}
+            options={options}
+            leading={leading}
+            selectedDetail={selectedDetail}
+            disabled={disabled}
+            onChange={onChange}
+          />
+        </Suspense>
+      ) : (
+        <label className="relative flex h-10 w-full items-center gap-2.5 rounded-xl border border-app-border bg-app-bg/35 px-3 text-left transition-colors hover:bg-app-elevated focus-within:outline-none focus-within:ring-2 focus-within:ring-brand-500">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center">
+            {leading}
+          </span>
+          <span className="min-w-0 flex-1 truncate text-[0.8rem] font-semibold text-app-text">
+            {selectedOption?.label ?? placeholder}
+            {detail ? (
+              <span className="ml-1 font-medium text-app-muted">({detail})</span>
+            ) : null}
+          </span>
+          <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-app-muted" />
+          <select
+            aria-label={label}
+            value={value}
+            disabled={disabled}
+            onChange={(event) => onChange(event.target.value)}
+            className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
+          >
+            <option value="">{placeholder}</option>
+            {options.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+                {option.detail ? ` (${option.detail})` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {helper ? (
         <p className="px-0.5 text-[0.68rem] leading-4 text-app-muted">
           {helper}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function PurchaseSelectControlFallback({
+  detail,
+  label,
+  leading,
+}: {
+  detail?: string;
+  label: string;
+  leading: ReactNode;
+}) {
+  return (
+    <div
+      aria-busy="true"
+      className="flex h-10 w-full items-center gap-2.5 rounded-xl border border-app-border bg-app-bg/35 px-3 text-left"
+    >
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center">
+        {leading}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-[0.8rem] font-semibold text-app-text">
+        {label}
+        {detail ? (
+          <span className="ml-1 font-medium text-app-muted">({detail})</span>
+        ) : null}
+      </span>
+      <ChevronDown
+        aria-hidden="true"
+        className="h-4 w-4 shrink-0 text-app-muted"
+      />
     </div>
   );
 }

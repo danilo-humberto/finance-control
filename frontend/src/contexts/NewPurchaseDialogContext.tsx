@@ -27,6 +27,12 @@ type NewPurchaseDialogProviderProps = {
   children: ReactNode;
 };
 
+function hasOpenNestedPurchaseLayer() {
+  return Boolean(
+    document.querySelector('[data-purchase-dialog-layer][data-state="open"]'),
+  );
+}
+
 export const NewPurchaseDialogContext = createContext<
   NewPurchaseDialogContextValue | undefined
 >(undefined);
@@ -110,6 +116,10 @@ export function NewPurchaseDialogProvider({
           onEscapeKeyDown={(event) => {
             event.preventDefault();
 
+            if (hasOpenNestedPurchaseLayer()) {
+              return;
+            }
+
             if (discardDialogOpen) {
               setDiscardDialogOpen(false);
               return;
@@ -118,6 +128,10 @@ export function NewPurchaseDialogProvider({
             requestClose();
           }}
           onPointerDownOutside={(event) => {
+            if (hasOpenNestedPurchaseLayer()) {
+              return;
+            }
+
             event.preventDefault();
 
             if (!discardDialogOpen) {

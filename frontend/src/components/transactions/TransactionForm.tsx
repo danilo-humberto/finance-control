@@ -118,6 +118,7 @@ export function TransactionForm({
       description={description}
       amount={amount}
       purchaseDate={purchaseDate}
+      useDesktopControls={presentation === 'dialog'}
       onDescriptionChange={onDescriptionChange}
       onAmountChange={onAmountChange}
       onPurchaseDateChange={onPurchaseDateChange}
@@ -136,6 +137,7 @@ export function TransactionForm({
       loadingCategories={loadingCategories}
       errorCards={errorCards}
       errorCategories={errorCategories}
+      useDesktopControls={presentation === 'dialog'}
       onCardChange={onCardChange}
       onCategoryChange={onCategoryChange}
       onInvoiceChange={onInvoiceChange}

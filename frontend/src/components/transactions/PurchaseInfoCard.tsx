@@ -6,12 +6,24 @@ import {
   CircleDollarSign,
   Diamond,
 } from "lucide-react";
-import { type InputHTMLAttributes, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from "react";
+
+const PurchaseDesktopDatePicker = lazy(() =>
+  import('./PurchaseDesktopDatePicker').then((module) => ({
+    default: module.PurchaseDesktopDatePicker,
+  })),
+);
 
 type PurchaseInfoCardProps = {
   description: string;
   amount: string;
   purchaseDate: string;
+  useDesktopControls?: boolean;
   onDescriptionChange: (value: string) => void;
   onAmountChange: (value: string) => void;
   onPurchaseDateChange: (value: string) => void;
@@ -21,6 +33,7 @@ export function PurchaseInfoCard({
   description,
   amount,
   purchaseDate,
+  useDesktopControls = false,
   onDescriptionChange,
   onAmountChange,
   onPurchaseDateChange,
@@ -63,33 +76,72 @@ export function PurchaseInfoCard({
           <p className="mb-1.5 text-[0.72rem] font-medium leading-none text-app-muted">
             Data da compra
           </p>
-          <label
-            htmlFor="purchase-date"
-            className="relative flex h-10 w-full cursor-pointer items-center gap-2.5 rounded-xl border border-app-border bg-app-bg/35 px-3 text-left text-[0.8rem] font-semibold text-app-text transition-colors hover:bg-app-elevated focus-within:outline-none focus-within:ring-2 focus-within:ring-brand-500"
-          >
-            <CalendarDays
-              aria-hidden="true"
-              className="h-4 w-4 shrink-0 text-brand-400"
-            />
-            <span className="min-w-0 flex-1 truncate">
-              {formattedPurchaseDate}
-            </span>
-            <ChevronDown
-              aria-hidden="true"
-              className="h-4 w-4 shrink-0 text-app-muted"
-            />
-            <input
-              id="purchase-date"
-              type="date"
-              value={purchaseDate}
-              aria-label="Data da compra"
-              onChange={(event) => onPurchaseDateChange(event.target.value)}
-              className="absolute inset-0 cursor-pointer opacity-0"
-            />
-          </label>
+          {useDesktopControls ? (
+            <Suspense
+              fallback={
+                <PurchaseDateControlFallback
+                  formattedValue={formattedPurchaseDate}
+                />
+              }
+            >
+              <PurchaseDesktopDatePicker
+                value={purchaseDate}
+                formattedValue={formattedPurchaseDate}
+                onChange={onPurchaseDateChange}
+              />
+            </Suspense>
+          ) : (
+            <label
+              htmlFor="purchase-date"
+              className="relative flex h-10 w-full cursor-pointer items-center gap-2.5 rounded-xl border border-app-border bg-app-bg/35 px-3 text-left text-[0.8rem] font-semibold text-app-text transition-colors hover:bg-app-elevated focus-within:outline-none focus-within:ring-2 focus-within:ring-brand-500"
+            >
+              <CalendarDays
+                aria-hidden="true"
+                className="h-4 w-4 shrink-0 text-brand-400"
+              />
+              <span className="min-w-0 flex-1 truncate">
+                {formattedPurchaseDate}
+              </span>
+              <ChevronDown
+                aria-hidden="true"
+                className="h-4 w-4 shrink-0 text-app-muted"
+              />
+              <input
+                id="purchase-date"
+                type="date"
+                value={purchaseDate}
+                aria-label="Data da compra"
+                onChange={(event) => onPurchaseDateChange(event.target.value)}
+                className="absolute inset-0 cursor-pointer opacity-0"
+              />
+            </label>
+          )}
         </div>
       </div>
     </section>
+  );
+}
+
+function PurchaseDateControlFallback({
+  formattedValue,
+}: {
+  formattedValue: string;
+}) {
+  return (
+    <div
+      aria-busy="true"
+      className="flex h-10 w-full items-center gap-2.5 rounded-xl border border-app-border bg-app-bg/35 px-3 text-left text-[0.8rem] font-semibold text-app-text"
+    >
+      <CalendarDays
+        aria-hidden="true"
+        className="h-4 w-4 shrink-0 text-brand-400"
+      />
+      <span className="min-w-0 flex-1 truncate">{formattedValue}</span>
+      <ChevronDown
+        aria-hidden="true"
+        className="h-4 w-4 shrink-0 text-app-muted"
+      />
+    </div>
   );
 }
 
