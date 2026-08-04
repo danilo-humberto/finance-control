@@ -129,9 +129,6 @@ function getApiErrorMessage(error: unknown) {
       return responseMessage;
     }
 
-    if (error.response?.status === 401) {
-      return 'Sua sessão expirou. Entre novamente para acessar suas faturas.';
-    }
   }
 
   if (error instanceof Error && error.message) {

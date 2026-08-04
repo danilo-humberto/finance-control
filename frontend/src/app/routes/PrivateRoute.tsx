@@ -4,7 +4,7 @@ import { LoadingScreen } from '../../components/ui/LoadingScreen';
 import { useAuth } from '../../hooks/useAuth';
 
 export function PrivateRoute() {
-  const { loading, user } = useAuth();
+  const { loading, sessionEndReason, user } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -12,7 +12,13 @@ export function PrivateRoute() {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location, sessionEndReason }}
+      />
+    );
   }
 
   return <Outlet />;

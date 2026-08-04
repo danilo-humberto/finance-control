@@ -23,11 +23,17 @@ import {
 } from 'react';
 
 import { auth } from '../config/firebase';
+import {
+  clearAuthSessionEndReason,
+  subscribeToAuthSessionEndReason,
+  type AuthSessionEndReason,
+} from '../lib/authSession';
 import { queryClient } from '../lib/queryClient';
 
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
+  sessionEndReason: AuthSessionEndReason | null;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
@@ -52,6 +58,8 @@ export const AuthContext = createContext<AuthContextValue | undefined>(
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionEndReason, setSessionEndReason] =
+    useState<AuthSessionEndReason | null>(null);
   const [authRevision, setAuthRevision] = useState(0);
   const previousUserIdRef = useRef<string | null>(null);
 
@@ -71,8 +79,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return unsubscribe;
   }, []);
 
+  useEffect(
+    () => subscribeToAuthSessionEndReason(setSessionEndReason),
+    [],
+  );
+
   const login = useCallback(async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
+    clearAuthSessionEndReason();
   }, []);
 
   const loginWithGoogle = useCallback(async () => {
@@ -83,6 +97,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
 
     const credential = await signInWithPopup(auth, provider);
+    clearAuthSessionEndReason();
     setUser(credential.user);
   }, []);
 
@@ -98,12 +113,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         displayName: name,
       });
 
+      clearAuthSessionEndReason();
       setUser(credential.user);
     },
     [],
   );
 
   const logout = useCallback(async () => {
+    clearAuthSessionEndReason();
     await signOut(auth);
   }, []);
 
@@ -154,6 +171,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     () => ({
       user,
       loading,
+      sessionEndReason,
       login,
       loginWithGoogle,
       register,
@@ -173,6 +191,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       logout,
       register,
       resetPassword,
+      sessionEndReason,
       updateDisplayName,
       user,
     ],

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { App } from 'firebase-admin/app';
 import type { DecodedIdToken } from 'firebase-admin/auth';
@@ -41,7 +41,9 @@ export class FirebaseAdminService {
       ?.replace(/\\n/g, '\n');
 
     if (!projectId || !clientEmail || !privateKey) {
-      throw new UnauthorizedException('Firebase Admin is not configured.');
+      throw new ServiceUnavailableException(
+        'Firebase authentication service is not configured.',
+      );
     }
 
     return {

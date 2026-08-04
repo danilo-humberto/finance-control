@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Lock, Mail } from 'lucide-react';
 
 import { AuthField } from '@/components/auth/AuthField';
@@ -11,9 +11,17 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { getFirebaseErrorMessage } from '@/utils/firebaseErrors';
 
+type LoginLocationState = {
+  sessionEndReason?: 'session-expired' | null;
+};
+
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, loginWithGoogle } = useAuth();
+  const sessionExpired =
+    (location.state as LoginLocationState | null)?.sessionEndReason ===
+    'session-expired';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -91,6 +99,11 @@ export function LoginPage() {
             </div>
           </div>
 
+          {sessionExpired ? (
+            <AuthMessage tone="info">
+              Sua sessão expirou. Entre novamente.
+            </AuthMessage>
+          ) : null}
           {error ? <AuthMessage tone="error">{error}</AuthMessage> : null}
 
           <Button

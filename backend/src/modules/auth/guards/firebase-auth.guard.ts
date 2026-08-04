@@ -1,7 +1,9 @@
 import {
   CanActivate,
   ExecutionContext,
+  HttpException,
   Injectable,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { User } from '@prisma/client';
@@ -11,6 +13,20 @@ import { FirebaseAdminService } from '../firebase-admin.service';
 import type { AuthenticatedRequest } from '../types/authenticated-request';
 
 type AuthorizationHeader = string | string[] | undefined;
+
+const invalidFirebaseTokenErrorCodes = new Set([
+  'auth/id-token-expired',
+  'auth/id-token-revoked',
+  'auth/invalid-id-token',
+  'auth/user-disabled',
+]);
+
+const invalidFirebaseTokenMessagePatterns = [
+  /^Decoding Firebase ID token failed\./i,
+  /^Firebase ID token has /i,
+  /^First argument to verifyIdToken\(\) must be a Firebase ID token string\./i,
+  /^verifyIdToken\(\) expects an ID token/i,
+];
 
 function getAuthorizationHeader(
   request: AuthenticatedRequest,
@@ -54,6 +70,26 @@ function getErrorLogData(error: unknown): {
   };
 }
 
+function isFirebaseTokenValidationError(error: unknown): boolean {
+  const { code, message } = getErrorLogData(error);
+
+  if (typeof code !== 'string') {
+    return false;
+  }
+
+  if (invalidFirebaseTokenErrorCodes.has(code)) {
+    return true;
+  }
+
+  if (code !== 'auth/argument-error') {
+    return false;
+  }
+
+  return invalidFirebaseTokenMessagePatterns.some(
+    (pattern) => typeof message === 'string' && pattern.test(message),
+  );
+}
+
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
   constructor(
@@ -95,11 +131,19 @@ export class FirebaseAuthGuard implements CanActivate {
         getErrorLogData(error),
       );
 
-      if (error instanceof UnauthorizedException) {
+      if (error instanceof HttpException) {
         throw error;
       }
 
-      throw new UnauthorizedException('Invalid Firebase authentication token.');
+      if (isFirebaseTokenValidationError(error)) {
+        throw new UnauthorizedException(
+          'Invalid Firebase authentication token.',
+        );
+      }
+
+      throw new ServiceUnavailableException(
+        'Firebase authentication service is unavailable.',
+      );
     }
 
     request.user = await this.findOrCreateUser({

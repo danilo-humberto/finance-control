@@ -1,4 +1,4 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { FirebaseAdminService } from './firebase-admin.service';
@@ -24,7 +24,7 @@ describe('FirebaseAdminService', () => {
     );
 
     await expect(service.verifyIdToken('token')).rejects.toBeInstanceOf(
-      UnauthorizedException,
+      ServiceUnavailableException,
     );
   });
 });

@@ -70,6 +70,11 @@ Authorization: Bearer TOKEN_DO_FIREBASE
 
 O backend valida esse token com Firebase Admin SDK.
 
+Quando a API responde `401`, o cliente força a renovação do ID token e repete a
+requisição uma única vez. Se a nova tentativa também retornar `401`, a sessão
+local é encerrada e a tela de login informa que ela expirou. Erros de rede e
+respostas `5xx` não encerram a sessão.
+
 ## Design system inicial
 
 A base visual fica em `src/components/ui` e usa TailwindCSS com tokens
