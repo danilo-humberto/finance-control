@@ -35,9 +35,7 @@ import {
 } from "./useCategoriesPageData";
 import { type CategoryFilter } from "@/components/categories/CategoryFilterTabs";
 
-type CategoriesDesktopViewProps = CategoriesPageData & {
-  embedded?: boolean;
-};
+type CategoriesDesktopViewProps = CategoriesPageData;
 
 type SummaryCardProps = {
   description: string;
@@ -107,7 +105,6 @@ export function CategoriesDesktopView({
   activeFilter,
   categories,
   categoryItems,
-  embedded = false,
   feedbackMessage,
   loadError,
   loading,
@@ -121,39 +118,26 @@ export function CategoriesDesktopView({
   summary,
 }: CategoriesDesktopViewProps) {
   return (
-    <div className={cn('space-y-6', embedded && 'space-y-4')}>
-      {embedded ? (
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            onClick={onCreateClick}
-            leftIcon={<Plus aria-hidden="true" className="h-4 w-4" />}
-            className="h-11 rounded-xl px-4"
-          >
-            Nova categoria
-          </Button>
+    <div className="space-y-6">
+      <header className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-[2rem] font-bold leading-tight text-app-text">
+            Categorias
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-app-muted">
+            Organize seus gastos e receitas
+          </p>
         </div>
-      ) : (
-        <header className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-[2rem] font-bold leading-tight text-app-text">
-              Categorias
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-app-muted">
-              Organize seus gastos e receitas
-            </p>
-          </div>
 
-          <Button
-            type="button"
-            onClick={onCreateClick}
-            leftIcon={<Plus aria-hidden="true" className="h-4 w-4" />}
-            className="h-11 self-start rounded-xl px-4 xl:self-auto"
-          >
-            Nova categoria
-          </Button>
-        </header>
-      )}
+        <Button
+          type="button"
+          onClick={onCreateClick}
+          leftIcon={<Plus aria-hidden="true" className="h-4 w-4" />}
+          className="h-11 self-start rounded-xl px-4 xl:self-auto"
+        >
+          Nova categoria
+        </Button>
+      </header>
 
       {feedbackMessage ? (
         <AuthMessage tone={feedbackMessage.tone}>

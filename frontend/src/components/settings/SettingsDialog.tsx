@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
-type SettingsDialogSize = 'md' | 'lg' | 'xl' | 'wide';
+type SettingsDialogSize = 'md' | 'lg' | 'xl';
 
 type SettingsDialogProps = {
   children: ReactNode;
@@ -24,7 +24,6 @@ const sizeClasses: Record<SettingsDialogSize, string> = {
   md: 'max-w-2xl',
   lg: 'max-w-3xl',
   xl: 'max-w-4xl',
-  wide: 'max-w-6xl',
 };
 
 export function SettingsDialog({

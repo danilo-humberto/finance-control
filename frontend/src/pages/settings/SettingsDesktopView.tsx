@@ -10,15 +10,14 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { forwardRef, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import { CategoriesSettingsContent } from './CategoriesSettingsContent';
 import { GeneralPreferencesContent } from './GeneralPreferencesPage';
 import { ProfileSettingsContent } from './ProfileSettingsPage';
 import { ThemeSettingsContent } from './ThemeSettingsPage';
 
 export type SettingsDialogKey =
   | 'profile'
-  | 'categories'
   | 'theme'
   | 'preferences'
   | null;
@@ -93,10 +92,10 @@ export function SettingsDesktopView({
   userName,
   userPhotoUrl,
 }: SettingsDesktopViewProps) {
+  const navigate = useNavigate();
   const [activeDialog, setActiveDialog] = useState<SettingsDialogKey>(null);
   const triggerRefs = useRef<Record<DialogTriggerKey, HTMLButtonElement | null>>({
     profile: null,
-    categories: null,
     theme: null,
     preferences: null,
   });
@@ -177,13 +176,10 @@ export function SettingsDesktopView({
 
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
           <SettingsCard
-            ref={(node) => {
-              triggerRefs.current.categories = node;
-            }}
             title="Categorias"
             description="Organize suas categorias de receitas e despesas."
             icon={LayoutGrid}
-            onClick={() => openDialog('categories')}
+            onClick={() => navigate('/categories')}
           />
           <SettingsCard
             ref={(node) => {
@@ -230,16 +226,6 @@ export function SettingsDesktopView({
         {activeDialog === 'profile' ? (
           <ProfileSettingsContent presentation="dialog" />
         ) : null}
-      </SettingsDialog>
-
-      <SettingsDialog
-        open={activeDialog === 'categories'}
-        onOpenChange={(open) => handleOpenChange('categories', open)}
-        title="Categorias"
-        description="Organize seus gastos e receitas"
-        size="wide"
-      >
-        {activeDialog === 'categories' ? <CategoriesSettingsContent /> : null}
       </SettingsDialog>
 
       <SettingsDialog
