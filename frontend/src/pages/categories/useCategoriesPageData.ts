@@ -11,7 +11,7 @@ import {
 import {
   type CategoryListItemData,
 } from '@/components/categories/CategoryListItem';
-import { type CategoryFormValues } from '@/components/sheets/CategoryFormSheet';
+import { type CategoryFormValues } from '@/components/categories/CategoryForm';
 import {
   useCategoriesQuery,
   useCreateCategoryMutation,

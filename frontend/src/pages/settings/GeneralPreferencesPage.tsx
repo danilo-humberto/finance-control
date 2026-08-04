@@ -27,6 +27,10 @@ type PreferenceSectionProps<T extends string> = {
   onChange: (value: T) => void;
 };
 
+type GeneralPreferencesContentProps = {
+  presentation?: 'page' | 'dialog';
+};
+
 const currencyOptions: PreferenceOption<CurrencyPreference>[] = [
   {
     value: 'BRL',
@@ -70,10 +74,16 @@ function PreferenceSection<T extends string>({
   options,
   onChange,
 }: PreferenceSectionProps<T>) {
+  const titleId = `preference-${title
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, '-')}`;
+
   return (
-    <section className="space-y-2" aria-labelledby={`preference-${title}`}>
+    <section className="space-y-2" aria-labelledby={titleId}>
       <h2
-        id={`preference-${title}`}
+        id={titleId}
         className="text-[0.94rem] font-semibold leading-tight text-app-muted"
       >
         {title}
@@ -124,8 +134,9 @@ function PreferenceSection<T extends string>({
   );
 }
 
-export function GeneralPreferencesPage() {
-  const navigate = useNavigate();
+export function GeneralPreferencesContent({
+  presentation = 'page',
+}: GeneralPreferencesContentProps) {
   const {
     formatCurrency,
     formatDateLabel,
@@ -133,29 +144,10 @@ export function GeneralPreferencesPage() {
     setCurrency,
     setDateFormat,
   } = usePreferences();
+  const isDialog = presentation === 'dialog';
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-4">
-      <header className="flex items-start gap-3">
-        <button
-          type="button"
-          aria-label="Voltar para configurações"
-          onClick={() => navigate('/settings')}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text shadow-lg shadow-black/15 transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-        >
-          <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-        </button>
-
-        <div className="min-w-0">
-          <h1 className="text-[1.36rem] font-bold leading-tight text-app-text">
-            Preferências gerais
-          </h1>
-          <p className="mt-1 text-[0.8rem] leading-5 text-app-muted">
-            Ajuste moeda e datas do app
-          </p>
-        </div>
-      </header>
-
+    <div className={cn('space-y-4', isDialog && 'space-y-5')}>
       <section aria-label="Resumo das preferências">
         <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-brand-800/65 bg-brand-950/30 shadow-lg shadow-black/15">
           <div className="min-w-0 border-r border-app-border p-2.5">
@@ -185,26 +177,58 @@ export function GeneralPreferencesPage() {
         </p>
       </section>
 
-      <PreferenceSection
-        title="Moeda"
-        icon={Banknote}
-        value={preferences.currency}
-        options={currencyOptions}
-        onChange={setCurrency}
-      />
+      <div className={cn('space-y-4', isDialog && 'grid gap-5 space-y-0 md:grid-cols-2')}>
+        <PreferenceSection
+          title="Moeda"
+          icon={Banknote}
+          value={preferences.currency}
+          options={currencyOptions}
+          onChange={setCurrency}
+        />
 
-      <PreferenceSection
-        title="Formato de data"
-        icon={CalendarDays}
-        value={preferences.dateFormat}
-        options={dateFormatOptions}
-        onChange={setDateFormat}
-      />
+        <PreferenceSection
+          title="Formato de data"
+          icon={CalendarDays}
+          value={preferences.dateFormat}
+          options={dateFormatOptions}
+          onChange={setDateFormat}
+        />
+      </div>
 
       <p className="rounded-2xl border border-app-border bg-app-surface/75 p-3 text-[0.72rem] leading-5 text-app-muted shadow-lg shadow-black/15">
         Essas preferências ficam salvas neste dispositivo e já são aplicadas nas
         moedas e datas exibidas no app.
       </p>
+    </div>
+  );
+}
+
+export function GeneralPreferencesPage() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="mx-auto w-full max-w-md space-y-4">
+      <header className="flex items-start gap-3">
+        <button
+          type="button"
+          aria-label="Voltar para configurações"
+          onClick={() => navigate('/settings')}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text shadow-lg shadow-black/15 transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+        >
+          <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+        </button>
+
+        <div className="min-w-0">
+          <h1 className="text-[1.36rem] font-bold leading-tight text-app-text">
+            Preferências gerais
+          </h1>
+          <p className="mt-1 text-[0.8rem] leading-5 text-app-muted">
+            Ajuste moeda e datas do app
+          </p>
+        </div>
+      </header>
+
+      <GeneralPreferencesContent />
     </div>
   );
 }

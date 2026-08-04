@@ -1,7 +1,14 @@
 import { type ThemeMode } from '@/contexts/ThemeContext';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Check, Monitor, Moon, Sun, type LucideIcon } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  Monitor,
+  Moon,
+  Sun,
+  type LucideIcon,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 type ThemeOption = {
@@ -9,6 +16,10 @@ type ThemeOption = {
   title: string;
   description: string;
   icon: LucideIcon;
+};
+
+type ThemeSettingsContentProps = {
+  presentation?: 'page' | 'dialog';
 };
 
 const themeOptions: ThemeOption[] = [
@@ -40,32 +51,14 @@ function getThemeLabel(theme: ThemeMode) {
   return theme === 'dark' ? 'Escuro' : 'Claro';
 }
 
-export function ThemeSettingsPage() {
-  const navigate = useNavigate();
+export function ThemeSettingsContent({
+  presentation = 'page',
+}: ThemeSettingsContentProps) {
   const { resolvedTheme, setTheme, theme } = useTheme();
+  const isDialog = presentation === 'dialog';
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-4">
-      <header className="flex items-start gap-3">
-        <button
-          type="button"
-          aria-label="Voltar para configurações"
-          onClick={() => navigate('/settings')}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text shadow-lg shadow-black/15 transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-        >
-          <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-        </button>
-
-        <div className="min-w-0">
-          <h1 className="text-[1.36rem] font-bold leading-tight text-app-text">
-            Tema
-          </h1>
-          <p className="mt-1 text-[0.8rem] leading-5 text-app-muted">
-            Escolha como o app deve aparecer
-          </p>
-        </div>
-      </header>
-
+    <div className={cn('space-y-4', isDialog && 'space-y-5')}>
       <section className="space-y-2" aria-labelledby="theme-current-title">
         <h2
           id="theme-current-title"
@@ -92,7 +85,12 @@ export function ThemeSettingsPage() {
           Selecionar tema
         </h2>
 
-        <div className="overflow-hidden rounded-2xl border border-app-border bg-app-surface/75 shadow-lg shadow-black/15">
+        <div
+          className={cn(
+            'overflow-hidden rounded-2xl border border-app-border bg-app-surface/75 shadow-lg shadow-black/15',
+            isDialog && 'grid overflow-visible bg-transparent shadow-none sm:grid-cols-3',
+          )}
+        >
           {themeOptions.map((option) => {
             const Icon = option.icon;
             const isSelected = option.value === theme;
@@ -103,7 +101,13 @@ export function ThemeSettingsPage() {
                 type="button"
                 onClick={() => setTheme(option.value)}
                 aria-pressed={isSelected}
-                className="flex w-full items-center gap-2.5 border-b border-app-border/80 px-2.5 py-3 text-left transition-colors last:border-b-0 hover:bg-app-elevated/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500"
+                className={cn(
+                  'flex w-full items-center gap-2.5 border-b border-app-border/80 px-2.5 py-3 text-left transition-colors last:border-b-0 hover:bg-app-elevated/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500',
+                  isDialog &&
+                    'relative min-h-40 flex-col items-start rounded-2xl border border-app-border p-4 last:border-b hover:border-brand-800/80',
+                  isDialog && isSelected &&
+                    'border-brand-600 bg-brand-950/35 ring-1 ring-brand-600',
+                )}
               >
                 <span
                   className={cn(
@@ -120,13 +124,23 @@ export function ThemeSettingsPage() {
                   <span className="block truncate text-[0.86rem] font-semibold leading-5 text-app-text">
                     {option.title}
                   </span>
-                  <span className="mt-0.5 block text-[0.68rem] leading-4 text-app-muted">
+                  <span
+                    className={cn(
+                      'mt-0.5 block text-[0.68rem] leading-4 text-app-muted',
+                      isDialog && 'mt-2 text-xs leading-5',
+                    )}
+                  >
                     {option.description}
                   </span>
                 </span>
 
                 {isSelected ? (
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500/15 text-brand-400">
+                  <span
+                    className={cn(
+                      'flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500/15 text-brand-400',
+                      isDialog && 'absolute right-4 top-4',
+                    )}
+                  >
                     <Check aria-hidden="true" className="h-4 w-4" />
                   </span>
                 ) : null}
@@ -135,6 +149,36 @@ export function ThemeSettingsPage() {
           })}
         </div>
       </section>
+    </div>
+  );
+}
+
+export function ThemeSettingsPage() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="mx-auto w-full max-w-md space-y-4">
+      <header className="flex items-start gap-3">
+        <button
+          type="button"
+          aria-label="Voltar para configurações"
+          onClick={() => navigate('/settings')}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text shadow-lg shadow-black/15 transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+        >
+          <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+        </button>
+
+        <div className="min-w-0">
+          <h1 className="text-[1.36rem] font-bold leading-tight text-app-text">
+            Tema
+          </h1>
+          <p className="mt-1 text-[0.8rem] leading-5 text-app-muted">
+            Escolha como o app deve aparecer
+          </p>
+        </div>
+      </header>
+
+      <ThemeSettingsContent />
     </div>
   );
 }

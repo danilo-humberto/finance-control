@@ -16,7 +16,7 @@ import {
   User,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 type ProfileInfoRowProps = {
@@ -30,6 +30,10 @@ type FeedbackMessage = {
   tone: 'error' | 'success' | 'info';
   message: string;
 } | null;
+
+type ProfileSettingsContentProps = {
+  presentation?: 'page' | 'dialog';
+};
 
 function getInitials(name: string, fallback: string) {
   const initials = name
@@ -73,7 +77,9 @@ function ProfileInfoRow({
         <p className="text-[0.68rem] font-medium leading-4 text-app-muted">
           {label}
         </p>
-        <p className={`mt-0.5 truncate text-[0.84rem] font-semibold leading-5 ${valueClass}`}>
+        <p
+          className={`mt-0.5 truncate text-[0.84rem] font-semibold leading-5 ${valueClass}`}
+        >
           {value}
         </p>
       </div>
@@ -81,8 +87,13 @@ function ProfileInfoRow({
   );
 }
 
-export function ProfileSettingsPage() {
-  const navigate = useNavigate();
+function ProfileColumn({ children }: { children: ReactNode }) {
+  return <div className="space-y-4">{children}</div>;
+}
+
+export function ProfileSettingsContent({
+  presentation = 'page',
+}: ProfileSettingsContentProps) {
   const { changePassword, updateDisplayName, user } = useAuth();
   const userName = user?.displayName || user?.email?.split('@')[0] || 'Usuário';
   const userEmail = user?.email || 'E-mail não informado';
@@ -98,8 +109,7 @@ export function ProfileSettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [profileMessage, setProfileMessage] = useState<FeedbackMessage>(null);
-  const [passwordMessage, setPasswordMessage] =
-    useState<FeedbackMessage>(null);
+  const [passwordMessage, setPasswordMessage] = useState<FeedbackMessage>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
 
@@ -210,6 +220,202 @@ export function ProfileSettingsPage() {
     }
   }
 
+  const profileSummary = (
+    <section
+      className="rounded-2xl border border-app-border bg-app-surface/75 p-3 text-center shadow-lg shadow-black/15"
+      aria-label="Resumo do perfil"
+    >
+      <UserAvatar
+        name={userName}
+        email={userEmail}
+        photoUrl={userPhotoUrl}
+        fallback={userInitials}
+        ariaLabel={`Avatar de ${userName || 'usuário'}`}
+        className="mx-auto h-20 w-20 bg-gradient-to-br from-brand-950 via-brand-900 to-brand-700 text-[1.45rem] font-bold"
+      />
+
+      <h2 className="mt-3 truncate text-[1rem] font-semibold leading-5 text-app-text">
+        {userName}
+      </h2>
+      <p className="mt-1 truncate text-[0.74rem] leading-4 text-app-muted">
+        {userEmail}
+      </p>
+
+      <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-500/15 px-2.5 py-1 text-[0.68rem] font-semibold text-brand-400">
+        <ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />
+        {providerLabel}
+      </div>
+    </section>
+  );
+
+  const accountData = (
+    <section className="space-y-2" aria-labelledby="profile-data-title">
+      <h2
+        id="profile-data-title"
+        className="text-[0.94rem] font-semibold leading-tight text-app-muted"
+      >
+        Dados da conta
+      </h2>
+
+      <div className="overflow-hidden rounded-2xl border border-app-border bg-app-surface/75 shadow-lg shadow-black/15">
+        <ProfileInfoRow label="Nome" value={userName} icon={User} />
+        <ProfileInfoRow label="E-mail" value={userEmail} icon={Mail} />
+        <ProfileInfoRow
+          label="Método de login"
+          value={providerLabel}
+          icon={BadgeCheck}
+          tone="success"
+        />
+      </div>
+    </section>
+  );
+
+  const editProfile = (
+    <section className="space-y-2" aria-labelledby="profile-edit-title">
+      <h2
+        id="profile-edit-title"
+        className="text-[0.94rem] font-semibold leading-tight text-app-muted"
+      >
+        Editar perfil
+      </h2>
+
+      <form
+        className="space-y-3 rounded-2xl border border-app-border bg-app-surface/75 p-3 shadow-lg shadow-black/15"
+        onSubmit={handleProfileSubmit}
+      >
+        <Input
+          label="Nome completo"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="Seu nome completo"
+          leftIcon={<User aria-hidden="true" className="h-4 w-4" />}
+          autoComplete="name"
+        />
+
+        {profileMessage ? (
+          <AuthMessage tone={profileMessage.tone}>
+            {profileMessage.message}
+          </AuthMessage>
+        ) : null}
+
+        <Button
+          type="submit"
+          className="h-10 w-full rounded-xl"
+          loading={isSavingProfile}
+          leftIcon={<Save aria-hidden="true" className="h-4 w-4" />}
+        >
+          Salvar nome
+        </Button>
+      </form>
+    </section>
+  );
+
+  const passwordSettings = (
+    <section className="space-y-2" aria-labelledby="profile-password-title">
+      <h2
+        id="profile-password-title"
+        className="text-[0.94rem] font-semibold leading-tight text-app-muted"
+      >
+        Senha
+      </h2>
+
+      {canChangePassword ? (
+        <form
+          className="space-y-3 rounded-2xl border border-app-border bg-app-surface/75 p-3 shadow-lg shadow-black/15"
+          onSubmit={handlePasswordSubmit}
+        >
+          <AuthField
+            label="Senha atual"
+            value={currentPassword}
+            onChange={(event) => setCurrentPassword(event.target.value)}
+            leftIcon={<Lock aria-hidden="true" className="h-4 w-4" />}
+            showPasswordToggle
+            autoComplete="current-password"
+          />
+
+          <AuthField
+            label="Nova senha"
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+            leftIcon={<KeyRound aria-hidden="true" className="h-4 w-4" />}
+            showPasswordToggle
+            autoComplete="new-password"
+          />
+
+          <AuthField
+            label="Confirmar nova senha"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            leftIcon={<KeyRound aria-hidden="true" className="h-4 w-4" />}
+            showPasswordToggle
+            autoComplete="new-password"
+          />
+
+          {passwordMessage ? (
+            <AuthMessage tone={passwordMessage.tone}>
+              {passwordMessage.message}
+            </AuthMessage>
+          ) : null}
+
+          <Button
+            type="submit"
+            className="h-10 w-full rounded-xl"
+            loading={isSavingPassword}
+            leftIcon={<Save aria-hidden="true" className="h-4 w-4" />}
+          >
+            Atualizar senha
+          </Button>
+        </form>
+      ) : (
+        <div className="rounded-2xl border border-app-border bg-app-surface/75 p-3 shadow-lg shadow-black/15">
+          <div className="flex items-start gap-2.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-icon text-brand-400">
+              <KeyRound aria-hidden="true" className="h-4 w-4" />
+            </span>
+
+            <div className="min-w-0">
+              <p className="text-[0.86rem] font-semibold leading-5 text-app-text">
+                Senha gerenciada pelo provedor
+              </p>
+              <p className="mt-1 text-[0.72rem] leading-5 text-app-muted">
+                Essa conta usa {providerLabel}. Para trocar a senha, acesse as
+                configurações desse provedor de login.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+
+  if (presentation === 'dialog') {
+    return (
+      <div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <ProfileColumn>
+          {profileSummary}
+          {accountData}
+        </ProfileColumn>
+        <ProfileColumn>
+          {editProfile}
+          {passwordSettings}
+        </ProfileColumn>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {profileSummary}
+      {accountData}
+      {editProfile}
+      {passwordSettings}
+    </div>
+  );
+}
+
+export function ProfileSettingsPage() {
+  const navigate = useNavigate();
+
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
       <header className="flex items-start gap-3">
@@ -232,165 +438,7 @@ export function ProfileSettingsPage() {
         </div>
       </header>
 
-      <section
-        className="rounded-2xl border border-app-border bg-app-surface/75 p-3 text-center shadow-lg shadow-black/15"
-        aria-label="Resumo do perfil"
-      >
-        <UserAvatar
-          name={userName}
-          email={userEmail}
-          photoUrl={userPhotoUrl}
-          fallback={userInitials}
-          ariaLabel={`Avatar de ${userName || 'usuario'}`}
-          className="mx-auto h-20 w-20 bg-gradient-to-br from-brand-950 via-brand-900 to-brand-700 text-[1.45rem] font-bold"
-        />
-
-        <h2 className="mt-3 truncate text-[1rem] font-semibold leading-5 text-app-text">
-          {userName}
-        </h2>
-        <p className="mt-1 truncate text-[0.74rem] leading-4 text-app-muted">
-          {userEmail}
-        </p>
-
-        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-500/15 px-2.5 py-1 text-[0.68rem] font-semibold text-brand-400">
-          <ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />
-          {providerLabel}
-        </div>
-      </section>
-
-      <section className="space-y-2" aria-labelledby="profile-data-title">
-        <h2
-          id="profile-data-title"
-          className="text-[0.94rem] font-semibold leading-tight text-app-muted"
-        >
-          Dados da conta
-        </h2>
-
-        <div className="overflow-hidden rounded-2xl border border-app-border bg-app-surface/75 shadow-lg shadow-black/15">
-          <ProfileInfoRow label="Nome" value={userName} icon={User} />
-          <ProfileInfoRow label="E-mail" value={userEmail} icon={Mail} />
-          <ProfileInfoRow
-            label="Método de login"
-            value={providerLabel}
-            icon={BadgeCheck}
-            tone="success"
-          />
-        </div>
-      </section>
-
-      <section className="space-y-2" aria-labelledby="profile-edit-title">
-        <h2
-          id="profile-edit-title"
-          className="text-[0.94rem] font-semibold leading-tight text-app-muted"
-        >
-          Editar perfil
-        </h2>
-
-        <form
-          className="space-y-3 rounded-2xl border border-app-border bg-app-surface/75 p-3 shadow-lg shadow-black/15"
-          onSubmit={handleProfileSubmit}
-        >
-          <Input
-            label="Nome completo"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Seu nome completo"
-            leftIcon={<User aria-hidden="true" className="h-4 w-4" />}
-            autoComplete="name"
-          />
-
-          {profileMessage ? (
-            <AuthMessage tone={profileMessage.tone}>
-              {profileMessage.message}
-            </AuthMessage>
-          ) : null}
-
-          <Button
-            type="submit"
-            className="h-10 w-full rounded-xl"
-            loading={isSavingProfile}
-            leftIcon={<Save aria-hidden="true" className="h-4 w-4" />}
-          >
-            Salvar nome
-          </Button>
-        </form>
-      </section>
-
-      <section className="space-y-2" aria-labelledby="profile-password-title">
-        <h2
-          id="profile-password-title"
-          className="text-[0.94rem] font-semibold leading-tight text-app-muted"
-        >
-          Senha
-        </h2>
-
-        {canChangePassword ? (
-          <form
-            className="space-y-3 rounded-2xl border border-app-border bg-app-surface/75 p-3 shadow-lg shadow-black/15"
-            onSubmit={handlePasswordSubmit}
-          >
-            <AuthField
-              label="Senha atual"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              leftIcon={<Lock aria-hidden="true" className="h-4 w-4" />}
-              showPasswordToggle
-              autoComplete="current-password"
-            />
-
-            <AuthField
-              label="Nova senha"
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              leftIcon={<KeyRound aria-hidden="true" className="h-4 w-4" />}
-              showPasswordToggle
-              autoComplete="new-password"
-            />
-
-            <AuthField
-              label="Confirmar nova senha"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              leftIcon={<KeyRound aria-hidden="true" className="h-4 w-4" />}
-              showPasswordToggle
-              autoComplete="new-password"
-            />
-
-            {passwordMessage ? (
-              <AuthMessage tone={passwordMessage.tone}>
-                {passwordMessage.message}
-              </AuthMessage>
-            ) : null}
-
-            <Button
-              type="submit"
-              className="h-10 w-full rounded-xl"
-              loading={isSavingPassword}
-              leftIcon={<Save aria-hidden="true" className="h-4 w-4" />}
-            >
-              Atualizar senha
-            </Button>
-          </form>
-        ) : (
-          <div className="rounded-2xl border border-app-border bg-app-surface/75 p-3 shadow-lg shadow-black/15">
-            <div className="flex items-start gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-icon text-brand-400">
-                <KeyRound aria-hidden="true" className="h-4 w-4" />
-              </span>
-
-              <div className="min-w-0">
-                <p className="text-[0.86rem] font-semibold leading-5 text-app-text">
-                  Senha gerenciada pelo provedor
-                </p>
-                <p className="mt-1 text-[0.72rem] leading-5 text-app-muted">
-                  Essa conta usa {providerLabel}. Para trocar a senha, acesse as
-                  configurações desse provedor de login.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </section>
+      <ProfileSettingsContent />
     </div>
   );
 }

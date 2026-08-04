@@ -1,54 +1,54 @@
-import { ProfileCard } from "@/components/settings/ProfileCard";
-import { SettingsItem } from "@/components/settings/SettingsItem";
-import { SettingsSection } from "@/components/settings/SettingsSection";
-import { useAuth } from "@/hooks/useAuth";
-import { useTheme } from "@/hooks/useTheme";
+import { ProfileCard } from '@/components/settings/ProfileCard';
+import { SettingsItem } from '@/components/settings/SettingsItem';
+import { SettingsSection } from '@/components/settings/SettingsSection';
+import { useAuth } from '@/hooks/useAuth';
+import { usePreferences } from '@/hooks/usePreferences';
+import { useTheme } from '@/hooks/useTheme';
 import {
   ChevronRight,
   LayoutGrid,
   LogOut,
   Moon,
   SlidersHorizontal,
-} from "lucide-react";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+} from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { SettingsDesktopView } from './SettingsDesktopView';
 
 function getInitials(name: string, fallback: string) {
   const initials = name
-    .split(" ")
+    .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0])
-    .join("")
+    .join('')
     .toUpperCase();
 
   return initials || fallback;
 }
 
-export function SettingsPage() {
-  const navigate = useNavigate();
-  const { logout, user } = useAuth();
-  const { theme } = useTheme();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+type SettingsMobileViewProps = {
+  isLoggingOut: boolean;
+  onLogout: () => void;
+  onNavigate: (path: string) => void;
+  themeLabel: string;
+  userEmail: string;
+  userInitials: string;
+  userName: string;
+  userPhotoUrl?: string | null;
+};
 
-  const userName = user?.displayName || user?.email?.split("@")[0] || "Usuário";
-  const userEmail = user?.email || "E-mail não informado";
-  const userInitials = getInitials(userName, "U");
-  const userPhotoUrl = user?.photoURL;
-  const themeLabel =
-    theme === "system" ? "Automático" : theme === "dark" ? "Escuro" : "Claro";
-
-  async function handleLogout() {
-    setIsLoggingOut(true);
-
-    try {
-      await logout();
-      navigate("/login", { replace: true });
-    } finally {
-      setIsLoggingOut(false);
-    }
-  }
-
+function SettingsMobileView({
+  isLoggingOut,
+  onLogout,
+  onNavigate,
+  themeLabel,
+  userEmail,
+  userInitials,
+  userName,
+  userPhotoUrl,
+}: SettingsMobileViewProps) {
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
       <header className="space-y-1">
@@ -65,7 +65,7 @@ export function SettingsPage() {
         email={userEmail}
         initials={userInitials}
         photoUrl={userPhotoUrl}
-        onClick={() => navigate("/settings/profile")}
+        onClick={() => onNavigate('/settings/profile')}
       />
 
       <SettingsSection title="Preferências">
@@ -73,33 +73,85 @@ export function SettingsPage() {
           title="Categorias"
           description="Organize gastos e receitas"
           icon={LayoutGrid}
-          onClick={() => navigate("/categories")}
+          onClick={() => onNavigate('/categories')}
         />
         <SettingsItem
           title="Tema"
           description="Escolha entre claro, escuro ou automático"
           icon={Moon}
           badge={themeLabel}
-          onClick={() => navigate("/settings/theme")}
+          onClick={() => onNavigate('/settings/theme')}
         />
         <SettingsItem
           title="Preferências gerais"
           description="Moeda e datas"
           icon={SlidersHorizontal}
-          onClick={() => navigate("/settings/preferences")}
+          onClick={() => onNavigate('/settings/preferences')}
         />
       </SettingsSection>
 
       <button
         type="button"
-        onClick={handleLogout}
+        onClick={onLogout}
         disabled={isLoggingOut}
         className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-red-500/20 bg-red-950/15 px-4 text-[0.9rem] font-semibold text-red-300 shadow-lg shadow-black/15 transition-colors hover:bg-red-950/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <LogOut aria-hidden="true" className="h-5 w-5" />
-        <span>{isLoggingOut ? "Saindo..." : "Sair da conta"}</span>
+        <span>{isLoggingOut ? 'Saindo...' : 'Sair da conta'}</span>
         <ChevronRight aria-hidden="true" className="h-4 w-4 opacity-0" />
       </button>
     </div>
+  );
+}
+
+export function SettingsPage() {
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
+  const { preferences } = usePreferences();
+  const { theme } = useTheme();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const userName = user?.displayName || user?.email?.split('@')[0] || 'Usuário';
+  const userEmail = user?.email || 'E-mail não informado';
+  const userInitials = getInitials(userName, 'U');
+  const userPhotoUrl = user?.photoURL;
+  const themeLabel =
+    theme === 'system' ? 'Automático' : theme === 'dark' ? 'Escuro' : 'Claro';
+  const preferencesSummary = `${preferences.currency} • ${preferences.dateFormat}`;
+
+  async function handleLogout() {
+    setIsLoggingOut(true);
+
+    try {
+      await logout();
+      navigate('/login', { replace: true });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }
+
+  const sharedProps = {
+    isLoggingOut,
+    onLogout: handleLogout,
+    preferencesSummary,
+    themeLabel,
+    userEmail,
+    userInitials,
+    userName,
+    userPhotoUrl,
+  };
+
+  return (
+    <>
+      <div className="lg:hidden">
+        <SettingsMobileView
+          {...sharedProps}
+          onNavigate={(path) => navigate(path)}
+        />
+      </div>
+      <div className="hidden lg:block">
+        <SettingsDesktopView {...sharedProps} />
+      </div>
+    </>
   );
 }
