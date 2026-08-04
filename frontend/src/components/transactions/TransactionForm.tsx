@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/Button';
 
 const noteMaxLength = 200;
 
+export type TransactionFormPresentation = 'page' | 'dialog';
+
 type TransactionFormProps = {
   amount: string;
   amountValue: number;
@@ -36,6 +38,7 @@ type TransactionFormProps = {
   note: string;
   paymentMode: PaymentMode;
   purchaseDate: string;
+  presentation?: TransactionFormPresentation;
   selectedCardId: string;
   selectedCategoryId: string;
   selectedInvoiceId: string;
@@ -71,6 +74,7 @@ export function TransactionForm({
   note,
   paymentMode,
   purchaseDate,
+  presentation = 'page',
   selectedCardId,
   selectedCategoryId,
   selectedInvoiceId,
@@ -88,6 +92,122 @@ export function TransactionForm({
   onPurchaseDateChange,
   onSubmit,
 }: TransactionFormProps) {
+  const submitButton = (
+    <Button
+      type="submit"
+      size="lg"
+      loading={isSubmitting}
+      disabled={loadingCards || loadingCategories}
+      leftIcon={<Save aria-hidden="true" className="h-4 w-4" />}
+      className={
+        presentation === 'dialog'
+          ? 'h-11 min-w-40 rounded-xl px-5 text-[0.86rem]'
+          : 'h-11 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.86rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400'
+      }
+    >
+      {isSubmitting
+        ? 'Salvando...'
+        : isEditMode
+          ? 'Salvar alterações'
+          : 'Salvar compra'}
+    </Button>
+  );
+
+  const purchaseInfo = (
+    <PurchaseInfoCard
+      description={description}
+      amount={amount}
+      purchaseDate={purchaseDate}
+      onDescriptionChange={onDescriptionChange}
+      onAmountChange={onAmountChange}
+      onPurchaseDateChange={onPurchaseDateChange}
+    />
+  );
+
+  const purchaseDetails = (
+    <PurchaseDetailsCard
+      cards={cardOptions}
+      categories={categoryOptions}
+      invoices={invoiceOptions}
+      selectedCardId={selectedCardId}
+      selectedCategoryId={selectedCategoryId}
+      selectedInvoiceId={selectedInvoiceId}
+      loadingCards={loadingCards}
+      loadingCategories={loadingCategories}
+      errorCards={errorCards}
+      errorCategories={errorCategories}
+      onCardChange={onCardChange}
+      onCategoryChange={onCategoryChange}
+      onInvoiceChange={onInvoiceChange}
+    />
+  );
+
+  const paymentMethod = (
+    <PaymentMethodCard
+      paymentMode={paymentMode}
+      installmentCount={installmentCount}
+      onPaymentModeChange={onPaymentModeChange}
+      onInstallmentCountChange={onInstallmentCountChange}
+    />
+  );
+
+  const purchaseNote = (
+    <PurchaseNoteCard
+      note={note}
+      maxLength={noteMaxLength}
+      onNoteChange={onNoteChange}
+    />
+  );
+
+  const purchaseSummary = (
+    <PurchaseSummaryCard
+      amount={amountValue}
+      installmentCount={summaryInstallments}
+    />
+  );
+
+  if (presentation === 'dialog') {
+    return (
+      <form
+        onSubmit={onSubmit}
+        className="flex min-h-0 flex-1 flex-col overflow-hidden"
+      >
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+          {submitError ? (
+            <div className="mb-5">
+              <AuthMessage tone="error">{submitError}</AuthMessage>
+            </div>
+          ) : null}
+
+          <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+            <div className="space-y-5">
+              {purchaseInfo}
+              {purchaseDetails}
+            </div>
+            <div className="space-y-5">
+              {paymentMethod}
+              {purchaseNote}
+              {purchaseSummary}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center justify-end gap-3 border-t border-app-border bg-app-surface/95 px-6 py-4">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={isSubmitting}
+            onClick={onBack}
+            className="h-11 min-w-28 rounded-xl"
+          >
+            Cancelar
+          </Button>
+          {submitButton}
+        </div>
+      </form>
+    );
+  }
+
   return (
     <form onSubmit={onSubmit} className="mx-auto w-full max-w-md space-y-4">
       <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center gap-3">
@@ -122,63 +242,12 @@ export function TransactionForm({
 
       {submitError ? <AuthMessage tone="error">{submitError}</AuthMessage> : null}
 
-      <PurchaseInfoCard
-        description={description}
-        amount={amount}
-        purchaseDate={purchaseDate}
-        onDescriptionChange={onDescriptionChange}
-        onAmountChange={onAmountChange}
-        onPurchaseDateChange={onPurchaseDateChange}
-      />
-
-      <PurchaseDetailsCard
-        cards={cardOptions}
-        categories={categoryOptions}
-        invoices={invoiceOptions}
-        selectedCardId={selectedCardId}
-        selectedCategoryId={selectedCategoryId}
-        selectedInvoiceId={selectedInvoiceId}
-        loadingCards={loadingCards}
-        loadingCategories={loadingCategories}
-        errorCards={errorCards}
-        errorCategories={errorCategories}
-        onCardChange={onCardChange}
-        onCategoryChange={onCategoryChange}
-        onInvoiceChange={onInvoiceChange}
-      />
-
-      <PaymentMethodCard
-        paymentMode={paymentMode}
-        installmentCount={installmentCount}
-        onPaymentModeChange={onPaymentModeChange}
-        onInstallmentCountChange={onInstallmentCountChange}
-      />
-
-      <PurchaseNoteCard
-        note={note}
-        maxLength={noteMaxLength}
-        onNoteChange={onNoteChange}
-      />
-
-      <PurchaseSummaryCard
-        amount={amountValue}
-        installmentCount={summaryInstallments}
-      />
-
-      <Button
-        type="submit"
-        size="lg"
-        loading={isSubmitting}
-        disabled={loadingCards || loadingCategories}
-        leftIcon={<Save aria-hidden="true" className="h-4 w-4" />}
-        className="h-11 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.86rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400"
-      >
-        {isSubmitting
-          ? 'Salvando...'
-          : isEditMode
-            ? 'Salvar alterações'
-            : 'Salvar compra'}
-      </Button>
+      {purchaseInfo}
+      {purchaseDetails}
+      {paymentMethod}
+      {purchaseNote}
+      {purchaseSummary}
+      {submitButton}
     </form>
   );
 }

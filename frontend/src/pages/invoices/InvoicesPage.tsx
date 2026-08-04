@@ -6,7 +6,7 @@ import {
   RotateCcw,
   SlidersHorizontal,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AuthMessage } from '@/components/auth/AuthMessage';
@@ -28,6 +28,7 @@ import {
 } from '@/hooks/useInvoicesQuery';
 import { useCategoriesQuery } from '@/hooks/useCategoriesQuery';
 import { useCreditCardsQuery } from '@/hooks/useCreditCardsQuery';
+import { useNewPurchaseDialog } from '@/hooks/useNewPurchaseDialog';
 import { type CreditCard as CreditCardType } from '@/types/credit-card';
 import { type Invoice, type InvoiceInstallment } from '@/types/invoice';
 import {
@@ -38,12 +39,26 @@ import {
   getInvoiceDueDateLabel,
 } from '@/utils/invoiceCycle';
 
+const InvoicesDesktopView = lazy(() =>
+  import('./InvoicesDesktopView').then((module) => ({
+    default: module.InvoicesDesktopView,
+  })),
+);
+
 type FeedbackMessage = {
   tone: 'error' | 'success' | 'info';
   message: string;
 } | null;
 
+type InvoiceCategoryBreakdown = {
+  id: string;
+  name: string;
+  amount: number;
+  percentage: number;
+};
+
 const defaultColor = '#22c55e';
+const emptyInvoiceItems: InvoiceInstallment[] = [];
 const monthLabels = [
   'Jan',
   'Fev',
@@ -168,9 +183,55 @@ function buildInvoiceSummary(
   };
 }
 
+function buildCategoryBreakdown(
+  items: InvoiceInstallment[],
+  total: number,
+): InvoiceCategoryBreakdown[] {
+  const groupedCategories = new Map<
+    string,
+    { id: string; name: string; amount: number }
+  >();
+
+  items.forEach((item) => {
+    const currentCategory = groupedCategories.get(item.category.id);
+
+    groupedCategories.set(item.category.id, {
+      id: item.category.id,
+      name: item.category.name,
+      amount: (currentCategory?.amount ?? 0) + item.amount,
+    });
+  });
+
+  const sortedCategories = Array.from(groupedCategories.values()).sort(
+    (left, right) => right.amount - left.amount,
+  );
+  const visibleCategories = sortedCategories.slice(0, 5);
+  const remainingCategories = sortedCategories.slice(5);
+
+  if (remainingCategories.length > 0) {
+    visibleCategories.push({
+      id: 'other-categories',
+      name: 'Outras',
+      amount: remainingCategories.reduce(
+        (sum, category) => sum + category.amount,
+        0,
+      ),
+    });
+  }
+
+  return visibleCategories.map((category) => ({
+    ...category,
+    percentage: total > 0 ? (category.amount / total) * 100 : 0,
+  }));
+}
+
 export function InvoicesPage() {
   const navigate = useNavigate();
+  const { openNewPurchaseDialog } = useNewPurchaseDialog();
   const [searchParams] = useSearchParams();
+  const [isDesktopViewport, setIsDesktopViewport] = useState(() =>
+    window.matchMedia('(min-width: 1024px)').matches,
+  );
   const currentMonthYear = useMemo(() => getCurrentMonthYear(), []);
   const initialInvoiceMonthYear = useMemo(
     () =>
@@ -253,9 +314,8 @@ export function InvoicesPage() {
       month,
       year,
       ...(selectedCardId ? { creditCardId: selectedCardId } : {}),
-      ...(selectedCategoryId ? { categoryId: selectedCategoryId } : {}),
     }),
-    [month, selectedCardId, selectedCategoryId, year],
+    [month, selectedCardId, year],
   );
   const waitingForDefaultCard =
     !loadingCards && cards.length > 0 && !selectedCardId;
@@ -268,10 +328,60 @@ export function InvoicesPage() {
     : null;
   const actionLoading = installmentActionMutation.isPending;
 
-  const invoiceSummary = useMemo(
+  const invoiceItems = invoice?.items ?? emptyInvoiceItems;
+  const filteredInvoiceItems = useMemo(
+    () =>
+      selectedCategoryId
+        ? invoiceItems.filter(
+            (item) => item.category.id === selectedCategoryId,
+          )
+        : invoiceItems,
+    [invoiceItems, selectedCategoryId],
+  );
+  const filteredInvoiceTotal = useMemo(
+    () => filteredInvoiceItems.reduce((sum, item) => sum + item.amount, 0),
+    [filteredInvoiceItems],
+  );
+  const mobileInvoice = useMemo<Invoice | null>(
+    () =>
+      invoice
+        ? {
+            ...invoice,
+            total: filteredInvoiceTotal,
+            items: filteredInvoiceItems,
+            filters: {
+              ...invoice.filters,
+              categoryId: selectedCategoryId || null,
+            },
+          }
+        : null,
+    [filteredInvoiceItems, filteredInvoiceTotal, invoice, selectedCategoryId],
+  );
+  const mobileInvoiceSummary = useMemo(
+    () => buildInvoiceSummary(mobileInvoice, selectedCard, month, year),
+    [mobileInvoice, month, selectedCard, year],
+  );
+  const desktopInvoiceSummary = useMemo(
     () => buildInvoiceSummary(invoice, selectedCard, month, year),
     [invoice, month, selectedCard, year],
   );
+  const categoryBreakdown = useMemo(
+    () => buildCategoryBreakdown(invoiceItems, invoice?.total ?? 0),
+    [invoice?.total, invoiceItems],
+  );
+
+  useEffect(() => {
+    const desktopMediaQuery = window.matchMedia('(min-width: 1024px)');
+    const handleViewportChange = (event: MediaQueryListEvent) => {
+      setIsDesktopViewport(event.matches);
+    };
+
+    desktopMediaQuery.addEventListener('change', handleViewportChange);
+
+    return () => {
+      desktopMediaQuery.removeEventListener('change', handleViewportChange);
+    };
+  }, []);
 
   useEffect(() => {
     const invoiceMonthYear = parseInvoiceMonthYearParams(
@@ -450,75 +560,111 @@ export function InvoicesPage() {
   }, [actionLoading, selectedInstallment]);
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-4">
-      <header className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-[1.36rem] font-bold leading-tight text-app-text">
-            Fatura
-          </h1>
-          <p className="mt-1 text-[0.8rem] leading-5 text-app-muted">
-            Acompanhe seus gastos por fatura
-          </p>
+    <>
+      <div className="mx-auto w-full max-w-md space-y-4 lg:hidden">
+        <header className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-[1.36rem] font-bold leading-tight text-app-text">
+              Fatura
+            </h1>
+            <p className="mt-1 text-[0.8rem] leading-5 text-app-muted">
+              Acompanhe seus gastos por fatura
+            </p>
+          </div>
+
+          <button
+            type="button"
+            aria-label="Abrir filtros da fatura"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-800/60 bg-app-icon text-brand-400 shadow-lg shadow-brand-950/25 transition-colors hover:bg-brand-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          >
+            <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
+          </button>
+        </header>
+
+        {feedbackMessage ? (
+          <AuthMessage tone={feedbackMessage.tone}>
+            {feedbackMessage.message}
+          </AuthMessage>
+        ) : errorCards ? (
+          <AuthMessage tone="error">{errorCards}</AuthMessage>
+        ) : errorCategories ? (
+          <AuthMessage tone="error">{errorCategories}</AuthMessage>
+        ) : null}
+
+        <div className="space-y-2.5">
+          <InvoiceSummaryCard
+            invoice={mobileInvoiceSummary}
+            loadingCardInfo={loadingCards || waitingForDefaultCard}
+          />
         </div>
 
-        <button
-          type="button"
-          aria-label="Abrir filtros da fatura"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-800/60 bg-app-icon text-brand-400 shadow-lg shadow-brand-950/25 transition-colors hover:bg-brand-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-        >
-          <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
-        </button>
-      </header>
-
-      {feedbackMessage ? (
-        <AuthMessage tone={feedbackMessage.tone}>
-          {feedbackMessage.message}
-        </AuthMessage>
-      ) : errorCards ? (
-        <AuthMessage tone="error">{errorCards}</AuthMessage>
-      ) : errorCategories ? (
-        <AuthMessage tone="error">{errorCategories}</AuthMessage>
-      ) : null}
-
-      <div className="space-y-2.5">
-        <InvoiceSummaryCard
-          invoice={invoiceSummary}
-          loadingCardInfo={loadingCards || waitingForDefaultCard}
+        <InvoiceFilters
+          monthOptions={monthOptions}
+          cardOptions={cardOptions}
+          categoryOptions={categoryOptions}
+          selectedMonthId={selectedMonthId}
+          selectedCardId={selectedCardId}
+          selectedCategoryId={selectedCategoryId}
+          onMonthChange={handleMonthChange}
+          onCardChange={handleCardChange}
+          onCategoryChange={setSelectedCategoryId}
         />
+
+        <InvoiceItemsList
+          items={filteredInvoiceItems}
+          total={filteredInvoiceTotal}
+          loading={loadingInvoice || loadingCards || loadingCategories}
+          error={errorInvoice}
+          onRetry={() => void invoiceQuery.refetch()}
+          onNewPurchase={() => navigate('/transactions/new')}
+          onItemActionClick={handleInstallmentActionClick}
+        />
+
+        <Button
+          type="button"
+          size="lg"
+          disabled
+          title="O backend ainda não possui endpoint para marcar a fatura inteira como paga."
+          leftIcon={<CreditCard aria-hidden="true" className="h-4 w-4" />}
+          className="h-11 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.86rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400"
+        >
+          Marcar fatura como paga
+        </Button>
       </div>
 
-      <InvoiceFilters
-        monthOptions={monthOptions}
-        cardOptions={cardOptions}
-        categoryOptions={categoryOptions}
-        selectedMonthId={selectedMonthId}
-        selectedCardId={selectedCardId}
-        selectedCategoryId={selectedCategoryId}
-        onMonthChange={handleMonthChange}
-        onCardChange={handleCardChange}
-        onCategoryChange={setSelectedCategoryId}
-      />
-
-      <InvoiceItemsList
-        items={invoice?.items ?? []}
-        total={invoice?.total ?? 0}
-        loading={loadingInvoice || loadingCards || loadingCategories}
-        error={errorInvoice}
-        onRetry={() => void invoiceQuery.refetch()}
-        onNewPurchase={() => navigate('/transactions/new')}
-        onItemActionClick={handleInstallmentActionClick}
-      />
-
-      <Button
-        type="button"
-        size="lg"
-        disabled
-        title="O backend ainda não possui endpoint para marcar a fatura inteira como paga."
-        leftIcon={<CreditCard aria-hidden="true" className="h-4 w-4" />}
-        className="h-11 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.86rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400"
-      >
-        Marcar fatura como paga
-      </Button>
+      <div className="hidden lg:block">
+        {isDesktopViewport ? (
+          <Suspense fallback={<InvoicesDesktopViewLoadingFallback />}>
+            <InvoicesDesktopView
+              cardOptions={cardOptions}
+              categoryBreakdown={categoryBreakdown}
+              categoryOptions={categoryOptions}
+              feedbackMessage={feedbackMessage}
+              filteredTotal={filteredInvoiceTotal}
+              invoice={desktopInvoiceSummary}
+              items={filteredInvoiceItems}
+              loading={loadingInvoice || loadingCards || loadingCategories}
+              loadError={errorCards ?? errorCategories ?? errorInvoice}
+              monthOptions={monthOptions}
+              selectedCardId={selectedCardId}
+              selectedCategoryId={selectedCategoryId}
+              selectedMonthId={selectedMonthId}
+              onCardChange={handleCardChange}
+              onCategoryChange={setSelectedCategoryId}
+              onItemActionClick={handleInstallmentActionClick}
+              onMonthChange={handleMonthChange}
+              onNewPurchase={openNewPurchaseDialog}
+              onRetry={() => {
+                void Promise.all([
+                  cardsQuery.refetch(),
+                  categoriesQuery.refetch(),
+                  invoiceQuery.refetch(),
+                ]);
+              }}
+            />
+          </Suspense>
+        ) : null}
+      </div>
 
       <ActionSheet
         open={actionSheetOpen}
@@ -526,6 +672,18 @@ export function InvoicesPage() {
         title={selectedInstallment?.description ?? 'Parcela'}
         actions={installmentActions}
       />
+    </>
+  );
+}
+
+function InvoicesDesktopViewLoadingFallback() {
+  return (
+    <div className="space-y-6" aria-label="Carregando visualização desktop">
+      <div className="h-20 animate-pulse rounded-2xl bg-app-surface/45" />
+      <div className="grid gap-6 xl:grid-cols-12">
+        <div className="min-h-[22rem] animate-pulse rounded-2xl bg-app-surface/45 xl:col-span-5" />
+        <div className="min-h-[22rem] animate-pulse rounded-2xl bg-app-surface/45 xl:col-span-7" />
+      </div>
     </div>
   );
 }

@@ -19,6 +19,7 @@ import {
 } from '@/components/transactions/TransactionsSummary';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useNewPurchaseDialog } from '@/hooks/useNewPurchaseDialog';
 import {
   transactionsPageSize,
   useDeleteTransactionMutation,
@@ -311,6 +312,7 @@ function TransactionsLoadingState() {
 
 export function TransactionsPage() {
   const navigate = useNavigate();
+  const { openNewPurchaseDialog } = useNewPurchaseDialog();
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -570,7 +572,7 @@ export function TransactionsPage() {
           searchTerm={searchTerm}
           summary={summary}
           onAdvancedFiltersClick={() => setFiltersSheetOpen(true)}
-          onCreateClick={handleCreateClick}
+          onCreateClick={openNewPurchaseDialog}
           onDeleteTransaction={handleDesktopDeleteClick}
           onEditTransaction={handleDesktopEditClick}
           onFilterChange={setActiveFilter}
