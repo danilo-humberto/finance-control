@@ -26,6 +26,7 @@ describe('InvoicesService', () => {
       findMany: jest.Mock;
       findFirst: jest.Mock;
       update: jest.Mock;
+      updateMany: jest.Mock;
     };
   };
   let service: InvoicesService;
@@ -68,6 +69,7 @@ describe('InvoicesService', () => {
     userId,
     creditCardId,
     categoryId,
+    recurringTransactionId: null,
     description: 'Mercado',
     amount: new Prisma.Decimal(300),
     transactionType: TransactionType.EXPENSE,
@@ -127,6 +129,7 @@ describe('InvoicesService', () => {
         findMany: jest.fn(),
         findFirst: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
       },
     };
     service = new InvoicesService(prismaService as unknown as PrismaService);
@@ -182,6 +185,7 @@ describe('InvoicesService', () => {
           transaction: {
             id: transactionId,
             purchaseDate,
+            recurringTransactionId: null,
           },
         },
         {
@@ -205,6 +209,7 @@ describe('InvoicesService', () => {
           transaction: {
             id: transactionId,
             purchaseDate,
+            recurringTransactionId: null,
           },
         },
       ],
@@ -215,7 +220,7 @@ describe('InvoicesService', () => {
         userId,
         invoiceMonth: 7,
         invoiceYear: 2026,
-        status: InstallmentStatus.OPEN,
+        status: { not: InstallmentStatus.CANCELED },
         creditCardId,
         transaction: {
           categoryId,
@@ -344,5 +349,35 @@ describe('InvoicesService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
 
     expect(prismaService.installment.update).not.toHaveBeenCalled();
+  });
+
+  it('marks all open installments in an invoice as paid', async () => {
+    prismaService.creditCard.findFirst.mockResolvedValue(creditCard);
+    prismaService.installment.updateMany.mockResolvedValue({ count: 5 });
+
+    const result = await service.payInvoice(userId, {
+      month: 7,
+      year: 2026,
+      creditCardId,
+    });
+
+    expect(result).toEqual({
+      month: 7,
+      year: 2026,
+      creditCardId,
+      paidCount: 5,
+    });
+    expect(prismaService.installment.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId,
+        invoiceMonth: 7,
+        invoiceYear: 2026,
+        creditCardId,
+        status: InstallmentStatus.OPEN,
+      },
+      data: {
+        status: InstallmentStatus.PAID,
+      },
+    });
   });
 });

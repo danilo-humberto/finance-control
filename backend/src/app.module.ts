@@ -8,6 +8,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { CreditCardsModule } from './modules/credit-cards/credit-cards.module';
 import { HealthModule } from './modules/health/health.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
+import { RecurringTransactionsModule } from './modules/recurring-transactions/recurring-transactions.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -24,6 +25,7 @@ import { UsersModule } from './modules/users/users.module';
     CategoriesModule,
     TransactionsModule,
     InvoicesModule,
+    RecurringTransactionsModule,
   ],
   providers: [
     {

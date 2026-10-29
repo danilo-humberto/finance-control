@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
@@ -11,11 +12,13 @@ import type { User } from '@prisma/client';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { FirebaseAuthGuard } from '../auth/guards/firebase-auth.guard';
+import { PayInvoiceDto } from './dto/pay-invoice.dto';
 import { QueryInvoiceDto } from './dto/query-invoice.dto';
 import {
   InvoiceItemResponse,
   InvoiceResponse,
   InvoicesService,
+  PayInvoiceResponse,
 } from './invoices.service';
 
 @Controller('invoices')
@@ -29,6 +32,14 @@ export class InvoicesController {
     @Query() query: QueryInvoiceDto,
   ): Promise<InvoiceResponse> {
     return this.invoicesService.findOne(user.id, query);
+  }
+
+  @Patch('pay')
+  payInvoice(
+    @CurrentUser() user: User,
+    @Body() dto: PayInvoiceDto,
+  ): Promise<PayInvoiceResponse> {
+    return this.invoicesService.payInvoice(user.id, dto);
   }
 
   @Patch('installments/:id/pay')

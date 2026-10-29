@@ -137,6 +137,7 @@ export function TransactionForm({
       loadingCategories={loadingCategories}
       errorCards={errorCards}
       errorCategories={errorCategories}
+      isRecurring={paymentMode === 'recurring'}
       useDesktopControls={presentation === 'dialog'}
       onCardChange={onCardChange}
       onCategoryChange={onCategoryChange}
@@ -165,6 +166,7 @@ export function TransactionForm({
     <PurchaseSummaryCard
       amount={amountValue}
       installmentCount={summaryInstallments}
+      isRecurring={paymentMode === 'recurring'}
     />
   );
 

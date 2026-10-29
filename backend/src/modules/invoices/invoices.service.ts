@@ -9,6 +9,7 @@ import {
 } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { PayInvoiceDto } from './dto/pay-invoice.dto';
 import { QueryInvoiceDto } from './dto/query-invoice.dto';
 
 type InvoiceInstallmentWithRelations = Installment & {
@@ -40,6 +41,7 @@ export type InvoiceItemResponse = {
   transaction: {
     id: string;
     purchaseDate: Date;
+    recurringTransactionId: string | null;
   };
 };
 
@@ -52,6 +54,13 @@ export type InvoiceResponse = {
     categoryId: string | null;
   };
   items: InvoiceItemResponse[];
+};
+
+export type PayInvoiceResponse = {
+  month: number;
+  year: number;
+  creditCardId: string | null;
+  paidCount: number;
 };
 
 @Injectable()
@@ -85,7 +94,7 @@ export class InvoicesService {
         userId,
         invoiceMonth: query.month,
         invoiceYear: query.year,
-        status: InstallmentStatus.OPEN,
+        status: { not: InstallmentStatus.CANCELED },
         creditCardId: query.creditCardId,
         transaction: query.categoryId
           ? {
@@ -113,6 +122,35 @@ export class InvoicesService {
       items: installments.map((installment) =>
         this.mapInvoiceItem(installment),
       ),
+    };
+  }
+
+  async payInvoice(
+    userId: string,
+    dto: PayInvoiceDto,
+  ): Promise<PayInvoiceResponse> {
+    if (dto.creditCardId) {
+      await this.ensureCreditCardBelongsToUser(userId, dto.creditCardId);
+    }
+
+    const result = await this.prismaService.installment.updateMany({
+      where: {
+        userId,
+        invoiceMonth: dto.month,
+        invoiceYear: dto.year,
+        creditCardId: dto.creditCardId ?? undefined,
+        status: InstallmentStatus.OPEN,
+      },
+      data: {
+        status: InstallmentStatus.PAID,
+      },
+    });
+
+    return {
+      month: dto.month,
+      year: dto.year,
+      creditCardId: dto.creditCardId ?? null,
+      paidCount: result.count,
     };
   }
 
@@ -227,6 +265,7 @@ export class InvoicesService {
       transaction: {
         id: installment.transaction.id,
         purchaseDate: installment.transaction.purchaseDate,
+        recurringTransactionId: installment.transaction.recurringTransactionId,
       },
     };
   }

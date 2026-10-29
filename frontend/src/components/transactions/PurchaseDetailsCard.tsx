@@ -58,6 +58,7 @@ type PurchaseDetailsCardProps = {
   loadingCategories: boolean;
   errorCards: string | null;
   errorCategories: string | null;
+  isRecurring?: boolean;
   useDesktopControls?: boolean;
   onCardChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
@@ -102,6 +103,7 @@ export function PurchaseDetailsCard({
   loadingCategories,
   errorCards,
   errorCategories,
+  isRecurring = false,
   useDesktopControls = false,
   onCardChange,
   onCategoryChange,
@@ -190,7 +192,7 @@ export function PurchaseDetailsCard({
         />
 
         <PurchaseSelectRow
-          label="Fatura"
+          label={isRecurring ? "Primeira fatura" : "Fatura"}
           value={selectedInvoiceId}
           placeholder="Selecione a fatura"
           options={invoices.map((invoice) => ({
@@ -202,6 +204,7 @@ export function PurchaseDetailsCard({
           selectedDetail={
             selectedInvoice ? formatDateLabel(selectedInvoice.detail) : undefined
           }
+          helper={isRecurring ? 'Primeira cobrança projetada. As faturas seguintes serão calculadas mensalmente.' : undefined}
           disabled={invoices.length === 0}
           useDesktopControl={useDesktopControls}
           onChange={onInvoiceChange}

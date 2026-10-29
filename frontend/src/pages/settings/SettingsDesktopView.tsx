@@ -6,6 +6,7 @@ import {
   LogOut,
   Moon,
   Pencil,
+  Repeat,
   SlidersHorizontal,
   type LucideIcon,
 } from 'lucide-react';
@@ -180,6 +181,12 @@ export function SettingsDesktopView({
             description="Organize suas categorias de receitas e despesas."
             icon={LayoutGrid}
             onClick={() => navigate('/categories')}
+          />
+          <SettingsCard
+            title="Recorrências"
+            description="Gerencie assinaturas e cobranças automáticas."
+            icon={Repeat}
+            onClick={() => navigate('/recurring')}
           />
           <SettingsCard
             ref={(node) => {

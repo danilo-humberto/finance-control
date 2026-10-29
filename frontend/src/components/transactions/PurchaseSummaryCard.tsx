@@ -1,14 +1,16 @@
 import { usePreferences } from '@/hooks/usePreferences';
-import { ReceiptText } from 'lucide-react';
+import { ReceiptText, Repeat } from 'lucide-react';
 
 type PurchaseSummaryCardProps = {
   amount: number;
   installmentCount: number;
+  isRecurring?: boolean;
 };
 
 export function PurchaseSummaryCard({
   amount,
   installmentCount,
+  isRecurring = false,
 }: PurchaseSummaryCardProps) {
   const { formatCurrency } = usePreferences();
   const safeInstallments = Math.max(installmentCount, 1);
@@ -20,12 +22,16 @@ export function PurchaseSummaryCard({
       aria-label="Resumo da compra"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-app-icon text-brand-400">
-        <ReceiptText aria-hidden="true" className="h-4 w-4" />
+        {isRecurring ? (
+          <Repeat aria-hidden="true" className="h-4 w-4" />
+        ) : (
+          <ReceiptText aria-hidden="true" className="h-4 w-4" />
+        )}
       </span>
 
       <div className="min-w-0 flex-1">
         <h2 className="truncate text-[0.86rem] font-semibold leading-5 text-app-text">
-          Resumo da compra
+          {isRecurring ? 'Resumo da assinatura' : 'Resumo da compra'}
         </h2>
         <p className="mt-0.5 text-[0.68rem] leading-4 text-app-muted">Valor</p>
         <p className="text-[0.82rem] font-semibold leading-5 text-brand-400">
@@ -34,9 +40,13 @@ export function PurchaseSummaryCard({
       </div>
 
       <div className="shrink-0 text-right">
-        <p className="text-[0.68rem] leading-4 text-app-muted">Parcelas</p>
+        <p className="text-[0.68rem] leading-4 text-app-muted">
+          {isRecurring ? 'Recorrência' : 'Parcelas'}
+        </p>
         <p className="mt-0.5 text-[0.8rem] font-semibold leading-5 text-app-text">
-          {safeInstallments}x de {formatCurrency(installmentValue)}
+          {isRecurring
+            ? 'Mensal'
+            : `${safeInstallments}x de ${formatCurrency(installmentValue)}`}
         </p>
       </div>
     </section>

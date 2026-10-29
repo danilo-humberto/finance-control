@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   LogOut,
   Moon,
+  Repeat,
   SlidersHorizontal,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -74,6 +75,12 @@ function SettingsMobileView({
           description="Organize gastos e receitas"
           icon={LayoutGrid}
           onClick={() => onNavigate('/categories')}
+        />
+        <SettingsItem
+          title="Recorrências"
+          description="Assinaturas e despesas fixas"
+          icon={Repeat}
+          onClick={() => onNavigate('/recurring')}
         />
         <SettingsItem
           title="Tema"

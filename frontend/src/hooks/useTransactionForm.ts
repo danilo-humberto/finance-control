@@ -66,7 +66,8 @@ export function useTransactionForm({
       : null;
 
   const amountValue = useMemo(() => parseCurrencyInput(amount), [amount]);
-  const summaryInstallments = paymentMode === 'cash' ? 1 : installmentCount;
+  const summaryInstallments =
+    paymentMode === 'installments' ? installmentCount : 1;
 
   const selectedCard = useMemo(
     () => cards.find((card) => card.id === selectedCardId),
@@ -143,7 +144,11 @@ export function useTransactionForm({
     setAmount(formatCurrency(Math.abs(transactionToEdit.amount)));
     setPurchaseDate(toIsoDate(transactionToEdit.purchaseDate));
     setPaymentMode(
-      transactionToEdit.installmentsCount > 1 ? 'installments' : 'cash',
+      transactionToEdit.recurringTransactionId
+        ? 'recurring'
+        : transactionToEdit.installmentsCount > 1
+          ? 'installments'
+          : 'cash',
     );
     setInstallmentCount(Math.max(transactionToEdit.installmentsCount || 1, 1));
     setSelectedCardId(transactionToEdit.creditCardId ?? '');
@@ -229,7 +234,7 @@ export function useTransactionForm({
   const handlePaymentModeChange = useCallback((mode: PaymentMode) => {
     setPaymentMode(mode);
 
-    if (mode === 'cash') {
+    if (mode === 'cash' || mode === 'recurring') {
       setInstallmentCount(1);
     }
   }, []);

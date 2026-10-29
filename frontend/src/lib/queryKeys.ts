@@ -2,6 +2,9 @@ import {
   type InvoiceFilters,
 } from '@/types/invoice';
 import {
+  type QueryRecurringTransactionsParams,
+} from '@/types/recurring-transaction';
+import {
   type TransactionFilters,
 } from '@/types/transaction';
 
@@ -25,6 +28,14 @@ export const queryKeys = {
     all: ['invoices'] as const,
     detail: (filters: InvoiceFilters) =>
       [...queryKeys.invoices.all, filters] as const,
+  },
+  recurringTransactions: {
+    all: ['recurringTransactions'] as const,
+    lists: () => [...queryKeys.recurringTransactions.all, 'list'] as const,
+    list: (params?: QueryRecurringTransactionsParams) =>
+      [...queryKeys.recurringTransactions.all, 'list', params ?? {}] as const,
+    detail: (id: string) =>
+      [...queryKeys.recurringTransactions.all, 'detail', id] as const,
   },
   transactions: {
     all: ['transactions'] as const,

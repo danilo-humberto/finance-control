@@ -6,6 +6,7 @@ import { ForgotPasswordPage } from '../../pages/auth/ForgotPasswordPage';
 import { LoginPage } from '../../pages/auth/LoginPage';
 import { RegisterPage } from '../../pages/auth/RegisterPage';
 import { CategoriesPage } from '../../pages/categories/CategoriesPage';
+import { RecurringPage } from '../../pages/recurring/RecurringPage';
 import { CreditCardsPage } from '../../pages/credit-cards/CreditCardsPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { InvoicesPage } from '../../pages/invoices/InvoicesPage';
@@ -42,6 +43,7 @@ export function AppRoutes() {
             />
             <Route path="/credit-cards" element={<CreditCardsPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/recurring" element={<RecurringPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/profile" element={<ProfileSettingsPage />} />
             <Route

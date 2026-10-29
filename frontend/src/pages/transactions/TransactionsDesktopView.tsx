@@ -8,6 +8,7 @@ import {
   LoaderCircle,
   MoreVertical,
   Plus,
+  Repeat,
   Search,
   SlidersHorizontal,
   Trash2,
@@ -15,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useState, type FocusEvent, type KeyboardEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { AuthMessage } from '@/components/auth/AuthMessage';
 import {
@@ -358,6 +360,7 @@ function DesktopTransactionRow({
   onDelete: () => void;
   onEdit: () => void;
 }) {
+  const navigate = useNavigate();
   const { formatCurrency, formatDateLabel } = usePreferences();
   const [menuOpen, setMenuOpen] = useState(false);
   const isIncome = transaction.transactionType === 'INCOME';
@@ -397,14 +400,11 @@ function DesktopTransactionRow({
           {transaction.description}
         </h3>
         <p className="mt-1 truncate text-xs text-app-muted">
-          {transaction.categoryName} • {transaction.paymentLabel}
+          {transaction.categoryName} • {transaction.paymentLabel}{transaction.isRecurring ? " • Recorrente" : ""}
         </p>
       </div>
 
-      <div className="hidden min-w-0 items-center gap-2 text-sm text-app-muted xl:flex">
-        <CreditCard aria-hidden="true" className="h-4 w-4 shrink-0" />
-        <span className="truncate">{transaction.paymentLabel}</span>
-      </div>
+      <div className="hidden min-w-0 items-center gap-2 text-sm text-app-muted xl:flex">{transaction.isRecurring ? (<Repeat aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-400" />) : (<CreditCard aria-hidden="true" className="h-4 w-4 shrink-0" />)}<span className="truncate">{transaction.paymentLabel}{transaction.isRecurring ? " (Recorrente)" : ""}</span></div>
 
       <time className="text-right text-xs text-app-muted">
         {formatDateLabel(transaction.timeLabel)}
@@ -436,22 +436,38 @@ function DesktopTransactionRow({
 
         {menuOpen ? (
           <div className="absolute right-0 top-9 z-20 w-52 overflow-hidden rounded-xl border border-app-border bg-app-surface p-1.5 shadow-2xl shadow-black/40">
-            <button
-              type="button"
-              onClick={handleEdit}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-            >
-              <Edit3 aria-hidden="true" className="h-4 w-4 text-brand-400" />
-              Editar movimentação
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-400 transition-colors hover:bg-danger-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-            >
-              <Trash2 aria-hidden="true" className="h-4 w-4" />
-              Excluir movimentação
-            </button>
+            {transaction.isRecurring ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate('/recurring');
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+              >
+                <Repeat aria-hidden="true" className="h-4 w-4 text-brand-400" />
+                Gerenciar recorrências
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleEdit}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                >
+                  <Edit3 aria-hidden="true" className="h-4 w-4 text-brand-400" />
+                  Editar movimentação
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-400 transition-colors hover:bg-danger-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <Trash2 aria-hidden="true" className="h-4 w-4" />
+                  Excluir movimentação
+                </button>
+              </>
+            )}
           </div>
         ) : null}
       </div>

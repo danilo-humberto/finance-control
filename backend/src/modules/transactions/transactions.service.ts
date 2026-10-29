@@ -484,6 +484,7 @@ export class TransactionsService {
       id: transaction.id,
       creditCardId: transaction.creditCardId,
       categoryId: transaction.categoryId,
+      recurringTransactionId: transaction.recurringTransactionId,
       description: transaction.description,
       amount: this.decimalToNumber(transaction.amount),
       transactionType: transaction.transactionType,
