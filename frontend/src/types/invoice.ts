@@ -21,6 +21,7 @@ export type InvoiceInstallment = {
   transaction: {
     id: string;
     purchaseDate: string;
+    recurringTransactionId?: string | null;
   };
 };
 

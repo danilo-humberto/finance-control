@@ -1,3 +1,4 @@
+import { type CreateRecurringTransactionPayload } from '@/types/recurring-transaction';
 import { type CreateTransactionPayload } from '@/types/transaction';
 import { isIsoDate } from '@/utils/transactionForm';
 
@@ -39,11 +40,11 @@ export function buildTransactionPayload({
   );
 
   if (!trimmedDescription) {
-    throw new Error('Informe a descri\u00e7\u00e3o da compra.');
+    throw new Error('Informe a descrição da compra.');
   }
 
   if (!Number.isFinite(amountValue) || amountValue <= 0) {
-    throw new Error('Informe um valor v\u00e1lido.');
+    throw new Error('Informe um valor válido.');
   }
 
   if (!isIsoDate(purchaseDate)) {
@@ -55,7 +56,7 @@ export function buildTransactionPayload({
   }
 
   if (!selectedCardId) {
-    throw new Error('Selecione um cart\u00e3o.');
+    throw new Error('Selecione um cartão.');
   }
 
   if (!selectedInvoice) {
@@ -63,7 +64,7 @@ export function buildTransactionPayload({
   }
 
   if (!Number.isInteger(summaryInstallments) || summaryInstallments < 1) {
-    throw new Error('Informe uma quantidade v\u00e1lida de parcelas.');
+    throw new Error('Informe uma quantidade válida de parcelas.');
   }
 
   if (!selectedInvoice.month || !selectedInvoice.year) {
@@ -84,6 +85,70 @@ export function buildTransactionPayload({
   };
 
   if (trimmedNote || isEditMode) {
+    payload.notes = trimmedNote;
+  }
+
+  return payload;
+}
+
+type BuildRecurringTransactionPayloadParams = {
+  amountValue: number;
+  description: string;
+  note: string;
+  purchaseDate: string;
+  selectedCardId: string;
+  selectedCategoryId: string;
+};
+
+export function buildRecurringTransactionPayload({
+  amountValue,
+  description,
+  note,
+  purchaseDate,
+  selectedCardId,
+  selectedCategoryId,
+}: BuildRecurringTransactionPayloadParams): CreateRecurringTransactionPayload {
+  const trimmedDescription = description.trim();
+  const trimmedNote = note.trim();
+
+  if (!trimmedDescription) {
+    throw new Error('Informe a descrição da compra.');
+  }
+
+  if (!Number.isFinite(amountValue) || amountValue <= 0) {
+    throw new Error('Informe um valor válido.');
+  }
+
+  if (!isIsoDate(purchaseDate)) {
+    throw new Error('Selecione a data da compra.');
+  }
+
+  if (!selectedCategoryId) {
+    throw new Error('Selecione uma categoria.');
+  }
+
+  if (!selectedCardId) {
+    throw new Error('Selecione um cartão.');
+  }
+
+  const [yearStr, monthStr, dayStr] = purchaseDate.split('-');
+  const billingDay = Number(dayStr);
+  const startDate = new Date(
+    Date.UTC(Number(yearStr), Number(monthStr) - 1, billingDay, 12, 0, 0),
+  ).toISOString();
+
+  const payload: CreateRecurringTransactionPayload = {
+    description: trimmedDescription,
+    amount: amountValue,
+    transactionType: 'EXPENSE',
+    paymentMethod: 'CREDIT_CARD',
+    categoryId: selectedCategoryId,
+    creditCardId: selectedCardId,
+    billingDay,
+    startDate,
+  };
+
+  if (trimmedNote) {
     payload.notes = trimmedNote;
   }
 

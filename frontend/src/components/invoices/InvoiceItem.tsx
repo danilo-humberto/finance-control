@@ -13,6 +13,7 @@ import {
   Heart,
   Home,
   Plane,
+  Repeat,
   Shirt,
   ShoppingBag,
   ShoppingCart,
@@ -43,6 +44,7 @@ const iconByName: Record<string, LucideIcon> = {
   heart: Heart,
   home: Home,
   plane: Plane,
+  repeat: Repeat,
   shirt: Shirt,
   'shopping-bag': ShoppingBag,
   shoppingbag: ShoppingBag,
@@ -62,8 +64,8 @@ const statusLabel: Record<InstallmentStatus, string> = {
 export function InvoiceItem({ item, onActionClick }: InvoiceItemProps) {
   const { formatCurrency, formatDateLabel } = usePreferences();
   const Icon = getCategoryIcon(item.category.icon);
-  const installmentLabel =
-    item.totalInstallments > 1
+  const isRecurring = Boolean(item.transaction.recurringTransactionId);
+  const installmentLabel = isRecurring ? 'Recorrente' : item.totalInstallments > 1
       ? `Parcela ${item.installmentNumber}/${item.totalInstallments}`
       : 'À vista';
 
@@ -88,14 +90,12 @@ export function InvoiceItem({ item, onActionClick }: InvoiceItemProps) {
           {item.category.name} {'\u2022'}{' '}
           {formatDateLabel(formatIsoDateToBr(item.transaction.purchaseDate))}
         </span>
-        <span className="mt-0.5 block truncate text-[0.68rem] font-medium leading-4 text-brand-400">
-          {installmentLabel}
-        </span>
+        <span className="mt-0.5 flex items-center gap-1 truncate text-[0.68rem] font-medium leading-4 text-brand-400">{isRecurring ? <Repeat aria-hidden="true" className="h-3 w-3 shrink-0" /> : null}{installmentLabel}</span>
       </span>
 
       <Badge
-        variant="muted"
-        className="hidden shrink-0 rounded-md border-white/5 bg-white/[0.07] px-1.5 py-0.5 text-[0.6rem] font-medium text-app-text min-[375px]:inline-flex"
+        variant={item.status === 'PAID' ? 'success' : 'muted'}
+        className="hidden shrink-0 rounded-md px-1.5 py-0.5 text-[0.6rem] font-medium min-[375px]:inline-flex"
       >
         {statusLabel[item.status]}
       </Badge>

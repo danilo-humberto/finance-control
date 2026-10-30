@@ -3,6 +3,7 @@ import {
   Ban,
   CheckCircle2,
   CreditCard,
+  Repeat,
   RotateCcw,
   SlidersHorizontal,
 } from 'lucide-react';
@@ -20,11 +21,14 @@ import {
   type InvoiceSummaryData,
 } from '@/components/invoices/InvoiceSummaryCard';
 import { ActionSheet, type ActionSheetAction } from '@/components/modals/ActionSheet';
+import { RecurringDeleteDialog } from '@/components/transactions/RecurringDeleteDialog';
+import { useDeleteRecurringTransactionMutation } from '@/hooks/useRecurringTransactionsQuery';
 import { Button } from '@/components/ui/Button';
 import {
   type InstallmentAction,
   useInstallmentActionMutation,
   useInvoiceQuery,
+  usePayInvoiceMutation,
 } from '@/hooks/useInvoicesQuery';
 import { useCategoriesQuery } from '@/hooks/useCategoriesQuery';
 import { useCreditCardsQuery } from '@/hooks/useCreditCardsQuery';
@@ -159,15 +163,23 @@ function buildInvoiceSummary(
   month: number,
   year: number,
 ): InvoiceSummaryData {
-  const total = invoice?.total ?? 0;
+  const items = invoice?.items ?? [];
+  const openAmount = items
+    .filter((item) => item.status === 'OPEN')
+    .reduce((sum, item) => sum + item.amount, 0);
+  const paidAmount = items
+    .filter((item) => item.status === 'PAID')
+    .reduce((sum, item) => sum + item.amount, 0);
+  const total = invoice?.total ?? (openAmount + paidAmount);
   const limit = Number(selectedCard?.limitAmount) || 0;
   const usedPercentage = limit > 0 ? Math.round((total / limit) * 100) : 0;
+  const isInvoiceAllPaid = items.length > 0 && items.every((item) => item.status === 'PAID');
 
   return {
     cardName: selectedCard?.name ?? 'Fatura',
     cardLogo: selectedCard ? getCardLogo(selectedCard.name) || 'CC' : 'FC',
     cardColor: selectedCard?.color || defaultColor,
-    status: 'OPEN',
+    status: isInvoiceAllPaid ? 'PAID' : 'OPEN',
     dueDate: getInvoiceDueDateLabel(selectedCard?.dueDay, month, year),
     closingDate: getInvoiceClosingDateLabel(
       selectedCard?.closingDay,
@@ -177,8 +189,8 @@ function buildInvoiceSummary(
     ),
     total,
     limit,
-    openAmount: total,
-    paidAmount: 0,
+    openAmount,
+    paidAmount,
     usedPercentage,
   };
 }
@@ -253,6 +265,8 @@ export function InvoicesPage() {
   const [monthManuallyChanged, setMonthManuallyChanged] = useState(
     Boolean(initialInvoiceMonthYear),
   );
+  const [recurringDeleteDialogOpen, setRecurringDeleteDialogOpen] = useState(false);
+  const deleteRecurringTransactionMutation = useDeleteRecurringTransactionMutation();
   const [selectedInstallment, setSelectedInstallment] =
     useState<InvoiceInstallment | null>(null);
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
@@ -262,6 +276,7 @@ export function InvoicesPage() {
   const cardsQuery = useCreditCardsQuery();
   const categoriesQuery = useCategoriesQuery();
   const installmentActionMutation = useInstallmentActionMutation();
+  const payInvoiceMutation = usePayInvoiceMutation();
 
   const cards = cardsQuery.data ?? [];
   const categories = categoriesQuery.data ?? [];
@@ -528,36 +543,37 @@ export function InvoicesPage() {
       ];
     }
 
-    if (selectedInstallment.status === 'OPEN') {
-      return [
-        {
-          label: 'Marcar como paga',
-          description: 'Atualizar o status desta parcela para paga',
-          icon: CheckCircle2,
-          onClick: () =>
-            void handleInstallmentAction('pay', selectedInstallment),
-        },
-        {
-          label: 'Cancelar parcela',
-          description: 'Atualizar o status desta parcela para cancelada',
-          icon: Ban,
-          variant: 'danger',
-          onClick: () =>
-            void handleInstallmentAction('cancel', selectedInstallment),
-        },
-      ];
-    }
-
-    return [
-      {
-        label: 'Reabrir parcela',
-        description: 'Voltar o status desta parcela para aberta',
-        icon: RotateCcw,
-        onClick: () =>
-          void handleInstallmentAction('reopen', selectedInstallment),
-      },
-    ];
+    const actions: ActionSheetAction[] = []; if (selectedInstallment.status === "OPEN") { actions.push({ label: "Marcar como paga", description: "Atualizar o status desta parcela para paga", icon: CheckCircle2, onClick: () => void handleInstallmentAction("pay", selectedInstallment), }, { label: "Cancelar parcela", description: "Atualizar o status desta parcela para cancelada", icon: Ban, variant: "danger", onClick: () => void handleInstallmentAction("cancel", selectedInstallment), }); } else { actions.push({ label: "Reabrir parcela", description: "Voltar o status desta parcela para aberta", icon: RotateCcw, onClick: () => void handleInstallmentAction("reopen", selectedInstallment), }); } if (selectedInstallment.transaction.recurringTransactionId) { actions.push({ label: "Cancelar assinatura recorrente", description: "Encerrar cobranças automáticas desta assinatura", icon: Repeat, variant: "danger", onClick: () => { setActionSheetOpen(false); setRecurringDeleteDialogOpen(true); }, }); } return actions;
   }, [actionLoading, selectedInstallment]);
+
+  const isInvoiceAllPaid =
+    filteredInvoiceItems.length > 0 &&
+    filteredInvoiceItems.every((item) => item.status === 'PAID');
+  const isPayInvoiceDisabled =
+    filteredInvoiceItems.length === 0 ||
+    isInvoiceAllPaid ||
+    payInvoiceMutation.isPending;
+
+  async function handleConfirmRecurringDelete(includeCurrentMonth: boolean) { if (!selectedInstallment?.transaction.recurringTransactionId) { return; } try { setFeedbackMessage(null); await deleteRecurringTransactionMutation.mutateAsync({ id: selectedInstallment.transaction.recurringTransactionId, includeCurrentMonth }); setFeedbackMessage({ tone: "success", message: includeCurrentMonth ? "Assinatura cancelada e cobrança do mês removida." : "Assinatura cancelada. Cobranças futuras foram removidas." }); setSelectedInstallment(null); } catch (error) { setFeedbackMessage({ tone: "error", message: getApiErrorMessage(error) }); } }
+
+  async function handlePayInvoice() {
+    try {
+      const result = await payInvoiceMutation.mutateAsync({
+        month,
+        year,
+        creditCardId: selectedCardId || undefined,
+      });
+      setFeedbackMessage({
+        tone: 'success',
+        message: `${result.paidCount} ${result.paidCount === 1 ? 'parcela marcada' : 'parcelas marcadas'} como paga(s).`,
+      });
+    } catch (error) {
+      setFeedbackMessage({
+        tone: 'error',
+        message: getApiErrorMessage(error),
+      });
+    }
+  }
 
   return (
     <>
@@ -623,12 +639,13 @@ export function InvoicesPage() {
         <Button
           type="button"
           size="lg"
-          disabled
-          title="O backend ainda não possui endpoint para marcar a fatura inteira como paga."
+          disabled={isPayInvoiceDisabled}
+          loading={payInvoiceMutation.isPending}
+          onClick={handlePayInvoice}
           leftIcon={<CreditCard aria-hidden="true" className="h-4 w-4" />}
           className="h-11 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.86rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400"
         >
-          Marcar fatura como paga
+          {isInvoiceAllPaid ? 'Fatura já paga' : 'Marcar fatura como paga'}
         </Button>
       </div>
 
@@ -661,13 +678,17 @@ export function InvoicesPage() {
                   invoiceQuery.refetch(),
                 ]);
               }}
+              isPayDisabled={isPayInvoiceDisabled}
+              isPaying={payInvoiceMutation.isPending}
+              onPayInvoice={handlePayInvoice}
             />
           </Suspense>
         ) : null}
       </div>
 
-      <ActionSheet
-        open={actionSheetOpen}
+      <RecurringDeleteDialog open={recurringDeleteDialogOpen} onOpenChange={setRecurringDeleteDialogOpen} transactionDescription={selectedInstallment?.description ?? ""} confirming={deleteRecurringTransactionMutation.isPending} onConfirm={handleConfirmRecurringDelete} />
+
+      <ActionSheet open={actionSheetOpen}
         onOpenChange={setActionSheetOpen}
         title={selectedInstallment?.description ?? 'Parcela'}
         actions={installmentActions}

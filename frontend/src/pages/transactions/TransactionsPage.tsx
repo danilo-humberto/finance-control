@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { AuthMessage } from '@/components/auth/AuthMessage';
 import { ActionSheet } from '@/components/modals/ActionSheet';
 import { ConfirmDialog } from '@/components/modals/ConfirmDialog';
+import { RecurringDeleteDialog } from '@/components/transactions/RecurringDeleteDialog';
+import { useDeleteRecurringTransactionMutation } from '@/hooks/useRecurringTransactionsQuery';
 import { TransactionGroup } from '@/components/transactions/TransactionGroup';
 import {
   type TransactionListItemData,
@@ -37,6 +39,7 @@ import {
   LayoutGrid,
   LoaderCircle,
   Plus,
+  Repeat,
   Search,
   Trash2,
   Wallet,
@@ -245,6 +248,8 @@ function toListItem(transaction: Transaction): TransactionListItemData {
     amount: Math.abs(transaction.amount),
     transactionType: transaction.transactionType,
     timeLabel: getTimeLabel(transaction),
+    isRecurring: Boolean(transaction.recurringTransactionId),
+    recurringTransactionId: transaction.recurringTransactionId,
   };
 }
 
@@ -320,6 +325,8 @@ export function TransactionsPage() {
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [recurringDeleteDialogOpen, setRecurringDeleteDialogOpen] = useState(false);
+  const deleteRecurringTransactionMutation = useDeleteRecurringTransactionMutation();
   const [feedbackMessage, setFeedbackMessage] =
     useState<FeedbackMessage>(null);
 
@@ -345,7 +352,7 @@ export function TransactionsPage() {
   };
   const loading = transactionsQuery.isPending;
   const loadingMore = transactionsQuery.isFetchingNextPage;
-  const deleting = deleteTransactionMutation.isPending;
+  const deleting = deleteTransactionMutation.isPending || deleteRecurringTransactionMutation.isPending;
   const loadError =
     transactions.length === 0 && transactionsQuery.isError
       ? getApiErrorMessage(transactionsQuery.error)
@@ -428,8 +435,7 @@ export function TransactionsPage() {
       return;
     }
 
-    setSelectedTransaction(transaction);
-    setDeleteDialogOpen(true);
+    setSelectedTransaction(transaction); if (transaction.recurringTransactionId) { setRecurringDeleteDialogOpen(true); } else { setDeleteDialogOpen(true); }
   }
 
   function handleEditClick() {
@@ -440,9 +446,9 @@ export function TransactionsPage() {
     navigate(`/transactions/${selectedTransaction.id}/edit`);
   }
 
-  function handleDeleteClick() {
-    setDeleteDialogOpen(true);
-  }
+  function handleDeleteClick() { if (selectedTransaction?.recurringTransactionId) { setRecurringDeleteDialogOpen(true); } else { setDeleteDialogOpen(true); } }
+
+  async function handleConfirmRecurringDelete(includeCurrentMonth: boolean) { if (!selectedTransaction?.recurringTransactionId) { return; } try { setFeedbackMessage(null); await deleteRecurringTransactionMutation.mutateAsync({ id: selectedTransaction.recurringTransactionId, includeCurrentMonth }); setFeedbackMessage({ tone: "success", message: includeCurrentMonth ? "Recorrência cancelada e cobrança do mês removida." : "Recorrência cancelada. Cobranças futuras foram removidas." }); setSelectedTransaction(null); } catch (error) { setFeedbackMessage({ tone: "error", message: getApiErrorMessage(error) }); } }
 
   async function handleConfirmDelete() {
     if (!selectedTransaction) {
@@ -586,21 +592,35 @@ export function TransactionsPage() {
         open={actionSheetOpen}
         onOpenChange={setActionSheetOpen}
         title={selectedTransaction ? selectedTransaction.description : 'Movimentação'}
-        actions={[
-          {
-            label: 'Editar movimentação',
-            description: 'Alterar dados desta movimentação',
-            icon: Edit3,
-            onClick: handleEditClick,
-          },
-          {
-            label: 'Excluir movimentação',
-            description: 'Remover esta movimentação',
-            icon: Trash2,
-            variant: 'danger',
-            onClick: handleDeleteClick,
-          },
-        ]}
+        actions={
+          selectedTransaction?.recurringTransactionId
+            ? [
+                {
+                  label: 'Gerenciar recorrências',
+                  description: 'Configurar ou cancelar cobranças recorrentes',
+                  icon: Repeat,
+                  onClick: () => {
+                    setActionSheetOpen(false);
+                    navigate('/recurring');
+                  },
+                },
+              ]
+            : [
+                {
+                  label: 'Editar movimentação',
+                  description: 'Alterar dados desta movimentação',
+                  icon: Edit3,
+                  onClick: handleEditClick,
+                },
+                {
+                  label: 'Excluir movimentação',
+                  description: 'Remover esta movimentação',
+                  icon: Trash2,
+                  variant: 'danger',
+                  onClick: handleDeleteClick,
+                },
+              ]
+        }
       />
 
       <ActionSheet
@@ -629,8 +649,9 @@ export function TransactionsPage() {
         ]}
       />
 
-      <ConfirmDialog
-        open={deleteDialogOpen}
+      <RecurringDeleteDialog open={recurringDeleteDialogOpen} onOpenChange={setRecurringDeleteDialogOpen} transactionDescription={selectedTransaction?.description ?? ""} confirming={deleteRecurringTransactionMutation.isPending} onConfirm={handleConfirmRecurringDelete} />
+
+      <ConfirmDialog open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         title="Excluir movimentação"
         description="Tem certeza que deseja excluir esta movimentação?"

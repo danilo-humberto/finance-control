@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils';
-import { CreditCard, Layers3, Minus, Plus } from 'lucide-react';
+import { CreditCard, Layers3, Minus, Plus, Repeat } from 'lucide-react';
 import { type ReactNode } from 'react';
 
-export type PaymentMode = 'cash' | 'installments';
+export type PaymentMode = 'cash' | 'installments' | 'recurring';
 
 const maxInstallments = 48;
 
@@ -20,7 +20,8 @@ export function PaymentMethodCard({
   onInstallmentCountChange,
 }: PaymentMethodCardProps) {
   const isCash = paymentMode === 'cash';
-  const visibleInstallments = isCash ? 1 : installmentCount;
+  const isRecurring = paymentMode === 'recurring';
+  const visibleInstallments = isCash || isRecurring ? 1 : installmentCount;
 
   function updateInstallments(nextCount: number) {
     onInstallmentCountChange(Math.min(Math.max(nextCount, 1), maxInstallments));
@@ -33,56 +34,78 @@ export function PaymentMethodCard({
       </h2>
 
       <div className="overflow-hidden rounded-2xl border border-app-border bg-app-surface/75 shadow-lg shadow-black/15">
-        <div className="grid grid-cols-2 gap-1 p-1.5">
+        <div className="grid grid-cols-3 gap-1 p-1.5">
           <PaymentModeButton
             active={isCash}
-            icon={<CreditCard aria-hidden="true" className="h-4 w-4" />}
+            icon={<CreditCard aria-hidden="true" className="h-4 w-4 shrink-0" />}
             label="À vista"
             onClick={() => onPaymentModeChange('cash')}
           />
           <PaymentModeButton
-            active={!isCash}
-            icon={<Layers3 aria-hidden="true" className="h-4 w-4" />}
+            active={paymentMode === 'installments'}
+            icon={<Layers3 aria-hidden="true" className="h-4 w-4 shrink-0" />}
             label="Parcelado"
             onClick={() => onPaymentModeChange('installments')}
           />
+          <PaymentModeButton
+            active={isRecurring}
+            icon={<Repeat aria-hidden="true" className="h-4 w-4 shrink-0" />}
+            label="Recorrente"
+            onClick={() => onPaymentModeChange('recurring')}
+          />
         </div>
 
-        <div className="flex items-center justify-between gap-2.5 border-t border-app-border p-2.5">
-          <div className="min-w-0">
-            <p className="text-[0.72rem] font-medium leading-none text-app-muted">
-              Número de parcelas
-            </p>
-            <div className="mt-2 flex min-w-0 items-center gap-2.5">
-              <Layers3 aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-400" />
-              <p className="truncate text-[0.8rem] font-semibold text-app-text">
-                {visibleInstallments}{' '}
-                {visibleInstallments === 1 ? 'parcela' : 'parcelas'}
-                {isCash ? ' (à vista)' : null}
+        {isRecurring ? (
+          <div className="flex items-center gap-2.5 border-t border-app-border p-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-500/10 text-brand-400">
+              <Repeat aria-hidden="true" className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[0.72rem] font-medium leading-none text-app-muted">
+                Tipo de cobrança
+              </p>
+              <p className="mt-1 truncate text-[0.8rem] font-semibold text-app-text">
+                Mensal (12 meses projetados na fatura)
               </p>
             </div>
           </div>
+        ) : (
+          <div className="flex items-center justify-between gap-2.5 border-t border-app-border p-2.5">
+            <div className="min-w-0">
+              <p className="text-[0.72rem] font-medium leading-none text-app-muted">
+                Número de parcelas
+              </p>
+              <div className="mt-2 flex min-w-0 items-center gap-2.5">
+                <Layers3 aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-400" />
+                <p className="truncate text-[0.8rem] font-semibold text-app-text">
+                  {visibleInstallments}{' '}
+                  {visibleInstallments === 1 ? 'parcela' : 'parcelas'}
+                  {isCash ? ' (à vista)' : null}
+                </p>
+              </div>
+            </div>
 
-          <div className="grid h-9 w-[7rem] shrink-0 grid-cols-3 overflow-hidden rounded-xl bg-app-elevated/65">
-            <StepperButton
-              label="Diminuir parcelas"
-              disabled={isCash || visibleInstallments <= 1}
-              onClick={() => updateInstallments(visibleInstallments - 1)}
-            >
-              <Minus aria-hidden="true" className="h-4 w-4" />
-            </StepperButton>
-            <span className="flex items-center justify-center text-sm font-semibold text-app-text">
-              {visibleInstallments}
-            </span>
-            <StepperButton
-              label="Aumentar parcelas"
-              disabled={isCash || visibleInstallments >= maxInstallments}
-              onClick={() => updateInstallments(visibleInstallments + 1)}
-            >
-              <Plus aria-hidden="true" className="h-4 w-4" />
-            </StepperButton>
+            <div className="grid h-9 w-[7rem] shrink-0 grid-cols-3 overflow-hidden rounded-xl bg-app-elevated/65">
+              <StepperButton
+                label="Diminuir parcelas"
+                disabled={isCash || visibleInstallments <= 1}
+                onClick={() => updateInstallments(visibleInstallments - 1)}
+              >
+                <Minus aria-hidden="true" className="h-4 w-4" />
+              </StepperButton>
+              <span className="flex items-center justify-center text-sm font-semibold text-app-text">
+                {visibleInstallments}
+              </span>
+              <StepperButton
+                label="Aumentar parcelas"
+                disabled={isCash || visibleInstallments >= maxInstallments}
+                onClick={() => updateInstallments(visibleInstallments + 1)}
+              >
+                <Plus aria-hidden="true" className="h-4 w-4" />
+              </StepperButton>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );
@@ -101,14 +124,14 @@ function PaymentModeButton({ active, icon, label, onClick }: PaymentModeButtonPr
       type="button"
       onClick={onClick}
       className={cn(
-        'flex h-9 items-center justify-center gap-2 rounded-xl text-[0.76rem] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+        'flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-xl px-1 text-[0.74rem] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
         active
           ? 'bg-brand-950/85 text-app-text'
           : 'bg-app-bg/25 text-app-muted hover:bg-app-elevated hover:text-app-text',
       )}
     >
       <span className={active ? 'text-brand-400' : 'text-app-muted'}>{icon}</span>
-      {label}
+      <span className="truncate">{label}</span>
     </button>
   );
 }

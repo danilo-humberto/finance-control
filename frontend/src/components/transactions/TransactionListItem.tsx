@@ -11,6 +11,7 @@ import {
   Home,
   MoreVertical,
   Plane,
+  Repeat,
   ShoppingBag,
   ShoppingCart,
   Tag,
@@ -30,6 +31,8 @@ export type TransactionListItemData = {
   amount: number;
   transactionType: TransactionType;
   timeLabel: string;
+  isRecurring?: boolean;
+  recurringTransactionId?: string | null;
 };
 
 type TransactionListItemProps = {
@@ -51,6 +54,7 @@ const categoryIconMap: Record<string, LucideIcon> = {
   heart: Heart,
   home: Home,
   plane: Plane,
+  repeat: Repeat,
   'shopping-bag': ShoppingBag,
   shoppingbag: ShoppingBag,
   shoppingcart: ShoppingCart,
@@ -113,9 +117,7 @@ export function TransactionListItem({
         <h3 className="truncate text-[0.86rem] font-semibold leading-5 text-app-text">
           {transaction.description}
         </h3>
-        <p className="mt-0.5 truncate text-[0.68rem] leading-4 text-app-muted">
-          {transaction.categoryName} • {transaction.paymentLabel}
-        </p>
+        <p className="mt-0.5 flex items-center gap-1 truncate text-[0.68rem] leading-4 text-app-muted"><span className="truncate">{transaction.categoryName} • {transaction.paymentLabel}</span>{transaction.isRecurring ? (<span className="inline-flex shrink-0 items-center gap-0.5 font-medium text-brand-400">• <Repeat aria-hidden="true" className="h-3 w-3" /> Recorrente</span>) : null}</p>
       </div>
 
       <div className="flex min-w-0 items-center justify-end gap-1.5">

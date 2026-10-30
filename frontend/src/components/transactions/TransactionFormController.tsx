@@ -8,13 +8,17 @@ import {
 } from '@/components/transactions/TransactionForm';
 import { TransactionFormSkeleton } from '@/components/transactions/TransactionFormSkeleton';
 import { Button } from '@/components/ui/Button';
+import { useCreateRecurringTransactionMutation } from '@/hooks/useRecurringTransactionsQuery';
 import { useTransactionForm } from '@/hooks/useTransactionForm';
 import {
   useCreateTransactionMutation,
   useUpdateTransactionMutation,
 } from '@/hooks/useTransactionsQuery';
 import { type CreateTransactionPayload } from '@/types/transaction';
-import { buildTransactionPayload } from '@/utils/transactionPayload';
+import {
+  buildRecurringTransactionPayload,
+  buildTransactionPayload,
+} from '@/utils/transactionPayload';
 
 type TransactionFormControllerProps = {
   onCancel: () => void;
@@ -59,6 +63,8 @@ export function TransactionFormController({
 }: TransactionFormControllerProps) {
   const createTransactionMutation = useCreateTransactionMutation();
   const updateTransactionMutation = useUpdateTransactionMutation();
+  const createRecurringTransactionMutation =
+    useCreateRecurringTransactionMutation();
   const {
     amount,
     amountValue,
@@ -96,7 +102,9 @@ export function TransactionFormController({
   });
   const [submitError, setSubmitError] = useState<string | null>(null);
   const isSubmitting =
-    createTransactionMutation.isPending || updateTransactionMutation.isPending;
+    createTransactionMutation.isPending ||
+    updateTransactionMutation.isPending ||
+    createRecurringTransactionMutation.isPending;
 
   useEffect(() => {
     onSubmittingChange?.(isSubmitting);
@@ -159,6 +167,33 @@ export function TransactionFormController({
     }
 
     setSubmitError(null);
+
+    if (!isEditMode && paymentMode === 'recurring') {
+      let recurringPayload;
+
+      try {
+        recurringPayload = buildRecurringTransactionPayload({
+          amountValue,
+          description,
+          note,
+          purchaseDate,
+          selectedCardId,
+          selectedCategoryId,
+        });
+      } catch (error) {
+        setSubmitError(getApiErrorMessage(error));
+        return;
+      }
+
+      try {
+        await createRecurringTransactionMutation.mutateAsync(recurringPayload);
+        onDirtyChange?.(false);
+        onSuccess();
+      } catch (error) {
+        setSubmitError(getApiErrorMessage(error));
+      }
+      return;
+    }
 
     let payload: CreateTransactionPayload;
 

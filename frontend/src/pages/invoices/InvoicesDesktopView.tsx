@@ -7,6 +7,7 @@ import {
   MoreHorizontal,
   Plus,
   Receipt,
+  Repeat,
   Tag,
   type LucideIcon,
 } from 'lucide-react';
@@ -28,6 +29,7 @@ import {
 import { AuthMessage } from '@/components/auth/AuthMessage';
 import { type InvoiceFilterOption } from '@/components/invoices/InvoiceFilters';
 import { type InvoiceSummaryData } from '@/components/invoices/InvoiceSummaryCard';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import {
   Command,
@@ -79,6 +81,9 @@ type InvoicesDesktopViewProps = {
   onMonthChange: (value: string) => void;
   onNewPurchase: () => void;
   onRetry: () => void;
+  isPayDisabled?: boolean;
+  isPaying?: boolean;
+  onPayInvoice?: () => void;
 };
 
 type DesktopFilterConfig = {
@@ -117,6 +122,9 @@ export function InvoicesDesktopView({
   onMonthChange,
   onNewPurchase,
   onRetry,
+  isPayDisabled = false,
+  isPaying = false,
+  onPayInvoice,
 }: InvoicesDesktopViewProps) {
   const filters: DesktopFilterConfig[] = [
     {
@@ -163,14 +171,31 @@ export function InvoicesDesktopView({
           </p>
         </div>
 
-        <Button
-          type="button"
-          onClick={onNewPurchase}
-          leftIcon={<Plus aria-hidden="true" className="h-5 w-5" />}
-          className="h-11 shrink-0 rounded-xl px-5"
-        >
-          Nova compra
-        </Button>
+        <div className="flex items-center gap-3">
+          {onPayInvoice ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isPayDisabled}
+              loading={isPaying}
+              onClick={onPayInvoice}
+              leftIcon={<CreditCard aria-hidden="true" className="h-4 w-4" />}
+              className="h-11 shrink-0 rounded-xl px-4"
+            >
+              {isPayDisabled && items.length > 0 && items.every((i) => i.status === 'PAID')
+                ? 'Fatura já paga'
+                : 'Marcar fatura como paga'}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            onClick={onNewPurchase}
+            leftIcon={<Plus aria-hidden="true" className="h-5 w-5" />}
+            className="h-11 shrink-0 rounded-xl px-5"
+          >
+            Nova compra
+          </Button>
+        </div>
       </header>
 
       {feedbackMessage ? (
@@ -355,7 +380,9 @@ function InvoiceUsagePanel({ invoice }: { invoice: InvoiceSummaryData }) {
           <h2 className="truncate text-base font-semibold text-app-text">
             {invoice.cardName}
           </h2>
-          <p className="mt-1 text-xs font-medium text-brand-400">Fatura aberta</p>
+          <p className={cn("mt-1 text-xs font-medium", invoice.status === 'PAID' ? "text-emerald-400" : "text-brand-400")}>
+            {invoice.status === 'PAID' ? 'Fatura paga' : 'Fatura aberta'}
+          </p>
         </div>
       </div>
 
@@ -701,9 +728,12 @@ function InvoiceItemsTable({
                     </time>
                   </td>
                   <td className="px-4 py-3 text-app-muted">
-                    {item.totalInstallments > 1
-                      ? `${item.installmentNumber}/${item.totalInstallments}`
-                      : 'À vista'}
+                    <div className="flex items-center gap-2">
+                      <span>{item.transaction.recurringTransactionId ? (<span className="inline-flex items-center gap-1 font-medium text-brand-400"><Repeat aria-hidden="true" className="h-3.5 w-3.5" />Recorrente</span>) : item.totalInstallments > 1 ? `${item.installmentNumber}/${item.totalInstallments}` : 'À vista'}</span>
+                      <Badge variant={item.status === 'PAID' ? 'success' : 'muted'} className="text-[0.62rem] px-1.5 py-0 leading-tight">
+                        {item.status === 'PAID' ? 'Paga' : 'Aberta'}
+                      </Badge>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right font-semibold text-app-text">
                     {formatCurrency(item.amount)}

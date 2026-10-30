@@ -5,7 +5,11 @@ import {
   markInstallmentAsPaid,
   reopenInstallment,
 } from '@/services/installmentsService';
-import { getInvoice } from '@/services/invoicesService';
+import {
+  getInvoice,
+  payInvoice,
+  type PayInvoicePayload,
+} from '@/services/invoicesService';
 import { queryKeys } from '@/lib/queryKeys';
 import { type InvoiceFilters } from '@/types/invoice';
 
@@ -43,6 +47,27 @@ export function useInstallmentActionMutation() {
 
       return cancelInstallment(installmentId);
     },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.invoices.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.creditCards.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboard.all,
+        }),
+      ]);
+    },
+  });
+}
+
+export function usePayInvoiceMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: PayInvoicePayload) => payInvoice(payload),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({

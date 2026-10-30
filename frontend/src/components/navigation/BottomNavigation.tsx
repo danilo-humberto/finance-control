@@ -194,30 +194,24 @@ export function BottomNavigation() {
     <>
       <nav
         aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-40 h-[calc(78px+env(safe-area-inset-bottom))] w-full overflow-visible rounded-t-[18px] border-t border-white/[0.06] bg-[#101113] pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_26px_rgba(0,0,0,0.42)] lg:hidden"
+        className="fixed bottom-[calc(1.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 h-[58px] w-[calc(100%-1.75rem)] max-w-[364px] -translate-x-1/2 rounded-full border border-white/[0.12] bg-[#101216]/75 p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.55),0_2px_8px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 lg:hidden"
       >
-        <div className="relative mx-auto grid h-[78px] max-w-md grid-cols-5 items-start px-3.5 pt-7">
+        <div className="grid h-full w-full grid-cols-5 items-center gap-1">
           {navigationItems.slice(0, 2).map((item) => (
             <BottomNavigationItem key={item.to} {...item} />
           ))}
 
-          <button
-            type="button"
-            onClick={() => setQuickCreateOpen(true)}
-            aria-current={isNewPurchaseRoute ? 'page' : undefined}
-            className={cn(
-              'relative flex h-10 flex-col items-center justify-end rounded-xl px-1 text-[0.58rem] font-medium leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300',
-              isNewPurchaseRoute
-                ? 'text-brand-400'
-                : 'text-app-muted hover:text-app-text',
-            )}
-            aria-label="Adicionar"
-          >
-            <span className="absolute -top-[30px] left-1/2 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full bg-gradient-to-br from-brand-300 via-brand-500 to-brand-700 text-white shadow-[0_0_0_5px_rgba(34,197,94,0.1),0_10px_24px_rgba(34,197,94,0.45)] transition-transform hover:scale-105">
-              <Plus aria-hidden="true" className="h-5 w-5" />
-            </span>
-            <span>Nova</span>
-          </button>
+          <div className="flex h-full items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setQuickCreateOpen(true)}
+              aria-current={isNewPurchaseRoute ? 'page' : undefined}
+              className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-300 via-brand-500 to-brand-600 text-slate-950 shadow-[0_2px_12px_rgba(34,197,94,0.4)] transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+              aria-label="Nova compra ou cadastro rápido"
+            >
+              <Plus aria-hidden="true" className="h-5 w-5 stroke-[2.4] transition-transform duration-200 group-hover:rotate-90" />
+            </button>
+          </div>
 
           {navigationItems.slice(2).map((item) => (
             <BottomNavigationItem key={item.to} {...item} />
@@ -275,16 +269,15 @@ function BottomNavigationItem({ label, to, icon: Icon }: BottomNavigationItemPro
       end={to === '/'}
       className={({ isActive }) =>
         cn(
-          'relative flex h-10 flex-col items-center justify-start gap-1 rounded-xl px-1 pt-1 text-[0.58rem] font-medium leading-none transition-colors',
-          'after:absolute after:-top-1 after:left-1/2 after:h-0.5 after:w-6 after:-translate-x-1/2 after:rounded-full after:bg-transparent',
+          'group relative flex h-full flex-col items-center justify-center rounded-full px-1 py-1 transition-all duration-200 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
           isActive
-            ? 'text-brand-400 after:bg-brand-500'
-            : 'text-app-muted hover:text-app-text',
+            ? 'bg-white/[0.12] text-brand-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]'
+            : 'text-app-muted hover:bg-white/[0.05] hover:text-app-text active:scale-95',
         )
       }
     >
-      <Icon aria-hidden="true" className="h-4 w-4" />
-      <span className="max-w-full truncate">{label}</span>
+      <Icon aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-hover:scale-105" />
+      <span className="mt-0.5 max-w-full truncate text-[0.6rem] font-medium leading-none">{label}</span>
     </NavLink>
   );
 }

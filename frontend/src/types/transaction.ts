@@ -30,6 +30,7 @@ export type Transaction = {
   purchaseDate: string;
   categoryId: string;
   creditCardId?: string | null;
+  recurringTransactionId?: string | null;
   installmentsCount: number;
   invoiceStartMonth?: number | null;
   invoiceStartYear?: number | null;
@@ -45,6 +46,7 @@ export type TransactionInstallment = {
   id: string;
   transactionId: string;
   creditCardId?: string | null;
+  recurringTransactionId?: string | null;
   amount: number;
   installmentNumber: number;
   totalInstallments: number;

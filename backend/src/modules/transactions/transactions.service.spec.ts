@@ -111,6 +111,7 @@ describe('TransactionsService', () => {
     userId,
     creditCardId,
     categoryId,
+    recurringTransactionId: null,
     description: 'Mercado',
     amount: new Prisma.Decimal(100),
     transactionType: TransactionType.EXPENSE,
