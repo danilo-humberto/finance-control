@@ -33,6 +33,7 @@ describe('RecurringTransactionsService', () => {
       findFirst: jest.Mock;
       findMany: jest.Mock;
       update: jest.Mock;
+      updateMany: jest.Mock;
       deleteMany: jest.Mock;
       count: jest.Mock;
     };
@@ -109,6 +110,7 @@ describe('RecurringTransactionsService', () => {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
         deleteMany: jest.fn(),
         count: jest.fn(),
       },
@@ -309,26 +311,24 @@ describe('RecurringTransactionsService', () => {
         },
       ]);
       prismaService.transaction.deleteMany.mockResolvedValue({ count: 1 });
-      prismaService.transaction.count.mockResolvedValue(1); // tx-current remains
-      prismaService.recurringTransaction.update.mockResolvedValue({
-        ...recurringTransaction,
-        isActive: false,
-        canceledAt: now,
-        category,
-        creditCard,
-      });
+      prismaService.transaction.updateMany.mockResolvedValue({ count: 1 });
+      prismaService.recurringTransaction.delete.mockResolvedValue(
+        recurringTransaction,
+      );
 
       await service.remove(userId, recurringId, { includeCurrentMonth: false });
 
-      // tx-future was deleted, tx-current was preserved
+      // tx-future was deleted, tx-current was preserved and unlinked
       expect(prismaService.transaction.deleteMany).toHaveBeenCalledWith({
         where: { id: { in: ['tx-future'] } },
       });
-      // Soft cancel performed because tx-current remained
-      expect(prismaService.recurringTransaction.update).toHaveBeenCalledWith({
+      expect(prismaService.transaction.updateMany).toHaveBeenCalledWith({
+        where: { recurringTransactionId: recurringId },
+        data: { recurringTransactionId: null },
+      });
+      // Always physically deleted
+      expect(prismaService.recurringTransaction.delete).toHaveBeenCalledWith({
         where: { id: recurringId },
-        data: expect.objectContaining({ isActive: false }),
-        include: { category: true, creditCard: true },
       });
     });
 
@@ -354,7 +354,7 @@ describe('RecurringTransactionsService', () => {
         },
       ]);
       prismaService.transaction.deleteMany.mockResolvedValue({ count: 1 });
-      prismaService.transaction.count.mockResolvedValue(0); // 0 remaining
+      prismaService.transaction.updateMany.mockResolvedValue({ count: 0 });
       prismaService.recurringTransaction.delete.mockResolvedValue(
         recurringTransaction,
       );
@@ -364,7 +364,11 @@ describe('RecurringTransactionsService', () => {
       expect(prismaService.transaction.deleteMany).toHaveBeenCalledWith({
         where: { id: { in: ['tx-current'] } },
       });
-      // Clean physical delete because 0 transactions remain
+      expect(prismaService.transaction.updateMany).toHaveBeenCalledWith({
+        where: { recurringTransactionId: recurringId },
+        data: { recurringTransactionId: null },
+      });
+      // Clean physical delete
       expect(prismaService.recurringTransaction.delete).toHaveBeenCalledWith({
         where: { id: recurringId },
       });

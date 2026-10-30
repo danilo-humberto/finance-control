@@ -101,9 +101,16 @@ export class RecurringTransactionsService {
     userId: string,
     query: QueryRecurringTransactionsDto,
   ): Promise<RecurringTransactionResponse[]> {
+    const resolvedIsActive =
+      query.isActive === true || query.isActive === 'true'
+        ? true
+        : query.isActive === false || query.isActive === 'false'
+          ? false
+          : undefined;
+
     const where: Prisma.RecurringTransactionWhereInput = {
       userId,
-      isActive: query.isActive,
+      isActive: resolvedIsActive,
       creditCardId: query.creditCardId,
       categoryId: query.categoryId,
     };
@@ -200,7 +207,10 @@ export class RecurringTransactionsService {
       throw new NotFoundException('Recurring transaction not found.');
     }
 
-    const includeCurrentMonth = Boolean(query.includeCurrentMonth);
+    const includeCurrentMonth =
+      query.includeCurrentMonth === true ||
+      query.includeCurrentMonth === 'true' ||
+      query.includeCurrentMonth === '1';
     const now = new Date();
     const currentMonthYear = this.getCurrentCycleMonthYear(recurring.creditCard, now);
 
@@ -268,32 +278,20 @@ export class RecurringTransactionsService {
       });
     }
 
-    const remainingCount = await this.prismaService.transaction.count({
+    await this.prismaService.transaction.updateMany({
       where: {
         recurringTransactionId: id,
       },
+      data: {
+        recurringTransactionId: null,
+      },
     });
 
-    let result = recurring;
+    await this.prismaService.recurringTransaction.delete({
+      where: { id },
+    });
 
-    if (remainingCount === 0) {
-      // No remaining transactions: clean physical deletion
-      await this.prismaService.recurringTransaction.delete({
-        where: { id },
-      });
-    } else {
-      // Historical transactions remain: soft cancel to preserve history
-      result = await this.prismaService.recurringTransaction.update({
-        where: { id },
-        data: {
-          isActive: false,
-          canceledAt: new Date(),
-        },
-        include: this.recurringInclude,
-      });
-    }
-
-    return this.mapRecurringTransaction(result);
+    return this.mapRecurringTransaction(recurring);
   }
 
   private async materializeOccurrences(
