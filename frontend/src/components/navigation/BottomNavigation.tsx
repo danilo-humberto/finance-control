@@ -194,7 +194,7 @@ export function BottomNavigation() {
     <>
       <nav
         aria-label="Navegação principal"
-        className="fixed bottom-[calc(1.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 h-[58px] w-[calc(100%-1.75rem)] max-w-[364px] -translate-x-1/2 rounded-full border border-white/[0.12] bg-[#101216]/75 p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.55),0_2px_8px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 lg:hidden"
+        className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 h-[64px] w-[calc(100%-1.75rem)] max-w-[364px] -translate-x-1/2 rounded-full border border-white/[0.18] bg-[#101216]/65 p-1.5 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.18),0_12px_36px_rgba(0,0,0,0.55),0_2px_8px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 lg:hidden"
       >
         <div className="grid h-full w-full grid-cols-5 items-center gap-1">
           {navigationItems.slice(0, 2).map((item) => (
@@ -206,10 +206,10 @@ export function BottomNavigation() {
               type="button"
               onClick={() => setQuickCreateOpen(true)}
               aria-current={isNewPurchaseRoute ? 'page' : undefined}
-              className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-300 via-brand-500 to-brand-600 text-slate-950 shadow-[0_2px_12px_rgba(34,197,94,0.4)] transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+              className="group relative flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-brand-300 via-brand-500 to-brand-600 text-slate-950 shadow-[0_2px_14px_rgba(34,197,94,0.45)] transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
               aria-label="Nova compra ou cadastro rápido"
             >
-              <Plus aria-hidden="true" className="h-5 w-5 stroke-[2.4] transition-transform duration-200 group-hover:rotate-90" />
+              <Plus aria-hidden="true" className="h-5 w-5 stroke-[2.5] transition-transform duration-200 group-hover:rotate-90" />
             </button>
           </div>
 
@@ -271,13 +271,13 @@ function BottomNavigationItem({ label, to, icon: Icon }: BottomNavigationItemPro
         cn(
           'group relative flex h-full flex-col items-center justify-center rounded-full px-1 py-1 transition-all duration-200 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
           isActive
-            ? 'bg-white/[0.12] text-brand-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]'
-            : 'text-app-muted hover:bg-white/[0.05] hover:text-app-text active:scale-95',
+            ? 'bg-white/[0.14] text-brand-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.14)]'
+            : 'text-app-muted hover:bg-white/[0.06] hover:text-app-text active:scale-95',
         )
       }
     >
-      <Icon aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-hover:scale-105" />
-      <span className="mt-0.5 max-w-full truncate text-[0.6rem] font-medium leading-none">{label}</span>
+      <Icon aria-hidden="true" className="h-5 w-5 transition-transform duration-200 group-hover:scale-105" />
+      <span className="mt-1 max-w-full truncate text-[0.625rem] font-medium leading-none">{label}</span>
     </NavLink>
   );
 }

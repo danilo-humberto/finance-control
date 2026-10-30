@@ -46,7 +46,7 @@ export function PwaUpdateToast() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-x-3 bottom-[calc(94px+env(safe-area-inset-bottom))] z-[60] mx-auto max-w-md rounded-2xl border border-brand-500/30 bg-app-surface/95 p-3 text-app-text shadow-[0_18px_48px_rgba(0,0,0,0.5)] backdrop-blur md:bottom-5"
+      className="fixed inset-x-3 bottom-[calc(80px+env(safe-area-inset-bottom))] z-[60] mx-auto max-w-md rounded-2xl border border-brand-500/30 bg-app-surface/95 p-3 text-app-text shadow-[0_18px_48px_rgba(0,0,0,0.5)] backdrop-blur md:bottom-5"
     >
       <div className="flex gap-3">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-success-surface text-brand-400">

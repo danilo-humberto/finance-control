@@ -81,7 +81,7 @@ export function AppLayout() {
         />
 
         <div className="min-h-screen lg:pl-72">
-          <main className="mx-auto min-h-screen w-full max-w-5xl px-4 pb-[calc(116px+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:max-w-7xl lg:px-8 lg:pb-10 lg:pt-8 xl:px-10">
+          <main className="mx-auto min-h-screen w-full max-w-5xl px-4 pb-[calc(100px+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:max-w-7xl lg:px-8 lg:pb-10 lg:pt-8 xl:px-10">
             {showAppHeader ? (
               <header className="mb-8 flex items-center justify-between gap-4">
                 <div className="min-w-0">
