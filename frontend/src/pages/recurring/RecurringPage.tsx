@@ -1,21 +1,31 @@
 import { isAxiosError } from 'axios';
-import { useMemo, useState } from 'react';
+import { Edit3, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { AuthMessage } from '@/components/auth/AuthMessage';
+import { ActionSheet } from '@/components/modals/ActionSheet';
+import { RecurringFormDialog } from '@/components/recurring/RecurringFormDialog';
+import { RecurringFormSheet } from '@/components/recurring/RecurringFormSheet';
 import { RecurringDeleteDialog } from '@/components/transactions/RecurringDeleteDialog';
 import { useNewPurchaseDialog } from '@/hooks/useNewPurchaseDialog';
 import {
   useDeleteRecurringTransactionMutation,
   useRecurringTransactionsQuery,
+  useUpdateRecurringTransactionMutation,
 } from '@/hooks/useRecurringTransactionsQuery';
-import { type RecurringTransaction } from '@/types/recurring-transaction';
+import {
+  type RecurringTransaction,
+  type UpdateRecurringTransactionPayload,
+} from '@/types/recurring-transaction';
 import { RecurringDesktopView } from './RecurringDesktopView';
 import {
   RecurringMobileView,
   type RecurringStatusFilter,
   type RecurringSummaryData,
 } from './RecurringMobileView';
+
+const desktopMediaQuery = '(min-width: 1024px)';
 
 type FeedbackMessage = {
   tone: 'error' | 'success' | 'info';
@@ -47,11 +57,37 @@ export function RecurringPage() {
   const [statusFilter, setStatusFilter] = useState<RecurringStatusFilter>('all');
   const [selectedRecurring, setSelectedRecurring] =
     useState<RecurringTransaction | null>(null);
+  const [editingRecurring, setEditingRecurring] =
+    useState<RecurringTransaction | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage>(null);
+
+  const [isDesktopViewport, setIsDesktopViewport] = useState(() =>
+    window.matchMedia(desktopMediaQuery).matches,
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(desktopMediaQuery);
+
+    function handleViewportChange(event: MediaQueryListEvent) {
+      setEditDialogOpen(false);
+      setActionSheetOpen(false);
+      setIsDesktopViewport(event.matches);
+    }
+
+    mediaQuery.addEventListener('change', handleViewportChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleViewportChange);
+    };
+  }, []);
 
   const recurringQuery = useRecurringTransactionsQuery();
   const deleteMutation = useDeleteRecurringTransactionMutation();
+  const updateMutation = useUpdateRecurringTransactionMutation();
 
   const allItems = recurringQuery.data ?? [];
   const loading = recurringQuery.isPending;
@@ -117,9 +153,42 @@ export function RecurringPage() {
     }
   }
 
+  function handleActionMenuClick(item: RecurringTransaction) {
+    setSelectedRecurring(item);
+    setActionSheetOpen(true);
+  }
+
+  function handleEditClick(item: RecurringTransaction) {
+    setEditingRecurring(item);
+    setEditSubmitError(null);
+    setEditDialogOpen(true);
+  }
+
   function handleCancelClick(item: RecurringTransaction) {
     setSelectedRecurring(item);
     setDeleteDialogOpen(true);
+  }
+
+  async function handleConfirmUpdate(payload: UpdateRecurringTransactionPayload) {
+    if (!editingRecurring) {
+      return;
+    }
+
+    try {
+      setEditSubmitError(null);
+      await updateMutation.mutateAsync({
+        id: editingRecurring.id,
+        payload,
+      });
+      setEditDialogOpen(false);
+      setEditingRecurring(null);
+      setFeedbackMessage({
+        tone: 'success',
+        message: 'Recorrência atualizada com sucesso.',
+      });
+    } catch (error) {
+      setEditSubmitError(getApiErrorMessage(error));
+    }
   }
 
   async function handleConfirmDelete(includeCurrentMonth: boolean) {
@@ -170,7 +239,7 @@ export function RecurringPage() {
           summary={summary}
           onRetry={() => void recurringQuery.refetch()}
           onNewRecurring={handleNewRecurring}
-          onCancelClick={handleCancelClick}
+          onActionMenuClick={handleActionMenuClick}
         />
       </div>
 
@@ -186,9 +255,73 @@ export function RecurringPage() {
           summary={summary}
           onRetry={() => void recurringQuery.refetch()}
           onNewRecurring={handleNewRecurring}
+          onEditClick={handleEditClick}
           onCancelClick={handleCancelClick}
         />
       </div>
+
+      <ActionSheet
+        open={actionSheetOpen}
+        onOpenChange={setActionSheetOpen}
+        title={selectedRecurring?.description ?? 'Recorrência'}
+        actions={[
+          {
+            label: 'Editar recorrência',
+            description: 'Alterar valor, categoria ou dia de cobrança',
+            icon: Edit3,
+            onClick: () => {
+              if (selectedRecurring) {
+                handleEditClick(selectedRecurring);
+              }
+            },
+          },
+          ...(selectedRecurring?.isActive
+            ? [
+                {
+                  label: 'Excluir recorrência',
+                  description: 'Encerrar cobranças e projeções futuras',
+                  icon: Trash2,
+                  variant: 'danger' as const,
+                  onClick: () => {
+                    setDeleteDialogOpen(true);
+                  },
+                },
+              ]
+            : []),
+        ]}
+      />
+
+      {isDesktopViewport ? (
+        <RecurringFormDialog
+          open={editDialogOpen}
+          onOpenChange={(open) => {
+            setEditDialogOpen(open);
+            if (!open) {
+              setEditingRecurring(null);
+              setEditSubmitError(null);
+            }
+          }}
+          recurringTransaction={editingRecurring}
+          onSubmit={handleConfirmUpdate}
+          submitting={updateMutation.isPending}
+          submitError={editSubmitError}
+        />
+      ) : (
+        <RecurringFormSheet
+          open={editDialogOpen}
+          onOpenChange={(open) => {
+            setEditDialogOpen(open);
+            if (!open) {
+              setEditingRecurring(null);
+              setEditSubmitError(null);
+            }
+          }}
+          recurringTransaction={editingRecurring}
+          onSubmit={handleConfirmUpdate}
+          submitting={updateMutation.isPending}
+          submitError={editSubmitError}
+        />
+      )}
 
       <RecurringDeleteDialog
         open={deleteDialogOpen}

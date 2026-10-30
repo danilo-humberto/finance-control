@@ -1,4 +1,4 @@
-import { LoaderCircle, Plus, Repeat, Search, Trash2 } from 'lucide-react';
+import { LoaderCircle, MoreVertical, Plus, Repeat, Search } from 'lucide-react';
 
 import { TransactionCategoryIcon } from '@/components/transactions/TransactionListItem';
 import { Badge } from '@/components/ui/Badge';
@@ -28,7 +28,7 @@ type RecurringMobileViewProps = {
   summary: RecurringSummaryData;
   onRetry: () => void;
   onNewRecurring: () => void;
-  onCancelClick: (item: RecurringTransaction) => void;
+  onActionMenuClick: (item: RecurringTransaction) => void;
 };
 
 const filterTabs: { label: string; value: RecurringStatusFilter }[] = [
@@ -48,7 +48,7 @@ export function RecurringMobileView({
   summary,
   onRetry,
   onNewRecurring,
-  onCancelClick,
+  onActionMenuClick,
 }: RecurringMobileViewProps) {
   const { formatCurrency } = usePreferences();
 
@@ -117,17 +117,15 @@ export function RecurringMobileView({
       </div>
 
       {/* Search Input */}
-      <div className="relative">
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-muted"
-        />
+      <div>
         <Input
           type="search"
+          aria-label="Buscar recorrência"
           placeholder="Buscar recorrência..."
           value={searchTerm}
           onChange={(event) => onSearchChange(event.target.value)}
-          className="h-10 pl-9 text-xs"
+          leftIcon={<Search aria-hidden="true" className="h-4 w-4" />}
+          className="h-10 text-xs"
         />
       </div>
 
@@ -186,16 +184,14 @@ export function RecurringMobileView({
                     </span>
                   </div>
 
-                  {item.isActive ? (
-                    <button
-                      type="button"
-                      aria-label={`Cancelar recorrência ${item.description}`}
-                      onClick={() => onCancelClick(item)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-app-muted transition-colors hover:bg-danger-surface hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                    >
-                      <Trash2 aria-hidden="true" className="h-4 w-4" />
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    aria-label={`Ações de ${item.description}`}
+                    onClick={() => onActionMenuClick(item)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-app-muted transition-colors hover:bg-app-elevated hover:text-app-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                  >
+                    <MoreVertical aria-hidden="true" className="h-4 w-4" />
+                  </button>
                 </div>
               </article>
             );

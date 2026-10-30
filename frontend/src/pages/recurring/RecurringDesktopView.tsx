@@ -2,6 +2,7 @@ import {
   CalendarDays,
   CheckCircle2,
   CreditCard,
+  Edit3,
   LoaderCircle,
   Plus,
   Repeat,
@@ -35,6 +36,7 @@ type RecurringDesktopViewProps = {
   summary: RecurringSummaryData;
   onRetry: () => void;
   onNewRecurring: () => void;
+  onEditClick: (item: RecurringTransaction) => void;
   onCancelClick: (item: RecurringTransaction) => void;
 };
 
@@ -97,6 +99,7 @@ export function RecurringDesktopView({
   summary,
   onRetry,
   onNewRecurring,
+  onEditClick,
   onCancelClick,
 }: RecurringDesktopViewProps) {
   const { formatCurrency } = usePreferences();
@@ -156,17 +159,15 @@ export function RecurringDesktopView({
         aria-label="Filtros de recorrência"
         className="flex flex-col gap-3 rounded-2xl border border-app-border bg-app-surface/45 p-4 shadow-lg shadow-black/10 sm:flex-row sm:items-center sm:justify-between"
       >
-        <div className="relative flex-1 max-w-md">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-muted"
-          />
+        <div className="flex-1 max-w-md">
           <Input
             type="search"
+            aria-label="Buscar recorrências"
             placeholder="Buscar por descrição, cartão ou categoria..."
             value={searchTerm}
             onChange={(event) => onSearchChange(event.target.value)}
-            className="h-10 pl-9 text-xs"
+            leftIcon={<Search aria-hidden="true" className="h-4 w-4" />}
+            className="h-10 text-xs"
           />
         </div>
 
@@ -290,20 +291,31 @@ export function RecurringDesktopView({
                     </td>
 
                     <td className="px-4 py-3 text-right">
-                      {item.isActive ? (
+                      <div className="flex items-center justify-end gap-1.5">
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => onCancelClick(item)}
-                          className="h-8 text-xs text-red-400 hover:bg-danger-surface hover:text-red-300"
-                          leftIcon={<Trash2 aria-hidden="true" className="h-3.5 w-3.5" />}
+                          onClick={() => onEditClick(item)}
+                          className="h-8 px-2.5 text-xs text-app-muted hover:bg-app-elevated hover:text-app-text"
+                          leftIcon={<Edit3 aria-hidden="true" className="h-3.5 w-3.5" />}
                         >
-                          Cancelar
+                          Editar
                         </Button>
-                      ) : (
-                        <span className="text-xs text-app-muted">Inativa</span>
-                      )}
+
+                        {item.isActive ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onCancelClick(item)}
+                            className="h-8 px-2.5 text-xs text-red-400 hover:bg-danger-surface hover:text-red-300"
+                            leftIcon={<Trash2 aria-hidden="true" className="h-3.5 w-3.5" />}
+                          >
+                            Excluir
+                          </Button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 );
