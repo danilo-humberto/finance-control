@@ -24,6 +24,8 @@ type PurchaseDesktopSelectProps = {
   onChange: (value: string) => void;
 };
 
+const EMPTY_VALUE = '__EMPTY__';
+
 export function PurchaseDesktopSelect({
   ariaLabel,
   disabled = false,
@@ -35,16 +37,17 @@ export function PurchaseDesktopSelect({
   onChange,
 }: PurchaseDesktopSelectProps) {
   const [open, setOpen] = useState(false);
+  const normalizedValue = value === '' ? EMPTY_VALUE : value;
   const selectedOption = options.find((option) => option.id === value);
   const detail = selectedDetail ?? selectedOption?.detail;
 
   return (
     <Select
       open={open}
-      value={value}
+      value={normalizedValue}
       disabled={disabled}
       onOpenChange={setOpen}
-      onValueChange={onChange}
+      onValueChange={(val) => onChange(val === EMPTY_VALUE ? '' : val)}
     >
       <SelectTrigger aria-label={ariaLabel}>
         <span className="flex h-7 w-7 shrink-0 items-center justify-center">
@@ -66,18 +69,21 @@ export function PurchaseDesktopSelect({
           setOpen(false);
         }}
       >
-        {options.map((option) => (
-          <SelectItem key={option.id} value={option.id}>
-            <span className="flex min-w-0 items-baseline gap-1">
-              <span className="truncate">{option.label}</span>
-              {option.detail ? (
-                <span className="shrink-0 text-xs text-app-muted">
-                  ({option.detail})
-                </span>
-              ) : null}
-            </span>
-          </SelectItem>
-        ))}
+        {options.map((option) => {
+          const itemVal = option.id === '' ? EMPTY_VALUE : option.id;
+          return (
+            <SelectItem key={itemVal} value={itemVal}>
+              <span className="flex min-w-0 items-baseline gap-1">
+                <span className="truncate">{option.label}</span>
+                {option.detail ? (
+                  <span className="shrink-0 text-xs text-app-muted">
+                    ({option.detail})
+                  </span>
+                ) : null}
+              </span>
+            </SelectItem>
+          );
+        })}
       </SelectContent>
     </Select>
   );

@@ -17,6 +17,7 @@ type BuildTransactionPayloadParams = {
   purchaseDate: string;
   selectedCardId: string;
   selectedCategoryId: string;
+  selectedSubcategoryId?: string | null;
   selectedInvoiceId: string;
   summaryInstallments: number;
 };
@@ -30,6 +31,7 @@ export function buildTransactionPayload({
   purchaseDate,
   selectedCardId,
   selectedCategoryId,
+  selectedSubcategoryId,
   selectedInvoiceId,
   summaryInstallments,
 }: BuildTransactionPayloadParams): CreateTransactionPayload {
@@ -84,6 +86,12 @@ export function buildTransactionPayload({
     invoiceStartYear: selectedInvoice.year,
   };
 
+  if (selectedSubcategoryId) {
+    payload.subcategoryId = selectedSubcategoryId;
+  } else if (isEditMode) {
+    payload.subcategoryId = null;
+  }
+
   if (trimmedNote || isEditMode) {
     payload.notes = trimmedNote;
   }
@@ -98,6 +106,7 @@ type BuildRecurringTransactionPayloadParams = {
   purchaseDate: string;
   selectedCardId: string;
   selectedCategoryId: string;
+  selectedSubcategoryId?: string | null;
 };
 
 export function buildRecurringTransactionPayload({
@@ -107,6 +116,7 @@ export function buildRecurringTransactionPayload({
   purchaseDate,
   selectedCardId,
   selectedCategoryId,
+  selectedSubcategoryId,
 }: BuildRecurringTransactionPayloadParams): CreateRecurringTransactionPayload {
   const trimmedDescription = description.trim();
   const trimmedNote = note.trim();
@@ -147,6 +157,10 @@ export function buildRecurringTransactionPayload({
     billingDay,
     startDate,
   };
+
+  if (selectedSubcategoryId) {
+    payload.subcategoryId = selectedSubcategoryId;
+  }
 
   if (trimmedNote) {
     payload.notes = trimmedNote;

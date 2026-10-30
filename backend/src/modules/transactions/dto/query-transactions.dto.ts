@@ -17,6 +17,10 @@ export class QueryTransactionsDto {
 
   @IsUUID()
   @IsOptional()
+  subcategoryId?: string;
+
+  @IsUUID()
+  @IsOptional()
   creditCardId?: string;
 
   @IsEnum(PaymentMethod)

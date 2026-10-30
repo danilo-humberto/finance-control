@@ -400,11 +400,22 @@ function DesktopTransactionRow({
           {transaction.description}
         </h3>
         <p className="mt-1 truncate text-xs text-app-muted">
-          {transaction.categoryName} • {transaction.paymentLabel}{transaction.isRecurring ? " • Recorrente" : ""}
+          {transaction.categoryName}
+          {transaction.subcategoryName ? ` › ${transaction.subcategoryName}` : ''} • {transaction.paymentLabel}{transaction.isRecurring ? " • Recorrente" : ""}
         </p>
       </div>
 
-      <div className="hidden min-w-0 items-center gap-2 text-sm text-app-muted xl:flex">{transaction.isRecurring ? (<Repeat aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-400" />) : (<CreditCard aria-hidden="true" className="h-4 w-4 shrink-0" />)}<span className="truncate">{transaction.paymentLabel}{transaction.isRecurring ? " (Recorrente)" : ""}</span></div>
+      <div className="hidden min-w-0 items-center gap-2 text-sm text-app-muted xl:flex">
+        {transaction.isRecurring ? (
+          <Repeat aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-400" />
+        ) : (
+          <CreditCard aria-hidden="true" className="h-4 w-4 shrink-0" />
+        )}
+        <span className="truncate">
+          {transaction.paymentLabel}
+          {transaction.isRecurring ? " (Recorrente)" : ""}
+        </span>
+      </div>
 
       <time className="text-right text-xs text-app-muted">
         {formatDateLabel(transaction.timeLabel)}

@@ -1,4 +1,4 @@
-import { Edit3, Trash2 } from 'lucide-react';
+import { Edit3, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { CategoryFormDialog } from '@/components/categories/CategoryFormDialog';
@@ -33,6 +33,37 @@ export function CategoriesPage() {
     };
   }, [categoriesData.onCategorySheetOpenChange]);
 
+  const isSubcategory = Boolean(categoriesData.selectedCategory?.parentId);
+
+  const actionSheetActions = [
+    ...(!isSubcategory && categoriesData.selectedCategory
+      ? [
+          {
+            label: 'Adicionar subcategoria',
+            description: 'Criar subcategoria vinculada a esta',
+            icon: Plus,
+            onClick: () =>
+              categoriesData.onAddSubcategory(categoriesData.selectedCategory!),
+          },
+        ]
+      : []),
+    {
+      label: isSubcategory ? 'Editar subcategoria' : 'Editar categoria',
+      description: 'Alterar nome, vínculo, ícone e cor',
+      icon: Edit3,
+      onClick: () => categoriesData.onEditCategory(),
+    },
+    {
+      label: isSubcategory ? 'Excluir subcategoria' : 'Excluir categoria',
+      description: isSubcategory
+        ? 'Remover esta subcategoria'
+        : 'Remover esta categoria e suas subcategorias',
+      icon: Trash2,
+      variant: 'danger' as const,
+      onClick: () => categoriesData.onDeleteCategory(),
+    },
+  ];
+
   return (
     <>
       <div className="lg:hidden">
@@ -50,21 +81,7 @@ export function CategoriesPage() {
             ? categoriesData.selectedCategory.name
             : 'Categoria'
         }
-        actions={[
-          {
-            label: 'Editar categoria',
-            description: 'Alterar nome, tipo, ícone e cor',
-            icon: Edit3,
-            onClick: () => categoriesData.onEditCategory(),
-          },
-          {
-            label: 'Excluir categoria',
-            description: 'Remover esta categoria da lista',
-            icon: Trash2,
-            variant: 'danger',
-            onClick: () => categoriesData.onDeleteCategory(),
-          },
-        ]}
+        actions={actionSheetActions}
       />
 
       {isDesktopViewport ? (
@@ -75,6 +92,7 @@ export function CategoriesPage() {
           submitting={categoriesData.submittingCategory}
           submitError={categoriesData.categorySubmitError}
           initialData={categoriesData.categoryFormInitialData}
+          parentCategories={categoriesData.parentCategories}
           onSubmit={categoriesData.onCategorySubmit}
           onDelete={categoriesData.onCategoryFormDelete}
         />
@@ -87,6 +105,7 @@ export function CategoriesPage() {
           submitting={categoriesData.submittingCategory}
           submitError={categoriesData.categorySubmitError}
           initialData={categoriesData.categoryFormInitialData}
+          parentCategories={categoriesData.parentCategories}
           onSubmit={categoriesData.onCategorySubmit}
           onDelete={categoriesData.onCategoryFormDelete}
         />
@@ -95,8 +114,12 @@ export function CategoriesPage() {
       <ConfirmDialog
         open={categoriesData.deleteDialogOpen}
         onOpenChange={categoriesData.onDeleteDialogOpenChange}
-        title="Excluir categoria"
-        description="Tem certeza que deseja excluir esta categoria?"
+        title={isSubcategory ? 'Excluir subcategoria' : 'Excluir categoria'}
+        description={
+          isSubcategory
+            ? 'Tem certeza que deseja excluir esta subcategoria?'
+            : 'Tem certeza que deseja excluir esta categoria? Ela não poderá ser excluída se estiver em uso.'
+        }
         confirmText="Excluir"
         cancelText="Cancelar"
         variant="danger"

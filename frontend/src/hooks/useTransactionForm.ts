@@ -39,6 +39,7 @@ export function useTransactionForm({
   const transactionToEdit = transactionQuery.data ?? null;
   const [selectedCardId, setSelectedCardId] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState('');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string>('current');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -86,7 +87,10 @@ export function useTransactionForm({
   );
 
   const expenseCategories = useMemo(
-    () => categories.filter((category) => category.type === 'EXPENSE'),
+    () =>
+      categories.filter(
+        (category) => category.type === 'EXPENSE' && !category.parentId,
+      ),
     [categories],
   );
 
@@ -99,6 +103,29 @@ export function useTransactionForm({
         color: category.color || defaultColor,
       })),
     [expenseCategories],
+  );
+
+  const availableSubcategories = useMemo(
+    () =>
+      selectedCategoryId
+        ? categories.filter(
+            (category) =>
+              category.type === 'EXPENSE' &&
+              category.parentId === selectedCategoryId,
+          )
+        : [],
+    [categories, selectedCategoryId],
+  );
+
+  const subcategoryOptions = useMemo<PurchaseCategoryOption[]>(
+    () =>
+      availableSubcategories.map((category) => ({
+        id: category.id,
+        name: category.name,
+        icon: category.icon,
+        color: category.color || defaultColor,
+      })),
+    [availableSubcategories],
   );
 
   const invoiceOptions = useMemo(() => {
@@ -153,6 +180,7 @@ export function useTransactionForm({
     setInstallmentCount(Math.max(transactionToEdit.installmentsCount || 1, 1));
     setSelectedCardId(transactionToEdit.creditCardId ?? '');
     setSelectedCategoryId(transactionToEdit.categoryId);
+    setSelectedSubcategoryId(transactionToEdit.subcategoryId ?? '');
     setSelectedInvoiceId('current');
     setNote(transactionToEdit.notes ?? '');
     setHydratedTransactionId(transactionToEdit.id);
@@ -224,6 +252,20 @@ export function useTransactionForm({
     });
   }, [expenseCategories, isEditMode]);
 
+  useEffect(() => {
+    setSelectedSubcategoryId((currentSubcategoryId) => {
+      if (!currentSubcategoryId) {
+        return '';
+      }
+
+      const exists = availableSubcategories.some(
+        (sub) => sub.id === currentSubcategoryId,
+      );
+
+      return exists ? currentSubcategoryId : '';
+    });
+  }, [availableSubcategories]);
+
   const handleAmountChange = useCallback(
     (value: string) => {
       setAmount(formatCurrencyInput(value, formatCurrency));
@@ -244,6 +286,7 @@ export function useTransactionForm({
     amountValue,
     cardOptions,
     categoryOptions,
+    subcategoryOptions,
     description,
     errorCards,
     errorCategories,
@@ -260,6 +303,7 @@ export function useTransactionForm({
     purchaseDate,
     selectedCardId,
     selectedCategoryId,
+    selectedSubcategoryId,
     selectedInvoiceId,
     setDescription,
     setInstallmentCount,
@@ -267,6 +311,7 @@ export function useTransactionForm({
     setPurchaseDate,
     setSelectedCardId,
     setSelectedCategoryId,
+    setSelectedSubcategoryId,
     setSelectedInvoiceId,
     summaryInstallments,
     transactionError,

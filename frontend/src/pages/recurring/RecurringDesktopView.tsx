@@ -264,7 +264,10 @@ export function RecurringDesktopView({
                     </td>
 
                     <td className="px-4 py-3 text-app-muted">
-                      <span className="truncate">{item.category?.name ?? 'Geral'}</span>
+                      <span className="truncate">
+                        {item.category?.name ?? 'Geral'}
+                        {item.subcategory?.name ? ` › ${item.subcategory.name}` : ''}
+                      </span>
                     </td>
 
                     <td className="px-4 py-3 text-app-muted">

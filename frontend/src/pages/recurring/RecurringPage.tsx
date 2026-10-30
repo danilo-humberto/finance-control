@@ -132,7 +132,8 @@ export function RecurringPage() {
         .toLowerCase()
         .includes(normalizedQuery);
       const matchCategory =
-        item.category?.name.toLowerCase().includes(normalizedQuery) ?? false;
+        (item.category?.name.toLowerCase().includes(normalizedQuery) ?? false) ||
+        (item.subcategory?.name?.toLowerCase().includes(normalizedQuery) ?? false);
       const matchCard =
         item.creditCard?.name.toLowerCase().includes(normalizedQuery) ?? false;
 

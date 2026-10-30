@@ -22,6 +22,10 @@ export class UpdateRecurringTransactionDto {
   @IsOptional()
   categoryId?: string;
 
+  @IsUUID()
+  @IsOptional()
+  subcategoryId?: string | null;
+
   @IsString()
   @IsOptional()
   description?: string;

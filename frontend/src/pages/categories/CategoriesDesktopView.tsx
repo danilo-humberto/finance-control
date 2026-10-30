@@ -3,6 +3,9 @@ import {
   ArrowUp,
   BookOpen,
   Car,
+  ChevronDown,
+  ChevronUp,
+  CornerDownRight,
   DollarSign,
   Edit3,
   Gift,
@@ -22,6 +25,7 @@ import {
   User,
   type LucideIcon,
 } from "lucide-react";
+import { useState } from "react";
 
 import { AuthMessage } from "@/components/auth/AuthMessage";
 import { Button } from "@/components/ui/Button";
@@ -109,6 +113,7 @@ export function CategoriesDesktopView({
   loadError,
   loading,
   onActiveFilterChange,
+  onAddSubcategory,
   onCreateClick,
   onDeleteCategory,
   onEditCategory,
@@ -152,14 +157,18 @@ export function CategoriesDesktopView({
         <SummaryCard
           title="Total de categorias"
           value={summary.total}
-          description="categorias"
+          description={
+            summary.subcategoriesTotal !== undefined && summary.subcategoriesTotal > 0
+              ? `${summary.subcategoriesTotal} subcategorias vinculadas`
+              : "categorias principais"
+          }
           icon={Tags}
           loading={loading}
         />
         <SummaryCard
           title="Despesas"
           value={summary.expenses}
-          description="ativas"
+          description="categorias ativas"
           icon={ArrowDown}
           tone="danger"
           loading={loading}
@@ -167,7 +176,7 @@ export function CategoriesDesktopView({
         <SummaryCard
           title="Receitas"
           value={summary.incomes}
-          description="ativas"
+          description="categorias ativas"
           icon={ArrowUp}
           loading={loading}
         />
@@ -178,7 +187,7 @@ export function CategoriesDesktopView({
           aria-label="Buscar categoria"
           value={searchTerm}
           onChange={(event) => onSearchTermChange(event.target.value)}
-          placeholder="Buscar categoria"
+          placeholder="Buscar categoria ou subcategoria"
           leftIcon={<Search aria-hidden="true" className="h-4 w-4" />}
           className="h-12 rounded-xl bg-app-surface/75 text-sm"
         />
@@ -231,7 +240,7 @@ export function CategoriesDesktopView({
             </p>
           </div>
           <span className="rounded-full border border-app-border bg-app-bg/35 px-3 py-1 text-xs font-semibold text-app-muted">
-            {categoryItems.length} de {categories.length}
+            {categoryItems.length} principais ({categories.length} total)
           </span>
         </div>
 
@@ -271,6 +280,7 @@ export function CategoriesDesktopView({
         ) : categoryItems.length > 0 ? (
           <CategoriesTable
             categories={categoryItems}
+            onAddSubcategory={onAddSubcategory}
             onDeleteCategory={onDeleteCategory}
             onEditCategory={onEditCategory}
           />
@@ -334,112 +344,237 @@ function SummaryCard({
 
 type CategoriesTableProps = {
   categories: CategoryPageItem[];
+  onAddSubcategory: (category: CategoryPageItem["source"]) => void;
   onDeleteCategory: (category?: CategoryPageItem["source"] | null) => void;
   onEditCategory: (category?: CategoryPageItem["source"] | null) => void;
 };
 
 function CategoriesTable({
   categories,
+  onAddSubcategory,
   onDeleteCategory,
   onEditCategory,
 }: CategoriesTableProps) {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+
+  function toggleExpand(id: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[46rem] table-fixed text-left text-sm">
         <colgroup>
-          <col style={{ width: "calc((100% - 9rem) / 2)" }} />
-          <col style={{ width: "calc((100% - 9rem) / 2)" }} />
-          <col className="w-36" />
+          <col style={{ width: "calc((100% - 11rem) / 2)" }} />
+          <col style={{ width: "calc((100% - 11rem) / 2)" }} />
+          <col className="w-44" />
         </colgroup>
         <thead className="bg-app-elevated/40 text-xs uppercase text-app-muted">
           <tr>
             <th className="px-5 py-3 font-semibold">Categoria</th>
             <th className="px-5 py-3 font-semibold">Tipo</th>
-            <th className="w-36 px-5 py-3 text-left font-semibold">Ações</th>
+            <th className="w-44 px-5 py-3 text-left font-semibold">Ações</th>
           </tr>
         </thead>
         <tbody>
-          {categories.map((category) => (
-            <CategoryTableRow
-              key={category.id}
-              category={category}
-              onDeleteCategory={onDeleteCategory}
-              onEditCategory={onEditCategory}
-            />
-          ))}
+          {categories.map((category) => {
+            const isExpanded = expandedIds.has(category.id);
+            const hasSubcategories = category.subcategories.length > 0;
+
+            return (
+              <CategoryTableRowGroup
+                key={category.id}
+                category={category}
+                isExpanded={isExpanded}
+                hasSubcategories={hasSubcategories}
+                onToggleExpand={() => toggleExpand(category.id)}
+                onAddSubcategory={onAddSubcategory}
+                onDeleteCategory={onDeleteCategory}
+                onEditCategory={onEditCategory}
+              />
+            );
+          })}
         </tbody>
       </table>
     </div>
   );
 }
 
-type CategoryTableRowProps = {
+type CategoryTableRowGroupProps = {
   category: CategoryPageItem;
+  isExpanded: boolean;
+  hasSubcategories: boolean;
+  onToggleExpand: () => void;
+  onAddSubcategory: (category: CategoryPageItem["source"]) => void;
   onDeleteCategory: (category?: CategoryPageItem["source"] | null) => void;
   onEditCategory: (category?: CategoryPageItem["source"] | null) => void;
 };
 
-function CategoryTableRow({
+function CategoryTableRowGroup({
   category,
+  isExpanded,
+  hasSubcategories,
+  onToggleExpand,
+  onAddSubcategory,
   onDeleteCategory,
   onEditCategory,
-}: CategoryTableRowProps) {
+}: CategoryTableRowGroupProps) {
   const Icon = getCategoryIcon(category.icon);
   const isIncome = category.type === "INCOME";
 
   return (
-    <tr className="border-t border-app-border transition-colors hover:bg-app-elevated/35">
-      <td className="px-5 py-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-            style={{
-              backgroundColor: getCategoryTint(category.color),
-              color: category.color,
-            }}
-          >
-            <Icon aria-hidden="true" className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate font-semibold text-app-text">
-              {category.name}
-            </p>
+    <>
+      <tr className="border-t border-app-border transition-colors hover:bg-app-elevated/35">
+        <td className="px-5 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+              style={{
+                backgroundColor: getCategoryTint(category.color),
+                color: category.color,
+              }}
+            >
+              <Icon aria-hidden="true" className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="truncate font-semibold text-app-text">
+                  {category.name}
+                </p>
+                {hasSubcategories && (
+                  <button
+                    type="button"
+                    onClick={onToggleExpand}
+                    className="inline-flex items-center gap-1 rounded-full border border-app-border/80 bg-app-bg/50 px-2 py-0.5 text-[0.68rem] font-medium text-app-muted hover:bg-app-elevated hover:text-app-text"
+                  >
+                    <span>
+                      {category.subcategories.length}{" "}
+                      {category.subcategories.length === 1 ? "sub" : "subs"}
+                    </span>
+                    {isExpanded ? (
+                      <ChevronUp aria-hidden="true" className="h-3 w-3" />
+                    ) : (
+                      <ChevronDown aria-hidden="true" className="h-3 w-3" />
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </td>
-      <td className="px-5 py-3">
-        <span
-          className={cn(
-            "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
-            isIncome
-              ? "bg-success-surface text-success-text"
-              : "bg-danger-surface text-danger-text",
-          )}
-        >
-          {isIncome ? "Receita" : "Despesa"}
-        </span>
-      </td>
-      <td className="px-5 py-3">
-        <div className="flex justify-start gap-2">
-          <button
-            type="button"
-            aria-label={`Editar categoria ${category.name}`}
-            onClick={() => onEditCategory(category.source)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-app-border bg-app-bg/35 text-app-muted transition-colors hover:bg-app-elevated hover:text-app-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+        </td>
+        <td className="px-5 py-3">
+          <span
+            className={cn(
+              "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
+              isIncome
+                ? "bg-success-surface text-success-text"
+                : "bg-danger-surface text-danger-text",
+            )}
           >
-            <Edit3 aria-hidden="true" className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            aria-label={`Excluir categoria ${category.name}`}
-            onClick={() => onDeleteCategory(category.source)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-danger-border bg-transparent text-red-400 transition-colors hover:bg-danger-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
-          >
-            <Trash2 aria-hidden="true" className="h-4 w-4" />
-          </button>
-        </div>
-      </td>
-    </tr>
+            {isIncome ? "Receita" : "Despesa"}
+          </span>
+        </td>
+        <td className="px-5 py-3">
+          <div className="flex justify-start gap-2">
+            <button
+              type="button"
+              aria-label={`Adicionar subcategoria em ${category.name}`}
+              title="Adicionar subcategoria"
+              onClick={() => onAddSubcategory(category.source)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-app-border bg-app-bg/35 text-app-muted transition-colors hover:bg-app-elevated hover:text-brand-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              aria-label={`Editar categoria ${category.name}`}
+              title="Editar categoria"
+              onClick={() => onEditCategory(category.source)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-app-border bg-app-bg/35 text-app-muted transition-colors hover:bg-app-elevated hover:text-app-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            >
+              <Edit3 aria-hidden="true" className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              aria-label={`Excluir categoria ${category.name}`}
+              title="Excluir categoria"
+              onClick={() => onDeleteCategory(category.source)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-danger-border bg-transparent text-red-400 transition-colors hover:bg-danger-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+            >
+              <Trash2 aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </div>
+        </td>
+      </tr>
+
+      {isExpanded &&
+        category.subcategories.map((sub) => {
+          const SubIcon = getCategoryIcon(sub.icon);
+
+          return (
+            <tr
+              key={sub.id}
+              className="border-t border-app-border/40 bg-app-bg/15 transition-colors hover:bg-app-elevated/25"
+            >
+              <td className="px-5 py-2.5">
+                <div className="flex min-w-0 items-center gap-2 pl-6">
+                  <CornerDownRight
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 shrink-0 text-app-muted"
+                  />
+                  <span
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs"
+                    style={{
+                      backgroundColor: getCategoryTint(sub.color),
+                      color: sub.color,
+                    }}
+                  >
+                    <SubIcon aria-hidden="true" className="h-3.5 w-3.5" />
+                  </span>
+                  <p className="truncate text-xs font-medium text-app-text">
+                    {sub.name}
+                  </p>
+                </div>
+              </td>
+              <td className="px-5 py-2.5">
+                <span className="inline-flex rounded-full bg-app-elevated px-2 py-0.5 text-[0.68rem] font-medium text-app-muted">
+                  Subcategoria
+                </span>
+              </td>
+              <td className="px-5 py-2.5">
+                <div className="flex justify-start gap-2">
+                  <button
+                    type="button"
+                    aria-label={`Editar subcategoria ${sub.name}`}
+                    title="Editar subcategoria"
+                    onClick={() => onEditCategory(sub.source)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-app-border/60 bg-app-bg/35 text-app-muted transition-colors hover:bg-app-elevated hover:text-app-text"
+                  >
+                    <Edit3 aria-hidden="true" className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Excluir subcategoria ${sub.name}`}
+                    title="Excluir subcategoria"
+                    onClick={() => onDeleteCategory(sub.source)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-danger-border/60 bg-transparent text-red-400 transition-colors hover:bg-danger-surface"
+                  >
+                    <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+    </>
   );
 }
 
@@ -449,14 +584,14 @@ function CategoriesTableSkeleton() {
       {[0, 1, 2, 3, 4, 5].map((item) => (
         <div
           key={item}
-          className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_9rem] items-center gap-4 border-t border-app-border px-5 py-4 first:border-t-0"
+          className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_11rem] items-center gap-4 border-t border-app-border px-5 py-4 first:border-t-0"
         >
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-app-elevated" />
             <div className="h-4 w-44 animate-pulse rounded-full bg-app-elevated" />
           </div>
           <div className="h-4 w-20 animate-pulse rounded-full bg-app-elevated" />
-          <div className="ml-auto h-8 w-20 animate-pulse rounded-full bg-app-elevated" />
+          <div className="ml-auto h-8 w-24 animate-pulse rounded-full bg-app-elevated" />
         </div>
       ))}
     </div>

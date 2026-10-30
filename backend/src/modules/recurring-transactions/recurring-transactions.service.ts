@@ -29,6 +29,7 @@ type CreditCardResponse = Omit<CreditCard, 'limitAmount' | 'userId'> & {
 
 type RecurringTransactionWithRelations = RecurringTransaction & {
   category: Category;
+  subcategory?: Category | null;
   creditCard: CreditCard | null;
   transactions?: Transaction[];
 };
@@ -39,6 +40,7 @@ export type RecurringTransactionResponse = Omit<
 > & {
   amount: number;
   category: CategoryResponse;
+  subcategory: CategoryResponse | null;
   creditCard: CreditCardResponse | null;
 };
 
@@ -46,6 +48,7 @@ export type RecurringTransactionResponse = Omit<
 export class RecurringTransactionsService {
   private readonly recurringInclude = {
     category: true,
+    subcategory: true,
     creditCard: true,
   } satisfies Prisma.RecurringTransactionInclude;
 
@@ -56,6 +59,14 @@ export class RecurringTransactionsService {
     dto: CreateRecurringTransactionDto,
   ): Promise<RecurringTransactionResponse> {
     await this.ensureCategoryBelongsToUser(userId, dto.categoryId);
+
+    if (dto.subcategoryId) {
+      await this.ensureSubcategoryBelongsToCategory(
+        userId,
+        dto.categoryId,
+        dto.subcategoryId,
+      );
+    }
 
     const amount = this.toMoneyDecimal(dto.amount);
     const isCreditCard = dto.paymentMethod === PaymentMethod.CREDIT_CARD;
@@ -80,6 +91,7 @@ export class RecurringTransactionsService {
         userId,
         creditCardId,
         categoryId: dto.categoryId,
+        subcategoryId: dto.subcategoryId ?? null,
         description: dto.description,
         amount,
         transactionType: dto.transactionType ?? TransactionType.EXPENSE,
@@ -113,6 +125,7 @@ export class RecurringTransactionsService {
       isActive: resolvedIsActive,
       creditCardId: query.creditCardId,
       categoryId: query.categoryId,
+      subcategoryId: query.subcategoryId,
     };
 
     const items = await this.prismaService.recurringTransaction.findMany({
@@ -152,6 +165,29 @@ export class RecurringTransactionsService {
       await this.ensureCategoryBelongsToUser(userId, dto.categoryId);
     }
 
+    const effectiveCategoryId = dto.categoryId ?? existing.categoryId;
+    let subcategoryId: string | null | undefined = undefined;
+
+    if (dto.subcategoryId !== undefined) {
+      if (dto.subcategoryId !== null) {
+        await this.ensureSubcategoryBelongsToCategory(
+          userId,
+          effectiveCategoryId,
+          dto.subcategoryId,
+        );
+        subcategoryId = dto.subcategoryId;
+      } else {
+        subcategoryId = null;
+      }
+    } else if (dto.categoryId && existing.subcategoryId) {
+      const subcategory = await this.prismaService.category.findFirst({
+        where: { id: existing.subcategoryId, userId },
+      });
+      if (subcategory && subcategory.parentId !== dto.categoryId) {
+        subcategoryId = null;
+      }
+    }
+
     const amount =
       dto.amount !== undefined ? this.toMoneyDecimal(dto.amount) : existing.amount;
     const paymentMethod = dto.paymentMethod ?? existing.paymentMethod;
@@ -173,6 +209,7 @@ export class RecurringTransactionsService {
       data: {
         creditCardId,
         categoryId: dto.categoryId ?? existing.categoryId,
+        ...(subcategoryId !== undefined ? { subcategoryId } : {}),
         description: dto.description ?? existing.description,
         amount,
         transactionType: dto.transactionType ?? existing.transactionType,
@@ -191,6 +228,7 @@ export class RecurringTransactionsService {
       amount: dto.amount !== undefined ? amount : undefined,
       description: dto.description,
       categoryId: dto.categoryId,
+      subcategoryId,
     });
 
     return this.mapRecurringTransaction(updated);
@@ -211,13 +249,15 @@ export class RecurringTransactionsService {
       query.includeCurrentMonth === true ||
       query.includeCurrentMonth === 'true' ||
       query.includeCurrentMonth === '1';
-    const now = new Date();
-    const currentMonthYear = this.getCurrentCycleMonthYear(recurring.creditCard, now);
+
+    const currentMonthYear = this.getCurrentCycleMonthYear(
+      recurring.creditCard,
+      new Date(),
+    );
 
     const relatedTransactions = await this.prismaService.transaction.findMany({
       where: {
         recurringTransactionId: id,
-        userId,
       },
       include: {
         installments: true,
@@ -353,6 +393,7 @@ export class RecurringTransactionsService {
           userId: recurring.userId,
           creditCardId: recurring.creditCardId,
           categoryId: recurring.categoryId,
+          subcategoryId: recurring.subcategoryId ?? null,
           recurringTransactionId: recurring.id,
           description: recurring.description,
           amount: recurring.amount,
@@ -391,6 +432,7 @@ export class RecurringTransactionsService {
       amount?: Prisma.Decimal;
       description?: string;
       categoryId?: string;
+      subcategoryId?: string | null;
     },
   ): Promise<void> {
     const now = new Date();
@@ -442,6 +484,18 @@ export class RecurringTransactionsService {
         };
       }
 
+      if (updates.subcategoryId !== undefined) {
+        if (updates.subcategoryId) {
+          dataToUpdate.subcategory = {
+            connect: { id: updates.subcategoryId },
+          };
+        } else {
+          dataToUpdate.subcategory = {
+            disconnect: true,
+          };
+        }
+      }
+
       if (updates.amount) {
         dataToUpdate.amount = updates.amount;
         dataToUpdate.installments = {
@@ -465,74 +519,58 @@ export class RecurringTransactionsService {
     }
   }
 
-  private getCurrentCycleMonthYear(
-    creditCard: CreditCard | null,
-    referenceDate: Date,
-  ): { month: number; year: number } {
-    if (!creditCard) {
-      return {
-        month: referenceDate.getUTCMonth() + 1,
-        year: referenceDate.getUTCFullYear(),
-      };
-    }
-
-    return this.calculateInvoiceCycle(
-      referenceDate,
-      creditCard.closingDay,
-      creditCard.dueDay,
-    );
-  }
-
   private calculateInvoiceCycle(
     purchaseDate: Date,
     closingDay: number,
     dueDay: number,
   ): { month: number; year: number } {
-    const purchaseMonth = purchaseDate.getUTCMonth() + 1;
+    const day = purchaseDate.getUTCDate();
+    const purchaseMonth = purchaseDate.getUTCMonth() + 1; // 1-12
     const purchaseYear = purchaseDate.getUTCFullYear();
-    const purchaseDay = purchaseDate.getUTCDate();
-    const lastDayOfMonth = this.getLastDayOfMonth(purchaseMonth, purchaseYear);
-    const clampedClosingDay = Math.min(closingDay, lastDayOfMonth);
 
-    let targetMonth = purchaseMonth;
-    let targetYear = purchaseYear;
+    let invoiceMonth = purchaseMonth;
+    let invoiceYear = purchaseYear;
 
-    if (purchaseDay > clampedClosingDay) {
-      targetMonth += 1;
-      if (targetMonth > 12) {
-        targetMonth = 1;
-        targetYear += 1;
+    if (day >= closingDay) {
+      invoiceMonth += 1;
+      if (invoiceMonth > 12) {
+        invoiceMonth = 1;
+        invoiceYear += 1;
       }
     }
 
-    if (closingDay > dueDay) {
-      targetMonth += 1;
-      if (targetMonth > 12) {
-        targetMonth = 1;
-        targetYear += 1;
+    if (dueDay < closingDay) {
+      invoiceMonth += 1;
+      if (invoiceMonth > 12) {
+        invoiceMonth = 1;
+        invoiceYear += 1;
       }
     }
 
-    return { month: targetMonth, year: targetYear };
+    return { month: invoiceMonth, year: invoiceYear };
   }
 
-  private clampDayToMonth(day: number, month: number, year: number): number {
-    return Math.min(day, this.getLastDayOfMonth(month, year));
-  }
+  private getCurrentCycleMonthYear(
+    creditCard: CreditCard | null,
+    now: Date,
+  ): { month: number; year: number } {
+    if (!creditCard) {
+      return {
+        month: now.getUTCMonth() + 1,
+        year: now.getUTCFullYear(),
+      };
+    }
 
-  private getLastDayOfMonth(month: number, year: number): number {
-    return new Date(Date.UTC(year, month, 0)).getUTCDate();
-  }
-
-  private toMoneyDecimal(value: number): Prisma.Decimal {
-    return new Prisma.Decimal(value).toDecimalPlaces(
-      2,
-      Prisma.Decimal.ROUND_HALF_UP,
+    return this.calculateInvoiceCycle(
+      now,
+      creditCard.closingDay,
+      creditCard.dueDay,
     );
   }
 
-  private decimalToNumber(value: Prisma.Decimal): number {
-    return Number(value.toFixed(2));
+  private clampDayToMonth(day: number, month: number, year: number): number {
+    const lastDayOfMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    return Math.min(day, lastDayOfMonth);
   }
 
   private findOwnedRecurringTransaction(
@@ -566,6 +604,29 @@ export class RecurringTransactionsService {
     return category;
   }
 
+  private async ensureSubcategoryBelongsToCategory(
+    userId: string,
+    categoryId: string,
+    subcategoryId: string,
+  ): Promise<void> {
+    const subcategory = await this.prismaService.category.findFirst({
+      where: {
+        id: subcategoryId,
+        userId,
+      },
+    });
+
+    if (!subcategory) {
+      throw new NotFoundException('Subcategory not found.');
+    }
+
+    if (subcategory.parentId !== categoryId) {
+      throw new BadRequestException(
+        'Subcategory does not belong to the selected category.',
+      );
+    }
+  }
+
   private async ensureCreditCardBelongsToUser(
     userId: string,
     creditCardId: string,
@@ -591,6 +652,7 @@ export class RecurringTransactionsService {
       id: item.id,
       creditCardId: item.creditCardId,
       categoryId: item.categoryId,
+      subcategoryId: item.subcategoryId,
       description: item.description,
       amount: this.decimalToNumber(item.amount),
       transactionType: item.transactionType,
@@ -604,6 +666,7 @@ export class RecurringTransactionsService {
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
       category: this.mapCategory(item.category),
+      subcategory: item.subcategory ? this.mapCategory(item.subcategory) : null,
       creditCard: this.mapCreditCard(item.creditCard),
     };
   }
@@ -615,6 +678,7 @@ export class RecurringTransactionsService {
       icon: category.icon,
       color: category.color,
       type: category.type,
+      parentId: category.parentId,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     };
@@ -637,5 +701,16 @@ export class RecurringTransactionsService {
       createdAt: creditCard.createdAt,
       updatedAt: creditCard.updatedAt,
     };
+  }
+
+  private toMoneyDecimal(value: number): Prisma.Decimal {
+    return new Prisma.Decimal(value).toDecimalPlaces(
+      2,
+      Prisma.Decimal.ROUND_HALF_UP,
+    );
+  }
+
+  private decimalToNumber(value: Prisma.Decimal): number {
+    return value.toNumber();
   }
 }

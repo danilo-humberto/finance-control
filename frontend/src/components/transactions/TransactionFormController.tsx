@@ -72,6 +72,7 @@ export function TransactionFormController({
     amountValue,
     cardOptions,
     categoryOptions,
+    subcategoryOptions,
     description,
     errorCards,
     errorCategories,
@@ -88,6 +89,7 @@ export function TransactionFormController({
     purchaseDate,
     selectedCardId,
     selectedCategoryId,
+    selectedSubcategoryId,
     selectedInvoiceId,
     setDescription,
     setInstallmentCount,
@@ -95,6 +97,7 @@ export function TransactionFormController({
     setPurchaseDate,
     setSelectedCardId,
     setSelectedCategoryId,
+    setSelectedSubcategoryId,
     setSelectedInvoiceId,
     summaryInstallments,
     transactionError,
@@ -141,6 +144,11 @@ export function TransactionFormController({
     setSelectedCategoryId(value);
   }
 
+  function handleSubcategoryChange(value: string) {
+    markDirty();
+    setSelectedSubcategoryId(value);
+  }
+
   function handleInvoiceChange(value: string) {
     markDirty();
     setSelectedInvoiceId(value);
@@ -181,6 +189,7 @@ export function TransactionFormController({
           purchaseDate,
           selectedCardId,
           selectedCategoryId,
+          selectedSubcategoryId,
         });
       } catch (error) {
         const errorMsg = getApiErrorMessage(error);
@@ -214,6 +223,7 @@ export function TransactionFormController({
         purchaseDate,
         selectedCardId,
         selectedCategoryId,
+        selectedSubcategoryId,
         selectedInvoiceId,
         summaryInstallments,
       });
@@ -266,6 +276,7 @@ export function TransactionFormController({
       amountValue={amountValue}
       cardOptions={cardOptions}
       categoryOptions={categoryOptions}
+      subcategoryOptions={subcategoryOptions}
       description={description}
       errorCards={errorCards}
       errorCategories={errorCategories}
@@ -281,6 +292,7 @@ export function TransactionFormController({
       purchaseDate={purchaseDate}
       selectedCardId={selectedCardId}
       selectedCategoryId={selectedCategoryId}
+      selectedSubcategoryId={selectedSubcategoryId}
       selectedInvoiceId={selectedInvoiceId}
       submitError={submitError}
       summaryInstallments={summaryInstallments}
@@ -288,6 +300,7 @@ export function TransactionFormController({
       onBack={onCancel}
       onCardChange={handleCardChange}
       onCategoryChange={handleCategoryChange}
+      onSubcategoryChange={handleSubcategoryChange}
       onDescriptionChange={handleDescriptionChange}
       onInstallmentCountChange={handleInstallmentCountChange}
       onInvoiceChange={handleInvoiceChange}

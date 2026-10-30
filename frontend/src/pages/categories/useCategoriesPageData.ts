@@ -34,6 +34,7 @@ export type FeedbackMessage = {
 
 export type CategoryPageItem = CategoryListItemData & {
   source: Category;
+  subcategories: Array<CategoryListItemData & { source: Category }>;
 };
 
 const defaultCategoryColor = '#22c55e';
@@ -112,19 +113,25 @@ function getDeleteCategoryErrorMessage(error: unknown) {
     isAxiosError(error) &&
     (error.response?.status === 400 || error.response?.status === 409)
   ) {
-    return 'Não foi possível excluir esta categoria. Ela pode estar vinculada a movimentações.';
+    const backendMsg = error.response?.data?.message;
+    if (typeof backendMsg === 'string' && backendMsg.trim()) {
+      return backendMsg;
+    }
+    return 'Não foi possível excluir esta categoria. Ela ou suas subcategorias podem estar vinculadas a movimentações.';
   }
 
   return getApiErrorMessage(error);
 }
 
 function getCategoriesSummary(categories: Category[]): CategoriesSummaryData {
+  const rootCategories = categories.filter((category) => !category.parentId);
+  const subcategories = categories.filter((category) => Boolean(category.parentId));
+
   return {
-    total: categories.length,
-    expenses: categories.filter((category) => category.type === 'EXPENSE')
-      .length,
-    incomes: categories.filter((category) => category.type === 'INCOME')
-      .length,
+    total: rootCategories.length,
+    expenses: rootCategories.filter((category) => category.type === 'EXPENSE').length,
+    incomes: rootCategories.filter((category) => category.type === 'INCOME').length,
+    subcategoriesTotal: subcategories.length,
   };
 }
 
@@ -165,21 +172,26 @@ function toCategoryPayload(
     throw new Error('Informe o nome da categoria.');
   }
 
+  const parentId =
+    values.parentId && values.parentId !== 'root' ? values.parentId : null;
+
   return {
     name,
     icon: getApiIcon(values.icon),
     color: values.color || defaultCategoryColor,
     type: values.type === 'income' ? 'INCOME' : 'EXPENSE',
+    parentId,
   };
 }
 
-function toCategoryPageItem(category: Category): CategoryPageItem {
+function toCategoryListItemData(category: Category): CategoryListItemData & { source: Category } {
   return {
     id: category.id,
     name: category.name,
     type: category.type,
     icon: category.icon || defaultCategoryIcon,
     color: category.color || defaultCategoryColor,
+    parentId: category.parentId,
     transactionsCount: 0,
     source: category,
   };
@@ -195,6 +207,7 @@ export function useCategoriesPageData() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null,
   );
+  const [customInitialData, setCustomInitialData] = useState<Partial<CategoryFormValues> | null>(null);
   const [activeFilter, setActiveFilter] = useState<CategoryFilter>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [categorySheetOpen, setCategorySheetOpen] = useState(false);
@@ -218,33 +231,69 @@ export function useCategoriesPageData() {
   const deletingCategory = deleteCategoryMutation.isPending;
   const summary = useMemo(() => getCategoriesSummary(categories), [categories]);
 
-  const filteredCategories = useMemo(() => {
+  const parentCategories = useMemo(() => {
+    const rootCategories = categories.filter((c) => !c.parentId);
+    if (categoryFormMode === 'edit' && selectedCategory) {
+      const hasChildren = categories.some((c) => c.parentId === selectedCategory.id);
+      if (hasChildren) {
+        return [];
+      }
+      return rootCategories.filter((c) => c.id !== selectedCategory.id);
+    }
+    return rootCategories;
+  }, [categories, categoryFormMode, selectedCategory]);
+
+  const categoryItems: CategoryPageItem[] = useMemo(() => {
     const normalizedSearch = normalizeText(searchTerm);
     const filterType = getFilterType(activeFilter);
 
-    return categories.filter((category) => {
-      const matchesType = !filterType || category.type === filterType;
-      const matchesSearch =
-        !normalizedSearch ||
-        normalizeText(category.name).includes(normalizedSearch);
+    const rootCategories = categories.filter((c) => !c.parentId);
 
-      return matchesType && matchesSearch;
-    });
+    return rootCategories
+      .filter((root) => {
+        const matchesType = !filterType || root.type === filterType;
+        if (!matchesType) return false;
+
+        if (!normalizedSearch) return true;
+
+        const rootMatches = normalizeText(root.name).includes(normalizedSearch);
+        const subcategories = categories.filter((c) => c.parentId === root.id);
+        const subMatches = subcategories.some((sub) =>
+          normalizeText(sub.name).includes(normalizedSearch),
+        );
+
+        return rootMatches || subMatches;
+      })
+      .map((root) => {
+        const subcategories = categories
+          .filter((c) => c.parentId === root.id)
+          .filter((sub) => {
+            if (!normalizedSearch) return true;
+            const rootMatches = normalizeText(root.name).includes(normalizedSearch);
+            if (rootMatches) return true;
+            return normalizeText(sub.name).includes(normalizedSearch);
+          })
+          .map(toCategoryListItemData);
+
+        return {
+          ...toCategoryListItemData(root),
+          subcategories,
+        };
+      });
   }, [activeFilter, categories, searchTerm]);
 
-  const categoryItems = useMemo(
-    () => filteredCategories.map(toCategoryPageItem),
-    [filteredCategories],
-  );
-  const categoryFormInitialData: Partial<CategoryFormValues> | undefined =
-    selectedCategory && categoryFormMode === 'edit'
-      ? {
-          name: selectedCategory.name,
-          type: selectedCategory.type === 'INCOME' ? 'income' : 'expense',
-          icon: getFormIcon(selectedCategory.icon),
-          color: selectedCategory.color || defaultCategoryColor,
-        }
-      : undefined;
+  const categoryFormInitialData: Partial<CategoryFormValues> | undefined = useMemo(() => {
+    if (categoryFormMode === 'edit' && selectedCategory) {
+      return {
+        name: selectedCategory.name,
+        type: selectedCategory.type === 'INCOME' ? 'income' : 'expense',
+        icon: getFormIcon(selectedCategory.icon),
+        color: selectedCategory.color || defaultCategoryColor,
+        parentId: selectedCategory.parentId ?? null,
+      };
+    }
+    return customInitialData ?? undefined;
+  }, [categoryFormMode, customInitialData, selectedCategory]);
 
   useEffect(() => {
     function handleQuickCreateCategoryCreated() {
@@ -270,7 +319,23 @@ export function useCategoriesPageData() {
     setFeedbackMessage(null);
     setCategorySubmitError(null);
     setSelectedCategory(null);
+    setCustomInitialData(null);
     setCategoryFormMode('create');
+    setCategorySheetOpen(true);
+  }
+
+  function handleAddSubcategory(parent: Category) {
+    setFeedbackMessage(null);
+    setCategorySubmitError(null);
+    setSelectedCategory(null);
+    setCustomInitialData({
+      parentId: parent.id,
+      type: parent.type === 'INCOME' ? 'income' : 'expense',
+      color: parent.color || defaultCategoryColor,
+      icon: getFormIcon(parent.icon),
+    });
+    setCategoryFormMode('create');
+    setActionSheetOpen(false);
     setCategorySheetOpen(true);
   }
 
@@ -290,6 +355,7 @@ export function useCategoriesPageData() {
     setFeedbackMessage(null);
     setCategorySubmitError(null);
     setSelectedCategory(categoryToEdit);
+    setCustomInitialData(null);
     setCategoryFormMode('edit');
     setActionSheetOpen(false);
     setCategorySheetOpen(true);
@@ -321,28 +387,37 @@ export function useCategoriesPageData() {
       return;
     }
 
+    const isSubcategory = Boolean(payload.parentId);
+
     try {
       if (categoryFormMode === 'create') {
         await createCategoryMutation.mutateAsync(payload);
-        toast.create('Categoria cadastrada com sucesso.');
+        const successMessage = isSubcategory
+          ? 'Subcategoria cadastrada com sucesso.'
+          : 'Categoria cadastrada com sucesso.';
+        toast.create(successMessage);
         setFeedbackMessage({
           tone: 'success',
-          message: 'Categoria cadastrada com sucesso.',
+          message: successMessage,
         });
       } else if (selectedCategory) {
         const updatedCategory = await updateCategoryMutation.mutateAsync({
           id: selectedCategory.id,
           payload,
         });
-        toast.edit('Categoria atualizada com sucesso.');
+        const successMessage = isSubcategory
+          ? 'Subcategoria atualizada com sucesso.'
+          : 'Categoria atualizada com sucesso.';
+        toast.edit(successMessage);
         setFeedbackMessage({
           tone: 'success',
-          message: 'Categoria atualizada com sucesso.',
+          message: successMessage,
         });
         setSelectedCategory(updatedCategory);
       }
 
       setCategorySheetOpen(false);
+      setCustomInitialData(null);
     } catch (error) {
       const errorMsg = getApiErrorMessage(error);
       setCategorySubmitError(errorMsg);
@@ -355,6 +430,7 @@ export function useCategoriesPageData() {
 
     if (!open) {
       setCategorySubmitError(null);
+      setCustomInitialData(null);
     }
   }, []);
 
@@ -363,12 +439,17 @@ export function useCategoriesPageData() {
       return;
     }
 
+    const isSubcategory = Boolean(selectedCategory.parentId);
+
     try {
       await deleteCategoryMutation.mutateAsync(selectedCategory.id);
-      toast.delete('Categoria excluída com sucesso.');
+      const successMessage = isSubcategory
+        ? 'Subcategoria excluída com sucesso.'
+        : 'Categoria excluída com sucesso.';
+      toast.delete(successMessage);
       setFeedbackMessage({
         tone: 'success',
-        message: 'Categoria excluída com sucesso.',
+        message: successMessage,
       });
       setSelectedCategory(null);
     } catch (error) {
@@ -397,6 +478,7 @@ export function useCategoriesPageData() {
     loading,
     onActionSheetOpenChange: setActionSheetOpen,
     onActiveFilterChange: setActiveFilter,
+    onAddSubcategory: handleAddSubcategory,
     onCategoryFormDelete: () => {
       handleCategoryFormOpenChange(false);
       setDeleteDialogOpen(true);
@@ -411,6 +493,7 @@ export function useCategoriesPageData() {
     onEditCategory: handleEditCategory,
     onRetryLoad: () => void categoriesQuery.refetch(),
     onSearchTermChange: setSearchTerm,
+    parentCategories,
     searchTerm,
     selectedCategory,
     submittingCategory,

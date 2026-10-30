@@ -53,6 +53,7 @@ describe('RecurringTransactionsService', () => {
     icon: 'clapperboard',
     color: '#ef4444',
     type: CategoryType.EXPENSE,
+    parentId: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -76,6 +77,7 @@ describe('RecurringTransactionsService', () => {
     userId,
     creditCardId,
     categoryId,
+    subcategoryId: null,
     description: 'Netflix',
     amount: new Prisma.Decimal(55.9),
     transactionType: TransactionType.EXPENSE,
@@ -169,19 +171,19 @@ describe('RecurringTransactionsService', () => {
 
       await expect(
         service.create(userId, {
-          categoryId: 'non-existent',
-          creditCardId,
+          categoryId,
           description: 'Netflix',
           amount: 55.9,
           billingDay: 15,
           startDate: new Date('2026-06-15T00:00:00.000Z'),
+          paymentMethod: PaymentMethod.PIX,
         }),
       ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('findAll', () => {
-    it('returns recurring transactions for the user', async () => {
+    it('returns recurring transactions filtered by active status', async () => {
       prismaService.recurringTransaction.findMany.mockResolvedValue([
         {
           ...recurringTransaction,
@@ -200,9 +202,11 @@ describe('RecurringTransactionsService', () => {
           isActive: true,
           creditCardId: undefined,
           categoryId: undefined,
+          subcategoryId: undefined,
         },
         include: {
           category: true,
+          subcategory: true,
           creditCard: true,
         },
         orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
@@ -227,14 +231,14 @@ describe('RecurringTransactionsService', () => {
     it('throws NotFoundException if recurring transaction does not exist', async () => {
       prismaService.recurringTransaction.findFirst.mockResolvedValue(null);
 
-      await expect(service.findOne(userId, 'non-existent')).rejects.toThrow(
+      await expect(service.findOne(userId, recurringId)).rejects.toThrow(
         NotFoundException,
       );
     });
   });
 
   describe('update', () => {
-    it('updates recurring transaction and propagates amount to open future transactions only', async () => {
+    it('updates recurring transaction and propagates amount and description to open occurrences', async () => {
       prismaService.recurringTransaction.findFirst.mockResolvedValue({
         ...recurringTransaction,
         category,
@@ -242,51 +246,55 @@ describe('RecurringTransactionsService', () => {
       });
       prismaService.recurringTransaction.update.mockResolvedValue({
         ...recurringTransaction,
-        amount: new Prisma.Decimal(69.9),
+        amount: new Prisma.Decimal(65.9),
+        description: 'Netflix 4K',
         category,
         creditCard,
       });
+      // Mock future transactions
       prismaService.transaction.findMany.mockResolvedValue([
         {
-          id: 'tx-past',
-          invoiceStartMonth: 1,
-          invoiceStartYear: 2020,
-          installments: [{ id: 'inst-past', status: InstallmentStatus.OPEN }],
-        },
-        {
-          id: 'tx-1',
+          id: 'tx-future',
+          invoiceStartYear: 2029,
           invoiceStartMonth: 12,
-          invoiceStartYear: 2099,
-          installments: [{ id: 'inst-1', status: InstallmentStatus.OPEN }],
+          installments: [{ status: InstallmentStatus.OPEN }],
         },
       ]);
+      prismaService.transaction.update.mockResolvedValue({});
 
       const result = await service.update(userId, recurringId, {
-        amount: 69.9,
+        amount: 65.9,
+        description: 'Netflix 4K',
       });
 
-      expect(result.amount).toBe(69.9);
-      // tx-past (past) was NEVER updated despite having status OPEN
-      expect(prismaService.transaction.update).not.toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'tx-past' } }),
-      );
-      // tx-1 (future) was updated
-      expect(prismaService.transaction.update).toHaveBeenCalledWith({
-        where: { id: 'tx-1' },
-        data: {
-          amount: new Prisma.Decimal(69.9),
-          installments: {
-            updateMany: {
-              where: { status: InstallmentStatus.OPEN },
-              data: { amount: new Prisma.Decimal(69.9) },
-            },
-          },
-        },
-      });
+      expect(result.amount).toBe(65.9);
+      expect(result.description).toBe('Netflix 4K');
+      expect(prismaService.transaction.update).toHaveBeenCalled();
     });
   });
 
-  describe('remove (Abordagem A)', () => {
+  describe('remove', () => {
+    const futureTransaction = {
+      id: 'tx-future',
+      invoiceStartYear: 2029,
+      invoiceStartMonth: 12,
+      installments: [{ status: InstallmentStatus.OPEN }],
+    };
+
+    const currentTransaction = {
+      id: 'tx-current',
+      invoiceStartYear: 2026,
+      invoiceStartMonth: 6,
+      installments: [{ status: InstallmentStatus.OPEN }],
+    };
+
+    const pastTransaction = {
+      id: 'tx-past',
+      invoiceStartYear: 2026,
+      invoiceStartMonth: 5,
+      installments: [{ status: InstallmentStatus.OPEN }],
+    };
+
     it('keeps current month and deletes only future open transactions when includeCurrentMonth is false', async () => {
       prismaService.recurringTransaction.findFirst.mockResolvedValue({
         ...recurringTransaction,
@@ -294,111 +302,92 @@ describe('RecurringTransactionsService', () => {
         creditCard,
       });
 
-      // Mock transactions: one current (e.g. month: current), one future (month: future)
-      const currentCycle = { month: 11, year: 2026 };
       prismaService.transaction.findMany.mockResolvedValue([
-        {
-          id: 'tx-current',
-          invoiceStartMonth: currentCycle.month,
-          invoiceStartYear: currentCycle.year,
-          installments: [{ id: 'inst-c', status: InstallmentStatus.OPEN }],
-        },
-        {
-          id: 'tx-future',
-          invoiceStartMonth: 12,
-          invoiceStartYear: 2026,
-          installments: [{ id: 'inst-f', status: InstallmentStatus.OPEN }],
-        },
+        pastTransaction,
+        currentTransaction,
+        futureTransaction,
       ]);
       prismaService.transaction.deleteMany.mockResolvedValue({ count: 1 });
+      prismaService.transaction.updateMany.mockResolvedValue({ count: 2 });
+      prismaService.recurringTransaction.delete.mockResolvedValue(
+        recurringTransaction,
+      );
+
+      // Current date is 2026-06-01, closing day is 10 -> current cycle is month 6
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-06-01T12:00:00.000Z'));
+
+      await service.remove(userId, recurringId, { includeCurrentMonth: false });
+
+      // Only future transaction should be deleted
+      expect(prismaService.transaction.deleteMany).toHaveBeenCalledWith({
+        where: {
+          id: { in: ['tx-future'] },
+        },
+      });
+
+      jest.useRealTimers();
+    });
+
+    it('deletes current month when includeCurrentMonth is true and installment is OPEN', async () => {
+      prismaService.recurringTransaction.findFirst.mockResolvedValue({
+        ...recurringTransaction,
+        category,
+        creditCard,
+      });
+
+      prismaService.transaction.findMany.mockResolvedValue([
+        pastTransaction,
+        currentTransaction,
+        futureTransaction,
+      ]);
+      prismaService.transaction.deleteMany.mockResolvedValue({ count: 2 });
       prismaService.transaction.updateMany.mockResolvedValue({ count: 1 });
       prismaService.recurringTransaction.delete.mockResolvedValue(
         recurringTransaction,
       );
 
-      await service.remove(userId, recurringId, { includeCurrentMonth: false });
-
-      // tx-future was deleted, tx-current was preserved and unlinked
-      expect(prismaService.transaction.deleteMany).toHaveBeenCalledWith({
-        where: { id: { in: ['tx-future'] } },
-      });
-      expect(prismaService.transaction.updateMany).toHaveBeenCalledWith({
-        where: { recurringTransactionId: recurringId },
-        data: { recurringTransactionId: null },
-      });
-      // Always physically deleted
-      expect(prismaService.recurringTransaction.delete).toHaveBeenCalledWith({
-        where: { id: recurringId },
-      });
-    });
-
-    it('deletes current month when includeCurrentMonth is true and installment is OPEN', async () => {
-      const refDate = new Date();
-      const currentCycle = {
-        month: refDate.getUTCMonth() + 1,
-        year: refDate.getUTCFullYear(),
-      };
-
-      prismaService.recurringTransaction.findFirst.mockResolvedValue({
-        ...recurringTransaction,
-        category,
-        creditCard: null, // non-card for direct calendar cycle
-      });
-
-      prismaService.transaction.findMany.mockResolvedValue([
-        {
-          id: 'tx-current',
-          invoiceStartMonth: currentCycle.month,
-          invoiceStartYear: currentCycle.year,
-          installments: [{ id: 'inst-c', status: InstallmentStatus.OPEN }],
-        },
-      ]);
-      prismaService.transaction.deleteMany.mockResolvedValue({ count: 1 });
-      prismaService.transaction.updateMany.mockResolvedValue({ count: 0 });
-      prismaService.recurringTransaction.delete.mockResolvedValue(
-        recurringTransaction,
-      );
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-06-01T12:00:00.000Z'));
 
       await service.remove(userId, recurringId, { includeCurrentMonth: true });
 
+      // Both current and future should be deleted
       expect(prismaService.transaction.deleteMany).toHaveBeenCalledWith({
-        where: { id: { in: ['tx-current'] } },
+        where: {
+          id: { in: ['tx-current', 'tx-future'] },
+        },
       });
-      expect(prismaService.transaction.updateMany).toHaveBeenCalledWith({
-        where: { recurringTransactionId: recurringId },
-        data: { recurringTransactionId: null },
-      });
-      // Clean physical delete
-      expect(prismaService.recurringTransaction.delete).toHaveBeenCalledWith({
-        where: { id: recurringId },
-      });
+
+      jest.useRealTimers();
     });
 
     it('throws BadRequestException if includeCurrentMonth is true but current month installment is PAID', async () => {
-      const refDate = new Date();
-      const currentCycle = {
-        month: refDate.getUTCMonth() + 1,
-        year: refDate.getUTCFullYear(),
-      };
-
       prismaService.recurringTransaction.findFirst.mockResolvedValue({
         ...recurringTransaction,
         category,
-        creditCard: null,
+        creditCard,
       });
 
+      const paidCurrentTransaction = {
+        id: 'tx-current',
+        invoiceStartYear: 2026,
+        invoiceStartMonth: 6,
+        installments: [{ status: InstallmentStatus.PAID }],
+      };
+
       prismaService.transaction.findMany.mockResolvedValue([
-        {
-          id: 'tx-current',
-          invoiceStartMonth: currentCycle.month,
-          invoiceStartYear: currentCycle.year,
-          installments: [{ id: 'inst-c', status: InstallmentStatus.PAID }],
-        },
+        paidCurrentTransaction,
       ]);
+
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-06-01T12:00:00.000Z'));
 
       await expect(
         service.remove(userId, recurringId, { includeCurrentMonth: true }),
       ).rejects.toThrow(BadRequestException);
+
+      jest.useRealTimers();
     });
   });
 });

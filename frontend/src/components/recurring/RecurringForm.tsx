@@ -41,6 +41,7 @@ export function RecurringForm({
     recurringTransaction?.categoryId ||
     recurringTransaction?.category?.id ||
     '';
+  const initialSubcatId = recurringTransaction?.subcategoryId ?? '';
 
   const [description, setDescription] = useState(
     () => recurringTransaction?.description ?? '',
@@ -49,6 +50,7 @@ export function RecurringForm({
     recurringTransaction ? formatCurrency(recurringTransaction.amount) : '',
   );
   const [categoryId, setCategoryId] = useState(() => initialCatId);
+  const [subcategoryId, setSubcategoryId] = useState(() => initialSubcatId);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -60,18 +62,34 @@ export function RecurringForm({
         recurringTransaction.category?.id ||
         '';
       setCategoryId(targetCatId);
+      setSubcategoryId(recurringTransaction.subcategoryId ?? '');
       setValidationError(null);
     }
   }, [formatCurrency, recurringTransaction]);
 
   const categories = categoriesQuery.data ?? [];
+  const rootCategories = categories.filter((cat) => !cat.parentId);
   const selectedCategory =
-    categories.find((cat) => cat.id === categoryId) ||
+    rootCategories.find((cat) => cat.id === categoryId) ||
     (recurringTransaction &&
     (recurringTransaction.categoryId === categoryId ||
       recurringTransaction.category?.id === categoryId)
       ? recurringTransaction.category
       : undefined);
+
+  const availableSubcategories = categories.filter(
+    (cat) => cat.parentId === categoryId,
+  );
+  const selectedSubcategory =
+    availableSubcategories.find((cat) => cat.id === subcategoryId) ||
+    (recurringTransaction?.subcategoryId === subcategoryId
+      ? recurringTransaction?.subcategory
+      : undefined);
+
+  function handleCategoryChange(newCatId: string) {
+    setCategoryId(newCatId);
+    setSubcategoryId('');
+  }
 
   function handleAmountChange(value: string) {
     setAmountInput(formatCurrencyInput(value, formatCurrency));
@@ -102,6 +120,7 @@ export function RecurringForm({
       description: trimmedDescription,
       amount: numericAmount,
       categoryId,
+      subcategoryId: subcategoryId || null,
     };
 
     await onSubmit(payload);
@@ -133,7 +152,7 @@ export function RecurringForm({
 
       <div className="space-y-2">
         <Label>Categoria</Label>
-        <Select value={categoryId || undefined} onValueChange={setCategoryId}>
+        <Select value={categoryId || undefined} onValueChange={handleCategoryChange}>
           <SelectTrigger>
             <span
               className={cn(
@@ -145,7 +164,7 @@ export function RecurringForm({
             </span>
           </SelectTrigger>
           <SelectContent>
-            {categories.map((cat) => (
+            {rootCategories.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
                 {cat.name}
               </SelectItem>
@@ -153,6 +172,37 @@ export function RecurringForm({
           </SelectContent>
         </Select>
       </div>
+
+      {availableSubcategories.length > 0 ? (
+        <div className="space-y-2">
+          <Label>Subcategoria (opcional)</Label>
+          <Select
+            value={subcategoryId || 'none'}
+            onValueChange={(val) => setSubcategoryId(val === 'none' ? '' : val)}
+          >
+            <SelectTrigger>
+              <span
+                className={cn(
+                  'min-w-0 flex-1 truncate text-left',
+                  !selectedSubcategory && 'text-app-muted',
+                )}
+              >
+                {selectedSubcategory?.name ?? 'Nenhuma (apenas categoria principal)'}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">
+                Nenhuma (apenas categoria principal)
+              </SelectItem>
+              {availableSubcategories.map((sub) => (
+                <SelectItem key={sub.id} value={sub.id}>
+                  {sub.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
 
       <div className="flex items-center justify-end gap-3 pt-3">
         <Button

@@ -30,6 +30,7 @@ type InstallmentResponse = Omit<Installment, 'amount' | 'userId'> & {
 
 type TransactionWithRelations = Transaction & {
   category: Category;
+  subcategory: Category | null;
   creditCard: CreditCard | null;
   installments: Installment[];
 };
@@ -37,6 +38,7 @@ type TransactionWithRelations = Transaction & {
 export type TransactionResponse = Omit<Transaction, 'amount' | 'userId'> & {
   amount: number;
   category: CategoryResponse;
+  subcategory: CategoryResponse | null;
   creditCard: CreditCardResponse | null;
   installments: InstallmentResponse[];
 };
@@ -55,6 +57,7 @@ export type PaginatedTransactionsResponse = {
 export class TransactionsService {
   private readonly transactionInclude = {
     category: true,
+    subcategory: true,
     creditCard: true,
     installments: {
       orderBy: {
@@ -70,6 +73,14 @@ export class TransactionsService {
     dto: CreateTransactionDto,
   ): Promise<TransactionResponse> {
     await this.ensureCategoryBelongsToUser(userId, dto.categoryId);
+
+    if (dto.subcategoryId) {
+      await this.ensureSubcategoryBelongsToCategory(
+        userId,
+        dto.categoryId,
+        dto.subcategoryId,
+      );
+    }
 
     const amount = this.toMoneyDecimal(dto.amount);
     const isCreditCard = dto.paymentMethod === PaymentMethod.CREDIT_CARD;
@@ -100,6 +111,7 @@ export class TransactionsService {
         userId,
         creditCardId,
         categoryId: dto.categoryId,
+        subcategoryId: dto.subcategoryId ?? null,
         description: dto.description,
         amount,
         transactionType: dto.transactionType,
@@ -142,6 +154,7 @@ export class TransactionsService {
     const where: Prisma.TransactionWhereInput = {
       userId,
       categoryId: query.categoryId,
+      subcategoryId: query.subcategoryId,
       creditCardId: query.creditCardId,
       paymentMethod: query.paymentMethod,
       transactionType: query.transactionType,
@@ -205,6 +218,30 @@ export class TransactionsService {
 
     if (dto.categoryId) {
       await this.ensureCategoryBelongsToUser(userId, dto.categoryId);
+    }
+
+    const effectiveCategoryId = dto.categoryId ?? existingTransaction.categoryId;
+
+    let subcategoryId: string | null | undefined = undefined;
+
+    if (dto.subcategoryId !== undefined) {
+      if (dto.subcategoryId !== null) {
+        await this.ensureSubcategoryBelongsToCategory(
+          userId,
+          effectiveCategoryId,
+          dto.subcategoryId,
+        );
+        subcategoryId = dto.subcategoryId;
+      } else {
+        subcategoryId = null;
+      }
+    } else if (dto.categoryId && existingTransaction.subcategoryId) {
+      const subcategory = await this.prismaService.category.findFirst({
+        where: { id: existingTransaction.subcategoryId, userId },
+      });
+      if (subcategory && subcategory.parentId !== dto.categoryId) {
+        subcategoryId = null;
+      }
     }
 
     const amount =
@@ -276,6 +313,7 @@ export class TransactionsService {
       data: {
         creditCardId,
         categoryId: dto.categoryId ?? existingTransaction.categoryId,
+        ...(subcategoryId !== undefined ? { subcategoryId } : {}),
         description: dto.description,
         amount,
         transactionType: dto.transactionType,
@@ -373,6 +411,29 @@ export class TransactionsService {
 
     if (!category) {
       throw new NotFoundException('Category not found.');
+    }
+  }
+
+  private async ensureSubcategoryBelongsToCategory(
+    userId: string,
+    categoryId: string,
+    subcategoryId: string,
+  ): Promise<void> {
+    const subcategory = await this.prismaService.category.findFirst({
+      where: {
+        id: subcategoryId,
+        userId,
+      },
+    });
+
+    if (!subcategory) {
+      throw new NotFoundException('Subcategory not found.');
+    }
+
+    if (subcategory.parentId !== categoryId) {
+      throw new BadRequestException(
+        'Subcategory does not belong to the selected category.',
+      );
     }
   }
 
@@ -484,6 +545,7 @@ export class TransactionsService {
       id: transaction.id,
       creditCardId: transaction.creditCardId,
       categoryId: transaction.categoryId,
+      subcategoryId: transaction.subcategoryId,
       recurringTransactionId: transaction.recurringTransactionId,
       description: transaction.description,
       amount: this.decimalToNumber(transaction.amount),
@@ -497,6 +559,9 @@ export class TransactionsService {
       createdAt: transaction.createdAt,
       updatedAt: transaction.updatedAt,
       category: this.mapCategory(transaction.category),
+      subcategory: transaction.subcategory
+        ? this.mapCategory(transaction.subcategory)
+        : null,
       creditCard: this.mapCreditCard(transaction.creditCard),
       installments: transaction.installments.map((installment) =>
         this.mapInstallment(installment),
@@ -511,6 +576,7 @@ export class TransactionsService {
       icon: category.icon,
       color: category.color,
       type: category.type,
+      parentId: category.parentId,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     };

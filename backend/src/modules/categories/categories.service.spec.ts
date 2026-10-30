@@ -12,8 +12,13 @@ describe('CategoriesService', () => {
       findFirst: jest.Mock;
       update: jest.Mock;
       delete: jest.Mock;
+      count: jest.Mock;
+      updateMany: jest.Mock;
     };
     transaction: {
+      count: jest.Mock;
+    };
+    recurringTransaction: {
       count: jest.Mock;
     };
   };
@@ -27,6 +32,7 @@ describe('CategoriesService', () => {
     icon: 'shopping-cart',
     color: '#22c55e',
     type: CategoryType.EXPENSE,
+    parentId: null,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   };
@@ -36,6 +42,7 @@ describe('CategoriesService', () => {
     icon: category.icon,
     color: category.color,
     type: category.type,
+    parentId: null,
     createdAt: category.createdAt,
     updatedAt: category.updatedAt,
   };
@@ -48,8 +55,13 @@ describe('CategoriesService', () => {
         findFirst: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
+        count: jest.fn(),
+        updateMany: jest.fn(),
       },
       transaction: {
+        count: jest.fn(),
+      },
+      recurringTransaction: {
         count: jest.fn(),
       },
     };
@@ -77,8 +89,103 @@ describe('CategoriesService', () => {
         icon: category.icon,
         color: category.color,
         type: category.type,
+        parentId: null,
       },
     });
+  });
+
+  it('creates a subcategory when parent category is valid and belongs to user', async () => {
+    const parentCategory: Category = {
+      ...category,
+      id: 'parent-id',
+    };
+    const subcategory: Category = {
+      id: 'sub-id',
+      userId,
+      name: 'Supermercado',
+      icon: null,
+      color: null,
+      type: CategoryType.EXPENSE,
+      parentId: 'parent-id',
+      createdAt: new Date('2026-01-02T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-02T00:00:00.000Z'),
+    };
+
+    prismaService.category.findFirst.mockResolvedValue(parentCategory);
+    prismaService.category.create.mockResolvedValue(subcategory);
+
+    const result = await service.create(userId, {
+      name: 'Supermercado',
+      type: CategoryType.EXPENSE,
+      parentId: 'parent-id',
+    });
+
+    expect(result).toEqual({
+      id: subcategory.id,
+      name: subcategory.name,
+      icon: null,
+      color: null,
+      type: CategoryType.EXPENSE,
+      parentId: 'parent-id',
+      createdAt: subcategory.createdAt,
+      updatedAt: subcategory.updatedAt,
+    });
+    expect(prismaService.category.create).toHaveBeenCalledWith({
+      data: {
+        userId,
+        name: 'Supermercado',
+        icon: null,
+        color: null,
+        type: CategoryType.EXPENSE,
+        parentId: 'parent-id',
+      },
+    });
+  });
+
+  it('throws NotFoundException when parent category is not found or not owned by user', async () => {
+    prismaService.category.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.create(userId, {
+        name: 'Supermercado',
+        type: CategoryType.EXPENSE,
+        parentId: 'invalid-parent-id',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('throws BadRequestException when trying to nest under a subcategory (depth > 1)', async () => {
+    const parentIsSubcategory: Category = {
+      ...category,
+      id: 'sub-id',
+      parentId: 'root-id',
+    };
+    prismaService.category.findFirst.mockResolvedValue(parentIsSubcategory);
+
+    await expect(
+      service.create(userId, {
+        name: 'Sub-sub',
+        type: CategoryType.EXPENSE,
+        parentId: 'sub-id',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('throws BadRequestException when subcategory type differs from parent type', async () => {
+    const parentCategory: Category = {
+      ...category,
+      id: 'parent-id',
+      type: CategoryType.EXPENSE,
+    };
+    prismaService.category.findFirst.mockResolvedValue(parentCategory);
+
+    await expect(
+      service.create(userId, {
+        name: 'Salário',
+        type: CategoryType.INCOME,
+        parentId: 'parent-id',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('lists only categories from the authenticated user', async () => {
@@ -142,9 +249,44 @@ describe('CategoriesService', () => {
     });
   });
 
-  it('blocks deletion when the category has linked transactions', async () => {
+  it('prevents a category from being set as its own parent', async () => {
     prismaService.category.findFirst.mockResolvedValue(category);
+
+    await expect(
+      service.update(userId, category.id, {
+        parentId: category.id,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('prevents a category with subcategories from becoming a subcategory', async () => {
+    prismaService.category.findFirst.mockResolvedValue(category);
+    prismaService.category.count.mockResolvedValue(2);
+
+    await expect(
+      service.update(userId, category.id, {
+        parentId: 'another-id',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('blocks deletion when the category or its subcategories have linked transactions', async () => {
+    prismaService.category.findFirst.mockResolvedValue(category);
+    prismaService.category.findMany.mockResolvedValue([{ id: 'sub-id' }]);
     prismaService.transaction.count.mockResolvedValue(1);
+
+    await expect(service.remove(userId, category.id)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+
+    expect(prismaService.category.delete).not.toHaveBeenCalled();
+  });
+
+  it('blocks deletion when the category or its subcategories are used in recurring transactions', async () => {
+    prismaService.category.findFirst.mockResolvedValue(category);
+    prismaService.category.findMany.mockResolvedValue([]);
+    prismaService.transaction.count.mockResolvedValue(0);
+    prismaService.recurringTransaction.count.mockResolvedValue(1);
 
     await expect(service.remove(userId, category.id)).rejects.toBeInstanceOf(
       BadRequestException,
@@ -155,7 +297,9 @@ describe('CategoriesService', () => {
 
   it('deletes categories owned by the authenticated user when unused', async () => {
     prismaService.category.findFirst.mockResolvedValue(category);
+    prismaService.category.findMany.mockResolvedValue([]);
     prismaService.transaction.count.mockResolvedValue(0);
+    prismaService.recurringTransaction.count.mockResolvedValue(0);
     prismaService.category.delete.mockResolvedValue(category);
 
     await expect(service.remove(userId, category.id)).resolves.toEqual(

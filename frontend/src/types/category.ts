@@ -6,6 +6,7 @@ export type Category = {
   icon?: string | null;
   color?: string | null;
   type: CategoryType;
+  parentId?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -15,6 +16,7 @@ export type CreateCategoryPayload = {
   icon?: string;
   color?: string;
   type: CategoryType;
+  parentId?: string | null;
 };
 
 export type UpdateCategoryPayload = Partial<CreateCategoryPayload>;

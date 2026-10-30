@@ -18,4 +18,8 @@ export class QueryRecurringTransactionsDto {
   @IsUUID()
   @IsOptional()
   categoryId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  subcategoryId?: string;
 }

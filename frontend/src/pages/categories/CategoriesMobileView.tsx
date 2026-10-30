@@ -40,6 +40,7 @@ export function CategoriesMobileView({
   loadError,
   loading,
   onActiveFilterChange,
+  onAddSubcategory,
   onCategoryMenuClick,
   onCreateClick,
   onRetryLoad,
@@ -127,7 +128,10 @@ export function CategoriesMobileView({
               <CategoryListItem
                 key={categoryItem.id}
                 category={categoryItem}
+                subcategories={categoryItem.subcategories}
                 onMenuClick={() => onCategoryMenuClick(categoryItem.source)}
+                onSubcategoryMenuClick={onCategoryMenuClick}
+                onAddSubcategory={() => onAddSubcategory(categoryItem.source)}
               />
             ))}
           </div>

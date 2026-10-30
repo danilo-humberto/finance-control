@@ -21,6 +21,10 @@ export class CreateRecurringTransactionDto {
   @IsUUID()
   categoryId!: string;
 
+  @IsUUID()
+  @IsOptional()
+  subcategoryId?: string;
+
   @IsString()
   @IsNotEmpty()
   description!: string;

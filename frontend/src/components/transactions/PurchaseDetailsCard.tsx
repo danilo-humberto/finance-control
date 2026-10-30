@@ -50,9 +50,11 @@ export type PurchaseInvoiceOption = {
 type PurchaseDetailsCardProps = {
   cards: PurchaseCardOption[];
   categories: PurchaseCategoryOption[];
+  subcategories?: PurchaseCategoryOption[];
   invoices: PurchaseInvoiceOption[];
   selectedCardId: string;
   selectedCategoryId: string;
+  selectedSubcategoryId?: string;
   selectedInvoiceId: string;
   loadingCards: boolean;
   loadingCategories: boolean;
@@ -62,6 +64,7 @@ type PurchaseDetailsCardProps = {
   useDesktopControls?: boolean;
   onCardChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
+  onSubcategoryChange?: (value: string) => void;
   onInvoiceChange: (value: string) => void;
 };
 
@@ -95,9 +98,11 @@ const iconByName: Record<string, LucideIcon> = {
 export function PurchaseDetailsCard({
   cards,
   categories,
+  subcategories,
   invoices,
   selectedCardId,
   selectedCategoryId,
+  selectedSubcategoryId,
   selectedInvoiceId,
   loadingCards,
   loadingCategories,
@@ -107,12 +112,16 @@ export function PurchaseDetailsCard({
   useDesktopControls = false,
   onCardChange,
   onCategoryChange,
+  onSubcategoryChange,
   onInvoiceChange,
 }: PurchaseDetailsCardProps) {
   const { formatDateLabel } = usePreferences();
   const selectedCard = cards.find((card) => card.id === selectedCardId);
   const selectedCategory = categories.find(
     (category) => category.id === selectedCategoryId,
+  );
+  const selectedSubcategory = subcategories?.find(
+    (sub) => sub.id === selectedSubcategoryId,
   );
   const selectedInvoice = invoices.find(
     (invoice) => invoice.id === selectedInvoiceId,
@@ -190,6 +199,36 @@ export function PurchaseDetailsCard({
           useDesktopControl={useDesktopControls}
           onChange={onCategoryChange}
         />
+
+        {subcategories && subcategories.length > 0 ? (
+          <PurchaseSelectRow
+            label="Subcategoria (opcional)"
+            value={selectedSubcategoryId || ''}
+            placeholder="Nenhuma (apenas categoria principal)"
+            options={[
+              { id: '', label: 'Nenhuma (apenas categoria principal)' },
+              ...subcategories.map((sub) => ({
+                id: sub.id,
+                label: sub.name,
+              })),
+            ]}
+            leading={
+              <Tag
+                aria-hidden="true"
+                className="h-4 w-4"
+                style={{
+                  color:
+                    selectedSubcategory?.color ||
+                    selectedCategory?.color ||
+                    defaultColor,
+                }}
+              />
+            }
+            disabled={loadingCategories}
+            useDesktopControl={useDesktopControls}
+            onChange={onSubcategoryChange ?? (() => {})}
+          />
+        ) : null}
 
         <PurchaseSelectRow
           label={isRecurring ? "Primeira fatura" : "Fatura"}
@@ -287,7 +326,6 @@ function PurchaseSelectRow({
             onChange={(event) => onChange(event.target.value)}
             className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
           >
-            <option value="">{placeholder}</option>
             {options.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.label}

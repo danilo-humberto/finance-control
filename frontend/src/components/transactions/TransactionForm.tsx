@@ -26,6 +26,7 @@ type TransactionFormProps = {
   amountValue: number;
   cardOptions: PurchaseCardOption[];
   categoryOptions: PurchaseCategoryOption[];
+  subcategoryOptions?: PurchaseCategoryOption[];
   description: string;
   errorCards: string | null;
   errorCategories: string | null;
@@ -41,6 +42,7 @@ type TransactionFormProps = {
   presentation?: TransactionFormPresentation;
   selectedCardId: string;
   selectedCategoryId: string;
+  selectedSubcategoryId?: string;
   selectedInvoiceId: string;
   submitError: string | null;
   summaryInstallments: number;
@@ -48,6 +50,7 @@ type TransactionFormProps = {
   onBack: () => void;
   onCardChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
+  onSubcategoryChange?: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onInstallmentCountChange: (value: number) => void;
   onInvoiceChange: (value: string) => void;
@@ -62,6 +65,7 @@ export function TransactionForm({
   amountValue,
   cardOptions,
   categoryOptions,
+  subcategoryOptions,
   description,
   errorCards,
   errorCategories,
@@ -77,6 +81,7 @@ export function TransactionForm({
   presentation = 'page',
   selectedCardId,
   selectedCategoryId,
+  selectedSubcategoryId,
   selectedInvoiceId,
   submitError,
   summaryInstallments,
@@ -84,6 +89,7 @@ export function TransactionForm({
   onBack,
   onCardChange,
   onCategoryChange,
+  onSubcategoryChange,
   onDescriptionChange,
   onInstallmentCountChange,
   onInvoiceChange,
@@ -129,9 +135,11 @@ export function TransactionForm({
     <PurchaseDetailsCard
       cards={cardOptions}
       categories={categoryOptions}
+      subcategories={subcategoryOptions}
       invoices={invoiceOptions}
       selectedCardId={selectedCardId}
       selectedCategoryId={selectedCategoryId}
+      selectedSubcategoryId={selectedSubcategoryId}
       selectedInvoiceId={selectedInvoiceId}
       loadingCards={loadingCards}
       loadingCategories={loadingCategories}
@@ -141,6 +149,7 @@ export function TransactionForm({
       useDesktopControls={presentation === 'dialog'}
       onCardChange={onCardChange}
       onCategoryChange={onCategoryChange}
+      onSubcategoryChange={onSubcategoryChange}
       onInvoiceChange={onInvoiceChange}
     />
   );
@@ -200,9 +209,8 @@ export function TransactionForm({
           <Button
             type="button"
             variant="secondary"
-            disabled={isSubmitting}
             onClick={onBack}
-            className="h-11 min-w-28 rounded-xl"
+            className="h-11 rounded-xl px-5 text-[0.86rem]"
           >
             Cancelar
           </Button>
@@ -213,45 +221,45 @@ export function TransactionForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto w-full max-w-md space-y-4">
-      <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center gap-3">
+    <div className="flex min-h-[100dvh] flex-col bg-app-bg text-app-text">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-app-border bg-app-surface/95 px-3 backdrop-blur-md">
         <button
           type="button"
-          aria-label="Voltar"
           onClick={onBack}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text shadow-lg shadow-black/15 transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          aria-label="Voltar para a lista de movimentações"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-app-muted transition-colors hover:bg-app-elevated hover:text-app-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
-          <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+          <ArrowLeft aria-hidden="true" className="h-5 w-5" />
         </button>
 
-        <div className="min-w-0 text-center">
-          <h1 className="truncate text-[1.36rem] font-bold leading-tight text-app-text">
-            {isEditMode ? 'Editar compra' : 'Nova compra'}
-          </h1>
-          <p className="mt-1 truncate text-[0.8rem] leading-5 text-app-muted">
-            {isEditMode
-              ? 'Atualize os dados desta compra'
-              : 'Adicione uma nova compra ao seu cartão'}
-          </p>
-        </div>
+        <h1 className="text-base font-semibold leading-tight">
+          {isEditMode ? 'Editar compra' : 'Nova compra'}
+        </h1>
 
         <button
           type="button"
-          aria-label={isEditMode ? 'Ajuda sobre edição' : 'Ajuda sobre nova compra'}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-brand-800/60 bg-app-icon text-brand-400 shadow-lg shadow-brand-950/25 transition-colors hover:bg-brand-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          aria-label="Ajuda sobre o cadastro de compras"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-app-muted transition-colors hover:bg-app-elevated hover:text-app-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
-          <CircleHelp aria-hidden="true" className="h-4 w-4" />
+          <CircleHelp aria-hidden="true" className="h-5 w-5" />
         </button>
       </header>
 
-      {submitError ? <AuthMessage tone="error">{submitError}</AuthMessage> : null}
+      <main className="flex-1 px-3 py-4">
+        <form onSubmit={onSubmit} className="mx-auto w-full max-w-md space-y-4">
+          {submitError ? (
+            <AuthMessage tone="error">{submitError}</AuthMessage>
+          ) : null}
 
-      {purchaseInfo}
-      {purchaseDetails}
-      {paymentMethod}
-      {purchaseNote}
-      {purchaseSummary}
-      {submitButton}
-    </form>
+          {purchaseInfo}
+          {purchaseDetails}
+          {paymentMethod}
+          {purchaseNote}
+          {purchaseSummary}
+
+          <div className="pt-2">{submitButton}</div>
+        </form>
+      </main>
+    </div>
   );
 }

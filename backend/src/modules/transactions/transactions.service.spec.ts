@@ -28,6 +28,7 @@ type TransactionCreateArgs = {
     userId: string;
     creditCardId: string | null;
     categoryId: string;
+    subcategoryId?: string | null;
     description: string;
     amount: Prisma.Decimal;
     transactionType: TransactionType;
@@ -88,6 +89,7 @@ describe('TransactionsService', () => {
     icon: 'shopping-cart',
     color: '#22c55e',
     type: CategoryType.EXPENSE,
+    parentId: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -111,6 +113,7 @@ describe('TransactionsService', () => {
     userId,
     creditCardId,
     categoryId,
+    subcategoryId: null,
     recurringTransactionId: null,
     description: 'Mercado',
     amount: new Prisma.Decimal(100),
@@ -173,11 +176,13 @@ describe('TransactionsService', () => {
   const transactionWithRelations = {
     ...transaction,
     category,
+    subcategory: null,
     creditCard,
     installments,
   };
   const transactionIncludeExpectation = {
     category: true,
+    subcategory: true,
     creditCard: true,
     installments: {
       orderBy: {
@@ -220,6 +225,7 @@ describe('TransactionsService', () => {
       invoiceStartYear: null,
       installments: [],
       category,
+      subcategory: null,
     };
 
     prismaService.category.findFirst.mockResolvedValue({ id: categoryId });
@@ -250,6 +256,7 @@ describe('TransactionsService', () => {
         userId,
         creditCardId: null,
         categoryId,
+        subcategoryId: null,
         description: 'Debito',
         amount: createArgs.data.amount,
         transactionType: TransactionType.EXPENSE,
@@ -319,6 +326,51 @@ describe('TransactionsService', () => {
       { month: 12, year: 2026 },
       { month: 1, year: 2027 },
     ]);
+  });
+
+  it('creates transaction with valid subcategory belonging to the category', async () => {
+    const subcategoryId = 'sub-id';
+    prismaService.category.findFirst
+      .mockResolvedValueOnce({ id: categoryId })
+      .mockResolvedValueOnce({ id: subcategoryId, parentId: categoryId, userId });
+    prismaService.transaction.create.mockResolvedValue({
+      ...transactionWithRelations,
+      subcategoryId,
+    });
+
+    await service.create(userId, {
+      categoryId,
+      subcategoryId,
+      description: 'Mercado com subcategoria',
+      amount: 50,
+      transactionType: TransactionType.EXPENSE,
+      paymentMethod: PaymentMethod.DEBIT,
+      purchaseDate,
+    });
+
+    const createArgs = firstMockArg<TransactionCreateArgs>(
+      prismaService.transaction.create,
+    );
+    expect(createArgs.data.subcategoryId).toBe(subcategoryId);
+  });
+
+  it('throws BadRequestException if subcategory does not belong to the selected category', async () => {
+    const subcategoryId = 'sub-id';
+    prismaService.category.findFirst
+      .mockResolvedValueOnce({ id: categoryId })
+      .mockResolvedValueOnce({ id: subcategoryId, parentId: 'different-parent-id', userId });
+
+    await expect(
+      service.create(userId, {
+        categoryId,
+        subcategoryId,
+        description: 'Invalido',
+        amount: 50,
+        transactionType: TransactionType.EXPENSE,
+        paymentMethod: PaymentMethod.DEBIT,
+        purchaseDate,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('throws bad request when a credit-card transaction misses invoice data', async () => {
@@ -392,6 +444,7 @@ describe('TransactionsService', () => {
       where: {
         userId,
         categoryId,
+        subcategoryId: undefined,
         creditCardId,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         transactionType: TransactionType.EXPENSE,
@@ -406,6 +459,7 @@ describe('TransactionsService', () => {
       where: {
         userId,
         categoryId,
+        subcategoryId: undefined,
         creditCardId,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         transactionType: TransactionType.EXPENSE,

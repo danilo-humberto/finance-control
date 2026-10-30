@@ -14,6 +14,7 @@ export type CreateTransactionPayload = {
   paymentMethod: PaymentMethod;
   purchaseDate: string;
   categoryId: string;
+  subcategoryId?: string | null;
   creditCardId?: string;
   installmentsCount?: number;
   invoiceStartMonth?: number;
@@ -29,6 +30,7 @@ export type Transaction = {
   paymentMethod: PaymentMethod;
   purchaseDate: string;
   categoryId: string;
+  subcategoryId?: string | null;
   creditCardId?: string | null;
   recurringTransactionId?: string | null;
   installmentsCount: number;
@@ -38,6 +40,7 @@ export type Transaction = {
   createdAt?: string;
   updatedAt?: string;
   category?: Category;
+  subcategory?: Category | null;
   creditCard?: CreditCard | null;
   installments?: TransactionInstallment[];
 };
@@ -59,6 +62,7 @@ export type TransactionInstallment = {
 
 export type TransactionFilters = {
   categoryId?: string;
+  subcategoryId?: string;
   creditCardId?: string;
   paymentMethod?: PaymentMethod;
   transactionType?: TransactionType;

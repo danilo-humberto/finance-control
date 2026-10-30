@@ -1,5 +1,5 @@
 import { CategoryType } from '@prisma/client';
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateCategoryDto {
   @IsString()
@@ -16,4 +16,8 @@ export class CreateCategoryDto {
 
   @IsEnum(CategoryType)
   type!: CategoryType;
+
+  @IsUUID()
+  @IsOptional()
+  parentId?: string;
 }

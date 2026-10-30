@@ -3,9 +3,11 @@ import {
   type CategoryFormValues,
 } from '@/components/categories/CategoryForm';
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
+import { type Category } from '@/types/category';
 
 type CategoryFormDialogProps = {
   initialData?: Partial<CategoryFormValues>;
+  parentCategories?: Category[];
   mode: 'create' | 'edit';
   onDelete?: () => void;
   onOpenChange: (open: boolean) => void;
@@ -17,6 +19,7 @@ type CategoryFormDialogProps = {
 
 export function CategoryFormDialog({
   initialData,
+  parentCategories = [],
   mode,
   onDelete,
   onOpenChange,
@@ -26,16 +29,25 @@ export function CategoryFormDialog({
   submitError = null,
 }: CategoryFormDialogProps) {
   const isEdit = mode === 'edit';
+  const isSubcategory = Boolean(initialData?.parentId);
 
   return (
     <SettingsDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={isEdit ? 'Editar categoria' : 'Nova categoria'}
+      title={
+        isEdit
+          ? isSubcategory
+            ? 'Editar subcategoria'
+            : 'Editar categoria'
+          : isSubcategory
+            ? 'Nova subcategoria'
+            : 'Nova categoria'
+      }
       description={
         isEdit
-          ? 'Atualize nome, tipo, ícone e cor.'
-          : 'Crie uma categoria para organizar suas movimentações.'
+          ? 'Atualize nome, vínculo, tipo, ícone e cor.'
+          : 'Crie uma categoria ou subcategoria para organizar suas movimentações.'
       }
       size="md"
     >
@@ -43,6 +55,7 @@ export function CategoryFormDialog({
         open={open}
         mode={mode}
         initialData={initialData}
+        parentCategories={parentCategories}
         onSubmit={onSubmit}
         onDelete={onDelete}
         submitting={submitting}

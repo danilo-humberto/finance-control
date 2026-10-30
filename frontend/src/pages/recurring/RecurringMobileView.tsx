@@ -170,7 +170,7 @@ export function RecurringMobileView({
                     </Badge>
                   </div>
                   <p className="mt-0.5 truncate text-[0.7rem] text-app-muted">
-                    {item.category?.name ?? 'Geral'} • {paymentName} • Todo dia {item.billingDay}
+                    {item.category?.name ?? 'Geral'}{item.subcategory?.name ? ` › ${item.subcategory.name}` : ''} • {paymentName} • Todo dia {item.billingDay}
                   </p>
                 </div>
 

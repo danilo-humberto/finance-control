@@ -6,11 +6,8 @@ import { AuthMessage } from '@/components/auth/AuthMessage';
 import { ActionSheet } from '@/components/modals/ActionSheet';
 import { ConfirmDialog } from '@/components/modals/ConfirmDialog';
 import { RecurringDeleteDialog } from '@/components/transactions/RecurringDeleteDialog';
-import { useDeleteRecurringTransactionMutation } from '@/hooks/useRecurringTransactionsQuery';
 import { TransactionGroup } from '@/components/transactions/TransactionGroup';
-import {
-  type TransactionListItemData,
-} from '@/components/transactions/TransactionListItem';
+import { type TransactionListItemData } from '@/components/transactions/TransactionListItem';
 import {
   TransactionsFilters,
   type TransactionFilter,
@@ -22,6 +19,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useNewPurchaseDialog } from '@/hooks/useNewPurchaseDialog';
+import { useDeleteRecurringTransactionMutation } from '@/hooks/useRecurringTransactionsQuery';
 import {
   transactionsPageSize,
   useDeleteTransactionMutation,
@@ -29,10 +27,9 @@ import {
 } from '@/hooks/useTransactionsQuery';
 import {
   type PaymentMethod,
-  type Transaction,
   type TransactionFilters as ApiTransactionFilters,
+  type Transaction,
 } from '@/types/transaction';
-import { TransactionsDesktopView } from './TransactionsDesktopView';
 import {
   CreditCard,
   Edit3,
@@ -44,6 +41,7 @@ import {
   Trash2,
   Wallet,
 } from 'lucide-react';
+import { TransactionsDesktopView } from './TransactionsDesktopView';
 
 type FeedbackMessage = {
   tone: 'error' | 'success' | 'info';
@@ -94,7 +92,6 @@ function getApiErrorMessage(error: unknown) {
     if (typeof responseMessage === 'string' && responseMessage.trim()) {
       return responseMessage;
     }
-
   }
 
   if (error instanceof Error && error.message) {
@@ -242,6 +239,7 @@ function toListItem(transaction: Transaction): TransactionListItemData {
     id: transaction.id,
     description: transaction.description,
     categoryName: transaction.category?.name ?? 'Categoria',
+    subcategoryName: transaction.subcategory?.name,
     categoryIcon: transaction.category?.icon,
     categoryColor: transaction.category?.color,
     paymentLabel: getPaymentLabel(transaction),
@@ -263,6 +261,7 @@ function transactionMatchesSearch(transaction: Transaction, searchTerm: string) 
   return (
     normalizeText(transaction.description).includes(normalizedSearch) ||
     normalizeText(transaction.category?.name ?? '').includes(normalizedSearch) ||
+    normalizeText(transaction.subcategory?.name ?? '').includes(normalizedSearch) ||
     normalizeText(getPaymentLabel(transaction)).includes(normalizedSearch)
   );
 }
@@ -435,7 +434,12 @@ export function TransactionsPage() {
       return;
     }
 
-    setSelectedTransaction(transaction); if (transaction.recurringTransactionId) { setRecurringDeleteDialogOpen(true); } else { setDeleteDialogOpen(true); }
+    setSelectedTransaction(transaction);
+    if (transaction.recurringTransactionId) {
+      setRecurringDeleteDialogOpen(true);
+    } else {
+      setDeleteDialogOpen(true);
+    }
   }
 
   function handleEditClick() {
@@ -446,9 +450,35 @@ export function TransactionsPage() {
     navigate(`/transactions/${selectedTransaction.id}/edit`);
   }
 
-  function handleDeleteClick() { if (selectedTransaction?.recurringTransactionId) { setRecurringDeleteDialogOpen(true); } else { setDeleteDialogOpen(true); } }
+  function handleDeleteClick() {
+    if (selectedTransaction?.recurringTransactionId) {
+      setRecurringDeleteDialogOpen(true);
+    } else {
+      setDeleteDialogOpen(true);
+    }
+  }
 
-  async function handleConfirmRecurringDelete(includeCurrentMonth: boolean) { if (!selectedTransaction?.recurringTransactionId) { return; } try { setFeedbackMessage(null); await deleteRecurringTransactionMutation.mutateAsync({ id: selectedTransaction.recurringTransactionId, includeCurrentMonth }); setFeedbackMessage({ tone: "success", message: includeCurrentMonth ? "Recorrência cancelada e cobrança do mês removida." : "Recorrência cancelada. Cobranças futuras foram removidas." }); setSelectedTransaction(null); } catch (error) { setFeedbackMessage({ tone: "error", message: getApiErrorMessage(error) }); } }
+  async function handleConfirmRecurringDelete(includeCurrentMonth: boolean) {
+    if (!selectedTransaction?.recurringTransactionId) {
+      return;
+    }
+    try {
+      setFeedbackMessage(null);
+      await deleteRecurringTransactionMutation.mutateAsync({
+        id: selectedTransaction.recurringTransactionId,
+        includeCurrentMonth,
+      });
+      setFeedbackMessage({
+        tone: "success",
+        message: includeCurrentMonth
+          ? "Recorrência cancelada e cobrança do mês removida."
+          : "Recorrência cancelada. Cobranças futuras foram removidas.",
+      });
+      setSelectedTransaction(null);
+    } catch (error) {
+      setFeedbackMessage({ tone: "error", message: getApiErrorMessage(error) });
+    }
+  }
 
   async function handleConfirmDelete() {
     if (!selectedTransaction) {
@@ -649,9 +679,16 @@ export function TransactionsPage() {
         ]}
       />
 
-      <RecurringDeleteDialog open={recurringDeleteDialogOpen} onOpenChange={setRecurringDeleteDialogOpen} transactionDescription={selectedTransaction?.description ?? ""} confirming={deleteRecurringTransactionMutation.isPending} onConfirm={handleConfirmRecurringDelete} />
+      <RecurringDeleteDialog
+        open={recurringDeleteDialogOpen}
+        onOpenChange={setRecurringDeleteDialogOpen}
+        transactionDescription={selectedTransaction?.description ?? ""}
+        confirming={deleteRecurringTransactionMutation.isPending}
+        onConfirm={handleConfirmRecurringDelete}
+      />
 
-      <ConfirmDialog open={deleteDialogOpen}
+      <ConfirmDialog
+        open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         title="Excluir movimentação"
         description="Tem certeza que deseja excluir esta movimentação?"

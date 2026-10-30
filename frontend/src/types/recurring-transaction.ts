@@ -7,6 +7,7 @@ export type RecurringTransaction = {
   userId: string;
   creditCardId?: string | null;
   categoryId: string;
+  subcategoryId?: string | null;
   description: string;
   amount: number;
   transactionType: TransactionType;
@@ -20,6 +21,7 @@ export type RecurringTransaction = {
   createdAt: string;
   updatedAt: string;
   category?: Category;
+  subcategory?: Category | null;
   creditCard?: CreditCard | null;
 };
 
@@ -29,6 +31,7 @@ export type CreateRecurringTransactionPayload = {
   transactionType: TransactionType;
   paymentMethod: PaymentMethod;
   categoryId: string;
+  subcategoryId?: string | null;
   creditCardId?: string;
   billingDay: number;
   startDate: string;
@@ -44,6 +47,7 @@ export type QueryRecurringTransactionsParams = {
   isActive?: boolean;
   creditCardId?: string;
   categoryId?: string;
+  subcategoryId?: string;
 };
 
 export type DeleteRecurringTransactionParams = {
