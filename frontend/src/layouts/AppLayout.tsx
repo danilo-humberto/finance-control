@@ -48,6 +48,7 @@ export function AppLayout() {
     '/transactions/new',
     '/credit-cards',
     '/categories',
+    '/recurring',
     '/settings',
   ];
   const isTransactionEditRoute = /^\/transactions\/[^/]+\/edit$/.test(
