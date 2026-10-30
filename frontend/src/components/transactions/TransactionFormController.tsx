@@ -8,6 +8,7 @@ import {
 } from '@/components/transactions/TransactionForm';
 import { TransactionFormSkeleton } from '@/components/transactions/TransactionFormSkeleton';
 import { Button } from '@/components/ui/Button';
+import { useToast } from '@/contexts/ToastContext';
 import { useCreateRecurringTransactionMutation } from '@/hooks/useRecurringTransactionsQuery';
 import { useTransactionForm } from '@/hooks/useTransactionForm';
 import {
@@ -61,6 +62,7 @@ export function TransactionFormController({
   presentation = 'page',
   transactionId,
 }: TransactionFormControllerProps) {
+  const { toast } = useToast();
   const createTransactionMutation = useCreateTransactionMutation();
   const updateTransactionMutation = useUpdateTransactionMutation();
   const createRecurringTransactionMutation =
@@ -181,16 +183,21 @@ export function TransactionFormController({
           selectedCategoryId,
         });
       } catch (error) {
-        setSubmitError(getApiErrorMessage(error));
+        const errorMsg = getApiErrorMessage(error);
+        setSubmitError(errorMsg);
+        toast.error(errorMsg);
         return;
       }
 
       try {
         await createRecurringTransactionMutation.mutateAsync(recurringPayload);
         onDirtyChange?.(false);
+        toast.create('Assinatura recorrente criada com sucesso.');
         onSuccess();
       } catch (error) {
-        setSubmitError(getApiErrorMessage(error));
+        const errorMsg = getApiErrorMessage(error);
+        setSubmitError(errorMsg);
+        toast.error(errorMsg);
       }
       return;
     }
@@ -211,7 +218,9 @@ export function TransactionFormController({
         summaryInstallments,
       });
     } catch (error) {
-      setSubmitError(getApiErrorMessage(error));
+      const errorMsg = getApiErrorMessage(error);
+      setSubmitError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
@@ -221,14 +230,18 @@ export function TransactionFormController({
           id: transactionId,
           payload,
         });
+        toast.edit('Transação atualizada com sucesso.');
       } else {
         await createTransactionMutation.mutateAsync(payload);
+        toast.create('Transação criada com sucesso.');
       }
 
       onDirtyChange?.(false);
       onSuccess();
     } catch (error) {
-      setSubmitError(getApiErrorMessage(error));
+      const errorMsg = getApiErrorMessage(error);
+      setSubmitError(errorMsg);
+      toast.error(errorMsg);
     }
   }
 

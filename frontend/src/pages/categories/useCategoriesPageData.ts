@@ -25,6 +25,7 @@ import {
   type CreateCategoryPayload,
 } from '@/types/category';
 import { QUICK_CREATE_CATEGORY_CREATED_EVENT } from '@/utils/quickCreateEvents';
+import { useToast } from '@/contexts/ToastContext';
 
 export type FeedbackMessage = {
   tone: 'error' | 'success' | 'info';
@@ -186,6 +187,7 @@ function toCategoryPageItem(category: Category): CategoryPageItem {
 
 export function useCategoriesPageData() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const categoriesQuery = useCategoriesQuery();
   const createCategoryMutation = useCreateCategoryMutation();
   const updateCategoryMutation = useUpdateCategoryMutation();
@@ -322,6 +324,7 @@ export function useCategoriesPageData() {
     try {
       if (categoryFormMode === 'create') {
         await createCategoryMutation.mutateAsync(payload);
+        toast.create('Categoria cadastrada com sucesso.');
         setFeedbackMessage({
           tone: 'success',
           message: 'Categoria cadastrada com sucesso.',
@@ -331,6 +334,7 @@ export function useCategoriesPageData() {
           id: selectedCategory.id,
           payload,
         });
+        toast.edit('Categoria atualizada com sucesso.');
         setFeedbackMessage({
           tone: 'success',
           message: 'Categoria atualizada com sucesso.',
@@ -340,7 +344,9 @@ export function useCategoriesPageData() {
 
       setCategorySheetOpen(false);
     } catch (error) {
-      setCategorySubmitError(getApiErrorMessage(error));
+      const errorMsg = getApiErrorMessage(error);
+      setCategorySubmitError(errorMsg);
+      toast.error(errorMsg);
     }
   }
 
@@ -359,15 +365,18 @@ export function useCategoriesPageData() {
 
     try {
       await deleteCategoryMutation.mutateAsync(selectedCategory.id);
+      toast.delete('Categoria excluída com sucesso.');
       setFeedbackMessage({
         tone: 'success',
         message: 'Categoria excluída com sucesso.',
       });
       setSelectedCategory(null);
     } catch (error) {
+      const errorMsg = getDeleteCategoryErrorMessage(error);
+      toast.error(errorMsg);
       setFeedbackMessage({
         tone: 'error',
-        message: getDeleteCategoryErrorMessage(error),
+        message: errorMsg,
       });
     }
   }

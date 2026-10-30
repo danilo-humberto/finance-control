@@ -24,6 +24,7 @@ import {
   getInvoiceDueDateLabel,
 } from '@/utils/invoiceCycle';
 import { QUICK_CREATE_CREDIT_CARD_CREATED_EVENT } from '@/utils/quickCreateEvents';
+import { useToast } from '@/contexts/ToastContext';
 
 export type FeedbackMessage = {
   tone: 'error' | 'success' | 'info';
@@ -189,6 +190,7 @@ function getCardsSummary(cards: CreditCardWithUsage[]): CardsSummaryData {
 export function useCreditCardsPageData() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const creditCardsQuery = useCreditCardsWithUsageQuery();
   const createCreditCardMutation = useCreateCreditCardMutation();
   const updateCreditCardMutation = useUpdateCreditCardMutation();
@@ -324,6 +326,7 @@ export function useCreditCardsPageData() {
     try {
       if (cardFormMode === 'create') {
         await createCreditCardMutation.mutateAsync(payload);
+        toast.create('Cartão cadastrado com sucesso.');
         setFeedbackMessage({
           tone: 'success',
           message: 'Cartão cadastrado com sucesso.',
@@ -334,6 +337,7 @@ export function useCreditCardsPageData() {
           id: selectedCard.id,
           payload,
         });
+        toast.edit('Cartão atualizado com sucesso.');
         setFeedbackMessage({
           tone: 'success',
           message: 'Cartão atualizado com sucesso.',
@@ -346,9 +350,11 @@ export function useCreditCardsPageData() {
 
       setCardSheetOpen(false);
     } catch (error) {
+      const errorMsg = getApiErrorMessage(error);
+      toast.error(errorMsg);
       setFeedbackMessage({
         tone: 'error',
-        message: getApiErrorMessage(error),
+        message: errorMsg,
       });
     }
   }
@@ -360,15 +366,18 @@ export function useCreditCardsPageData() {
 
     try {
       await deleteCreditCardMutation.mutateAsync(selectedCard.id);
+      toast.delete('Cartão excluído com sucesso.');
       setFeedbackMessage({
         tone: 'success',
         message: 'Cartão excluído com sucesso.',
       });
       setSelectedCard(null);
     } catch (error) {
+      const errorMsg = getApiErrorMessage(error);
+      toast.error(errorMsg);
       setFeedbackMessage({
         tone: 'error',
-        message: getApiErrorMessage(error),
+        message: errorMsg,
       });
     }
   }

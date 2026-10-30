@@ -3,11 +3,11 @@ import { Edit3, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { AuthMessage } from '@/components/auth/AuthMessage';
 import { ActionSheet } from '@/components/modals/ActionSheet';
 import { RecurringFormDialog } from '@/components/recurring/RecurringFormDialog';
 import { RecurringFormSheet } from '@/components/recurring/RecurringFormSheet';
 import { RecurringDeleteDialog } from '@/components/transactions/RecurringDeleteDialog';
+import { useToast } from '@/contexts/ToastContext';
 import { useNewPurchaseDialog } from '@/hooks/useNewPurchaseDialog';
 import {
   useDeleteRecurringTransactionMutation,
@@ -26,11 +26,6 @@ import {
 } from './RecurringMobileView';
 
 const desktopMediaQuery = '(min-width: 1024px)';
-
-type FeedbackMessage = {
-  tone: 'error' | 'success' | 'info';
-  message: string;
-} | null;
 
 function getApiErrorMessage(error: unknown): string {
   if (isAxiosError(error)) {
@@ -52,6 +47,7 @@ function getApiErrorMessage(error: unknown): string {
 
 export function RecurringPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { openNewPurchaseDialog } = useNewPurchaseDialog();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<RecurringStatusFilter>('all');
@@ -63,7 +59,6 @@ export function RecurringPage() {
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
-  const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage>(null);
 
   const [isDesktopViewport, setIsDesktopViewport] = useState(() =>
     window.matchMedia(desktopMediaQuery).matches,
@@ -182,12 +177,11 @@ export function RecurringPage() {
       });
       setEditDialogOpen(false);
       setEditingRecurring(null);
-      setFeedbackMessage({
-        tone: 'success',
-        message: 'Recorrência atualizada com sucesso.',
-      });
+      toast.edit('Recorrência atualizada com sucesso.');
     } catch (error) {
-      setEditSubmitError(getApiErrorMessage(error));
+      const message = getApiErrorMessage(error);
+      setEditSubmitError(message);
+      toast.error(message);
     }
   }
 
@@ -197,36 +191,23 @@ export function RecurringPage() {
     }
 
     try {
-      setFeedbackMessage(null);
       await deleteMutation.mutateAsync({
         id: selectedRecurring.id,
         includeCurrentMonth,
       });
-      setFeedbackMessage({
-        tone: 'success',
-        message: includeCurrentMonth
+      toast.delete(
+        includeCurrentMonth
           ? 'Assinatura cancelada e cobrança do mês removida com sucesso.'
           : 'Assinatura cancelada. Cobranças futuras foram removidas.',
-      });
+      );
       setSelectedRecurring(null);
     } catch (error) {
-      setFeedbackMessage({
-        tone: 'error',
-        message: getApiErrorMessage(error),
-      });
+      toast.error(getApiErrorMessage(error));
     }
   }
 
   return (
     <>
-      {feedbackMessage ? (
-        <div className="mb-4">
-          <AuthMessage tone={feedbackMessage.tone}>
-            {feedbackMessage.message}
-          </AuthMessage>
-        </div>
-      ) : null}
-
       <div className="lg:hidden">
         <RecurringMobileView
           items={filteredItems}
