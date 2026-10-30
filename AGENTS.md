@@ -43,70 +43,39 @@ Considere que o projeto já está em produção. Portanto, qualquer alteração 
 
 ## Regra principal
 
-Antes de implementar qualquer coisa, você deve primeiro explicar:
+Explicações devem ser **resumidas, diretas e com escrita simples de entender**, sem burocracia e sem textos longos desnecessários.
 
-1. O problema que entendeu.
-2. O objetivo da alteração.
-3. Quais arquivos provavelmente serão afetados.
-4. Quais responsabilidades pertencem ao frontend, backend e banco.
-5. Quais riscos existem.
-6. Quais decisões arquiteturais precisam ser tomadas.
-7. Quais testes devem ser feitos.
-8. O que você não deve alterar.
+Antes de implementar código, apresente uma explicação prévia curta e objetiva, exceto no caso abaixo.
 
-Só depois disso você pode propor implementação.
-
-Não implemente código antes de apresentar o plano, exceto se o usuário pedir explicitamente: "implemente direto".
+> [!IMPORTANT]
+> **Exceção de execução direta:** Se o usuário disser **"não precisa explicar"**, **"implemente direto"**, **"sem explicação"** ou equivalente:
+> - **NÃO** faça explicação prévia nem planos longos.
+> - **NÃO** peça confirmação antes de começar.
+> - Atualize o código diretamente.
+> - Ao finalizar, apenas resuma brevemente o que foi alterado e como testar.
 
 ---
 
-## Modo de resposta obrigatório
+## Modo de resposta prévio (quando houver explicação)
 
-Use sempre esta estrutura antes de codar:
+Quando for necessário explicar antes de codar, mantenha a resposta enxuta usando esta estrutura simples:
 
-### 1. Entendimento do problema
+### 1. O que será feito
+Explique em 2 ou 3 frases o problema e o objetivo, em linguagem simples e sem jargões desnecessários.
 
-Explique de forma objetiva o que precisa ser feito.
+### 2. Arquivos afetados e Cuidados
+- Lista direta de arquivos afetados.
+- O que cuidar para não gerar bugs (ex.: não quebrar layout mobile ou regras de negócio).
 
-### 2. Pontos cegos e riscos
+### 3. Solução
+- Para ajustes simples: descreva a solução direta em poucas linhas.
+- Se houver decisão arquitetural importante: apresente 2 opções resumidas (Simples vs Mais Robusta) com a recomendação justificada.
 
-Liste o que pode dar errado, o que está indefinido e o que pode virar dívida técnica.
+### 4. Como testar
+Passos rápidos e objetivos para validar a alteração.
 
-### 3. Opções de arquitetura
-
-Sempre que houver mais de uma solução possível, apresente pelo menos 2 opções:
-
-- Opção simples.
-- Opção mais robusta.
-
-Para cada opção, mostre:
-
-- Quando usar.
-- Vantagens.
-- Desvantagens.
-- Custo de manutenção.
-- Impacto futuro.
-
-### 4. Recomendação
-
-Escolha uma opção e justifique tecnicamente.
-
-A recomendação deve considerar o tamanho real do projeto, não arquitetura exagerada por vaidade.
-
-### 5. Plano de execução
-
-Divida em etapas pequenas.
-
-Cada etapa deve ter:
-
-- Objetivo.
-- Arquivos envolvidos.
-- Resultado esperado.
-- Como testar.
-
-### 6. Confirmação
-
-Antes de alterar muitos arquivos, pergunte se pode seguir.
+### 5. Confirmação
+Pergunte se pode aplicar a alteração (apenas se a mudança envolver múltiplos arquivos ou decisões críticas).
 
 ---
 
@@ -150,22 +119,28 @@ Não diga apenas "melhorei", "refatorei" ou "ajustei". Explique exatamente o que
 
 ## Regra de aprendizado
 
-O objetivo deste projeto também é estudar arquitetura e programação na era da IA.
+O objetivo deste projeto também é aprendizado prático de arquitetura e código.
 
-Depois de cada alteração, explique:
+Depois de alterar o código, faça uma explicação **resumida, direta e simples**:
 
-1. O que foi feito.
-2. Por que foi feito assim.
-3. Quais alternativas existiam.
-4. Onde está a regra de negócio.
-5. Onde está o acesso a dados.
-6. Como o fluxo funciona ponta a ponta.
-7. O que o desenvolvedor precisa revisar manualmente.
-8. Que conceito técnico essa alteração ensina.
+1. **O que mudou e por quê:** explicação objetiva sem rodeios.
+2. **Onde está a regra e os dados:** quais arquivos e camadas cuidam disso.
+3. **O que revisar manualmente:** pontos de atenção imediatos.
+4. **Conceito técnico:** lição ou conceito-chave em 1 ou 2 frases.
 
-Não resuma demais.
+*(Nota: se o usuário tiver solicitado "não precisa explicar", informe apenas brevemente o que foi alterado e como testar).*
 
-Explique como se o desenvolvedor fosse manter esse código sozinho daqui a 6 meses.
+---
+
+## Regra para formulários e componentes de UI (shadcn/ui)
+
+Sempre que for criar ou refatorar formulários, utilize os componentes de formulário padronizados do **shadcn/ui** disponíveis em `@/components/ui/`:
+
+- **Inputs:** utilize o componente `Input` de `@/components/ui/Input`.
+- **Selects:** utilize os selects baseados em Radix/shadcn (`Select`, `SelectTrigger`, `SelectContent`, `SelectItem`, `SelectValue` de `@/components/ui/RadixSelect` ou abstrações do projeto como `PurchaseDesktopSelect`). Nunca utilize tags `<select>` HTML nativas cruas para garantir consistência visual, estados de foco e tema.
+- **Modais e Sheets:** utilize `dialog.tsx`, `sheet.tsx` ou os wrappers padronizados do projeto (`SettingsDialog`, `BaseBottomSheet`).
+- **Labels e Ações:** utilize `Label` e `Button` de `@/components/ui/`.
+- Mantenha a consistência visual, acessibilidade, suporte a temas e estados de erro já presentes nesses componentes.
 
 ---
 
