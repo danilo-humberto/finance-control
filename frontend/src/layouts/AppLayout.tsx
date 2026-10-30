@@ -80,7 +80,7 @@ export function AppLayout() {
           onToggleTheme={toggleTheme}
         />
 
-        <div className="min-h-screen lg:pl-72">
+        <div className="min-h-screen lg:pl-80">
           <main className="mx-auto min-h-screen w-full max-w-5xl px-4 pb-[calc(100px+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:max-w-7xl lg:px-8 lg:pb-10 lg:pt-8 xl:px-10">
             {showAppHeader ? (
               <header className="mb-8 flex items-center justify-between gap-4">
@@ -155,7 +155,7 @@ function DesktopSidebar({
   const themeLabel = resolvedTheme === 'dark' ? 'Tema claro' : 'Tema escuro';
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 border-r border-app-border bg-app-surface/95 px-4 py-5 shadow-2xl shadow-black/20 lg:flex lg:flex-col">
+    <aside className="fixed inset-y-4 left-4 z-30 hidden w-72 rounded-2xl border border-app-border bg-app-surface/95 px-4 py-5 shadow-2xl shadow-black/40 backdrop-blur-sm lg:flex lg:flex-col">
       <div className="flex items-center gap-3 px-2">
         <img
           src="/icons/icon-96x96.png"
