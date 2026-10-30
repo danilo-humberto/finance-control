@@ -208,15 +208,15 @@ export function RecurringDesktopView({
           }
         />
       ) : items.length > 0 ? (
-        <div className="overflow-hidden rounded-2xl border border-app-border bg-app-surface/45 shadow-lg shadow-black/10">
-          <table className="w-full table-fixed text-left text-sm">
+        <div className="overflow-x-auto rounded-2xl border border-app-border bg-app-surface/45 shadow-lg shadow-black/10">
+          <table className="w-full min-w-[56rem] table-fixed text-left text-sm">
             <colgroup>
               <col className="w-[30%]" />
               <col className="w-[18%]" />
               <col className="w-[18%]" />
               <col className="w-[12%]" />
-              <col className="w-[10%]" />
-              <col className="w-[12%]" />
+              <col className="w-[120px]" />
+              <col className="w-[185px]" />
             </colgroup>
             <thead className="bg-app-elevated/40 text-xs text-app-muted">
               <tr>
@@ -224,8 +224,8 @@ export function RecurringDesktopView({
                 <th className="px-4 py-3 font-semibold">Categoria</th>
                 <th className="px-4 py-3 font-semibold">Pagamento</th>
                 <th className="px-4 py-3 font-semibold">Cobrança</th>
-                <th className="px-4 py-3 text-right font-semibold">Valor</th>
-                <th className="px-4 py-3 text-right font-semibold">
+                <th className="px-4 py-3 text-right font-semibold whitespace-nowrap">Valor</th>
+                <th className="px-4 py-3 text-right font-semibold whitespace-nowrap">
                   <span className="sr-only">Ações</span>
                 </th>
               </tr>
@@ -281,7 +281,7 @@ export function RecurringDesktopView({
                       </span>
                     </td>
 
-                    <td className="px-4 py-3 text-right font-semibold text-app-text">
+                    <td className="px-4 py-3 text-right font-semibold text-app-text whitespace-nowrap">
                       <div>
                         <span>{formatCurrency(item.amount)}</span>
                         <span className="block text-[0.7rem] font-normal text-app-muted">
@@ -290,8 +290,8 @@ export function RecurringDesktopView({
                       </div>
                     </td>
 
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
                         <Button
                           type="button"
                           variant="ghost"
@@ -303,18 +303,16 @@ export function RecurringDesktopView({
                           Editar
                         </Button>
 
-                        {item.isActive ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onCancelClick(item)}
-                            className="h-8 px-2.5 text-xs text-red-400 hover:bg-danger-surface hover:text-red-300"
-                            leftIcon={<Trash2 aria-hidden="true" className="h-3.5 w-3.5" />}
-                          >
-                            Excluir
-                          </Button>
-                        ) : null}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onCancelClick(item)}
+                          className="h-8 px-2.5 text-xs text-red-400 hover:bg-danger-surface hover:text-red-300"
+                          leftIcon={<Trash2 aria-hidden="true" className="h-3.5 w-3.5" />}
+                        >
+                          Excluir
+                        </Button>
                       </div>
                     </td>
                   </tr>

@@ -197,8 +197,8 @@ export function RecurringPage() {
       });
       toast.delete(
         includeCurrentMonth
-          ? 'Assinatura cancelada e cobrança do mês removida com sucesso.'
-          : 'Assinatura cancelada. Cobranças futuras foram removidas.',
+          ? 'Recorrência excluída e cobrança do mês removida com sucesso.'
+          : 'Recorrência excluída com sucesso.',
       );
       setSelectedRecurring(null);
     } catch (error) {
@@ -256,19 +256,17 @@ export function RecurringPage() {
               }
             },
           },
-          ...(selectedRecurring?.isActive
-            ? [
-                {
-                  label: 'Excluir recorrência',
-                  description: 'Encerrar cobranças e projeções futuras',
-                  icon: Trash2,
-                  variant: 'danger' as const,
-                  onClick: () => {
-                    setDeleteDialogOpen(true);
-                  },
-                },
-              ]
-            : []),
+          {
+            label: 'Excluir recorrência',
+            description: selectedRecurring?.isActive
+              ? 'Encerrar cobranças e projeções futuras'
+              : 'Excluir permanentemente do sistema',
+            icon: Trash2,
+            variant: 'danger' as const,
+            onClick: () => {
+              setDeleteDialogOpen(true);
+            },
+          },
         ]}
       />
 
@@ -309,6 +307,7 @@ export function RecurringPage() {
         onOpenChange={setDeleteDialogOpen}
         transactionDescription={selectedRecurring?.description ?? 'Recorrência'}
         confirming={deleteMutation.isPending}
+        isInactive={selectedRecurring ? !selectedRecurring.isActive : false}
         onConfirm={handleConfirmDelete}
       />
     </>
