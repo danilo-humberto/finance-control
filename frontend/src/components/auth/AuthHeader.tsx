@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Check, Lock, WalletCards, type LucideIcon } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
+
 type AuthHeaderProps = {
   title: string;
   description: string;
@@ -19,7 +21,12 @@ export function AuthHeader({
   const HeaderIcon = Icon ?? (variant === 'secure' ? Lock : WalletCards);
 
   return (
-    <header className="relative text-center">
+    <header
+      className={cn(
+        'relative text-center',
+        variant === 'brand' && 'lg:text-left',
+      )}
+    >
       {backTo ? (
         <Link
           to={backTo}
@@ -30,7 +37,13 @@ export function AuthHeader({
         </Link>
       ) : null}
 
-      <div className="mx-auto flex w-fit flex-col items-center">
+      {/* On desktop, variant="brand" shows the logo above the card in AuthShell */}
+      <div
+        className={cn(
+          'mx-auto flex w-fit flex-col items-center',
+          variant === 'brand' && 'lg:hidden',
+        )}
+      >
         <span className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-400">
           <HeaderIcon aria-hidden="true" className="h-8 w-8" />
           {variant === 'secure' ? (
@@ -47,11 +60,11 @@ export function AuthHeader({
         ) : null}
       </div>
 
-      <div className="mt-5">
-        <h1 className="text-[1.2rem] font-bold leading-tight text-app-text">
+      <div className={cn('mt-5', variant === 'brand' && 'lg:mt-0')}>
+        <h1 className="text-[1.2rem] font-bold leading-tight text-app-text lg:text-[1.7rem] lg:tracking-tight lg:text-white">
           {title}
         </h1>
-        <p className="mt-2 text-[0.8rem] leading-5 text-app-muted">
+        <p className="mt-2 text-[0.8rem] leading-5 text-app-muted lg:text-[0.86rem]">
           {description}
         </p>
       </div>

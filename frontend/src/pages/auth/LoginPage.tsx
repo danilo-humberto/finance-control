@@ -5,6 +5,7 @@ import { Lock, Mail } from 'lucide-react';
 import { AuthField } from '@/components/auth/AuthField';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { AuthMessage } from '@/components/auth/AuthMessage';
+import { AuthModeSwitch } from '@/components/auth/AuthModeSwitch';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { SocialLoginButton } from '@/components/auth/SocialLoginButton';
 import { Button } from '@/components/ui/Button';
@@ -59,13 +60,15 @@ export function LoginPage() {
 
   return (
     <AuthShell>
-      <div className="space-y-6">
+      <div className="space-y-5">
         <AuthHeader
           title="Bem-vindo de volta"
           description="Entre para acompanhar suas faturas e movimentações"
         />
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <AuthModeSwitch activeMode="login" />
+
+        <form className="space-y-3.5" onSubmit={handleSubmit}>
           <AuthField
             label="E-mail"
             type="email"
@@ -73,7 +76,7 @@ export function LoginPage() {
             onChange={(event) => setEmail(event.target.value)}
             autoComplete="email"
             required
-            placeholder="seu@email.com"
+            placeholder="E-mail"
             leftIcon={<Mail aria-hidden="true" className="h-4 w-4" />}
           />
 
@@ -84,7 +87,7 @@ export function LoginPage() {
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="current-password"
               required
-              placeholder="Digite sua senha"
+              placeholder="Senha"
               leftIcon={<Lock aria-hidden="true" className="h-4 w-4" />}
               showPasswordToggle
             />
@@ -109,13 +112,13 @@ export function LoginPage() {
           <Button
             type="submit"
             loading={isSubmitting}
-            className="h-11 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.86rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400"
+            className="h-11 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-[0.86rem] text-white shadow-lg shadow-brand-950/30 hover:from-brand-500 hover:to-brand-400 lg:h-12 lg:rounded-full lg:bg-[#24e578] lg:bg-none lg:text-[0.92rem] lg:font-bold lg:text-slate-950 lg:shadow-[0_0_24px_rgba(36,229,120,0.35)] lg:hover:bg-[#34f586]"
           >
             {isSubmitting ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>
 
-        <div className="flex items-center gap-3 text-[0.72rem] text-app-muted">
+        <div className="flex items-center gap-3 text-[0.72rem] text-app-muted lg:hidden">
           <span className="h-px flex-1 bg-app-border" />
           <span>ou continue com</span>
           <span className="h-px flex-1 bg-app-border" />
@@ -126,9 +129,12 @@ export function LoginPage() {
           onClick={handleGoogleLogin}
         />
 
-        <p className="text-center text-[0.76rem] text-app-muted">
+        <p className="text-center text-[0.76rem] text-app-muted lg:text-[0.82rem]">
           Ainda não tem uma conta?{' '}
-          <Link className="font-semibold text-brand-400" to="/register">
+          <Link
+            className="font-semibold text-brand-400 lg:text-white lg:underline lg:decoration-white/30 lg:underline-offset-4 lg:hover:text-[#24e578]"
+            to="/register"
+          >
             Cadastre-se
           </Link>
         </p>
