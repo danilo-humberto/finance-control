@@ -11,7 +11,10 @@ import {
   Check,
   type LucideIcon,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+
+const desktopMediaQuery = '(min-width: 1024px)';
 
 type PreferenceOption<T extends string> = {
   value: T;
@@ -205,6 +208,32 @@ export function GeneralPreferencesContent({
 
 export function GeneralPreferencesPage() {
   const navigate = useNavigate();
+  const [isDesktopViewport, setIsDesktopViewport] = useState(() =>
+    window.matchMedia(desktopMediaQuery).matches,
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(desktopMediaQuery);
+    const handleViewportChange = (event: MediaQueryListEvent) => {
+      setIsDesktopViewport(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleViewportChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleViewportChange);
+    };
+  }, []);
+
+  if (isDesktopViewport) {
+    return (
+      <Navigate
+        to="/settings"
+        replace
+        state={{ settingsDialog: 'preferences' }}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-md space-y-4">

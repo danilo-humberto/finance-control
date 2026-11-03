@@ -13,9 +13,16 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-import { SettingsDesktopView } from './SettingsDesktopView';
+import {
+  SettingsDesktopView,
+  type SettingsDialogKey,
+} from './SettingsDesktopView';
+
+type SettingsLocationState = {
+  settingsDialog?: Exclude<SettingsDialogKey, null>;
+} | null;
 
 function getInitials(name: string, fallback: string) {
   const initials = name
@@ -113,10 +120,15 @@ function SettingsMobileView({
 
 export function SettingsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout, user } = useAuth();
   const { preferences } = usePreferences();
   const { theme } = useTheme();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const locationState = location.state as SettingsLocationState;
+  const initialDialog: SettingsDialogKey =
+    locationState?.settingsDialog ?? null;
 
   const userName = user?.displayName || user?.email?.split('@')[0] || 'Usuário';
   const userEmail = user?.email || 'E-mail não informado';
@@ -157,7 +169,10 @@ export function SettingsPage() {
         />
       </div>
       <div className="hidden lg:block">
-        <SettingsDesktopView {...sharedProps} />
+        <SettingsDesktopView
+          {...sharedProps}
+          initialDialog={initialDialog}
+        />
       </div>
     </>
   );

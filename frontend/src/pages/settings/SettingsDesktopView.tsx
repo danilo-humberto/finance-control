@@ -10,7 +10,7 @@ import {
   SlidersHorizontal,
   type LucideIcon,
 } from 'lucide-react';
-import { forwardRef, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { GeneralPreferencesContent } from './GeneralPreferencesPage';
@@ -26,6 +26,7 @@ export type SettingsDialogKey =
 type DialogTriggerKey = Exclude<SettingsDialogKey, null>;
 
 type SettingsDesktopViewProps = {
+  initialDialog?: SettingsDialogKey;
   isLoggingOut: boolean;
   onLogout: () => void;
   preferencesSummary: string;
@@ -84,6 +85,7 @@ const SettingsCard = forwardRef<HTMLButtonElement, SettingsCardProps>(
 SettingsCard.displayName = 'SettingsCard';
 
 export function SettingsDesktopView({
+  initialDialog = null,
   isLoggingOut,
   onLogout,
   preferencesSummary,
@@ -94,12 +96,19 @@ export function SettingsDesktopView({
   userPhotoUrl,
 }: SettingsDesktopViewProps) {
   const navigate = useNavigate();
-  const [activeDialog, setActiveDialog] = useState<SettingsDialogKey>(null);
+  const [activeDialog, setActiveDialog] =
+    useState<SettingsDialogKey>(initialDialog);
   const triggerRefs = useRef<Record<DialogTriggerKey, HTMLButtonElement | null>>({
     profile: null,
     theme: null,
     preferences: null,
   });
+
+  useEffect(() => {
+    if (initialDialog) {
+      setActiveDialog(initialDialog);
+    }
+  }, [initialDialog]);
 
   function openDialog(dialog: DialogTriggerKey) {
     setActiveDialog(dialog);

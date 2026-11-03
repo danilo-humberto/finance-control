@@ -17,7 +17,9 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
+
+const desktopMediaQuery = '(min-width: 1024px)';
 
 type ProfileInfoRowProps = {
   label: string;
@@ -415,6 +417,32 @@ export function ProfileSettingsContent({
 
 export function ProfileSettingsPage() {
   const navigate = useNavigate();
+  const [isDesktopViewport, setIsDesktopViewport] = useState(() =>
+    window.matchMedia(desktopMediaQuery).matches,
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(desktopMediaQuery);
+    const handleViewportChange = (event: MediaQueryListEvent) => {
+      setIsDesktopViewport(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleViewportChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleViewportChange);
+    };
+  }, []);
+
+  if (isDesktopViewport) {
+    return (
+      <Navigate
+        to="/settings"
+        replace
+        state={{ settingsDialog: 'profile' }}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-md space-y-4">
