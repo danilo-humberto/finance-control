@@ -21,11 +21,13 @@ import {
 const defaultColor = '#22c55e';
 
 type UseTransactionFormParams = {
+  initialPaymentMode?: PaymentMode;
   transactionId?: string;
   getErrorMessage: (error: unknown) => string;
 };
 
 export function useTransactionForm({
+  initialPaymentMode = 'cash',
   transactionId,
   getErrorMessage,
 }: UseTransactionFormParams) {
@@ -44,7 +46,8 @@ export function useTransactionForm({
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [purchaseDate, setPurchaseDate] = useState(getTodayIsoDate);
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash');
+  const [paymentMode, setPaymentMode] =
+    useState<PaymentMode>(initialPaymentMode);
   const [installmentCount, setInstallmentCount] = useState(1);
   const [note, setNote] = useState('');
   const [hydratedTransactionId, setHydratedTransactionId] = useState<

@@ -316,7 +316,8 @@ function TransactionsLoadingState() {
 
 export function TransactionsPage() {
   const navigate = useNavigate();
-  const { openNewPurchaseDialog } = useNewPurchaseDialog();
+  const { openNewPurchaseDialog, openEditPurchaseDialog } =
+    useNewPurchaseDialog();
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -422,7 +423,7 @@ export function TransactionsPage() {
       return;
     }
 
-    navigate(`/transactions/${transaction.id}/edit`);
+    openEditPurchaseDialog(transaction.id);
   }
 
   function handleDesktopDeleteClick(transactionItem: TransactionListItemData) {

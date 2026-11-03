@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 
+import { type PaymentMode } from '@/components/transactions/PaymentMethodCard';
 import { TransactionFormController } from '@/components/transactions/TransactionFormController';
 import { Button } from '@/components/ui/Button';
 import {
@@ -19,8 +20,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+export type OpenNewPurchaseDialogOptions = {
+  initialPaymentMode?: PaymentMode;
+};
+
 type NewPurchaseDialogContextValue = {
-  openNewPurchaseDialog: () => void;
+  openNewPurchaseDialog: (options?: OpenNewPurchaseDialogOptions) => void;
+  openEditPurchaseDialog: (transactionId: string) => void;
 };
 
 type NewPurchaseDialogProviderProps = {
@@ -33,6 +39,23 @@ function hasOpenNestedPurchaseLayer() {
   );
 }
 
+function resolveInitialPaymentMode(
+  options?: OpenNewPurchaseDialogOptions,
+): PaymentMode {
+  if (
+    options &&
+    typeof options === 'object' &&
+    'initialPaymentMode' in options &&
+    (options.initialPaymentMode === 'cash' ||
+      options.initialPaymentMode === 'installments' ||
+      options.initialPaymentMode === 'recurring')
+  ) {
+    return options.initialPaymentMode;
+  }
+
+  return 'cash';
+}
+
 export const NewPurchaseDialogContext = createContext<
   NewPurchaseDialogContextValue | undefined
 >(undefined);
@@ -41,11 +64,17 @@ export function NewPurchaseDialogProvider({
   children,
 }: NewPurchaseDialogProviderProps) {
   const [open, setOpen] = useState(false);
+  const [editingTransactionId, setEditingTransactionId] = useState<
+    string | undefined
+  >(undefined);
+  const [initialPaymentMode, setInitialPaymentMode] =
+    useState<PaymentMode>('cash');
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const openerRef = useRef<HTMLElement | null>(null);
   const continueButtonRef = useRef<HTMLButtonElement | null>(null);
+  const isEditMode = Boolean(editingTransactionId);
 
   useEffect(() => {
     if (!discardDialogOpen) {
@@ -70,17 +99,37 @@ export function NewPurchaseDialogProvider({
 
   const closeDialog = useCallback(() => {
     setOpen(false);
+    setEditingTransactionId(undefined);
+    setInitialPaymentMode('cash');
     setDiscardDialogOpen(false);
     setDirty(false);
     setSubmitting(false);
     restoreOpenerFocus();
   }, [restoreOpenerFocus]);
 
-  const openNewPurchaseDialog = useCallback(() => {
+  const openNewPurchaseDialog = useCallback(
+    (options?: OpenNewPurchaseDialogOptions) => {
+      openerRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      setEditingTransactionId(undefined);
+      setInitialPaymentMode(resolveInitialPaymentMode(options));
+      setDirty(false);
+      setSubmitting(false);
+      setDiscardDialogOpen(false);
+      setOpen(true);
+    },
+    [],
+  );
+
+  const openEditPurchaseDialog = useCallback((transactionId: string) => {
     openerRef.current =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
+    setEditingTransactionId(transactionId);
+    setInitialPaymentMode('cash');
     setDirty(false);
     setSubmitting(false);
     setDiscardDialogOpen(false);
@@ -101,8 +150,8 @@ export function NewPurchaseDialogProvider({
   }, [closeDialog, dirty, submitting]);
 
   const contextValue = useMemo(
-    () => ({ openNewPurchaseDialog }),
-    [openNewPurchaseDialog],
+    () => ({ openNewPurchaseDialog, openEditPurchaseDialog }),
+    [openNewPurchaseDialog, openEditPurchaseDialog],
   );
 
   return (
@@ -141,12 +190,22 @@ export function NewPurchaseDialogProvider({
         >
           <DialogHeader className="relative shrink-0 border-b border-app-border px-6 py-5 pr-16 text-left">
             <DialogTitle>
-              {discardDialogOpen ? 'Descartar nova compra' : 'Nova compra'}
+              {discardDialogOpen
+                ? isEditMode
+                  ? 'Descartar alterações'
+                  : 'Descartar nova compra'
+                : isEditMode
+                  ? 'Editar compra'
+                  : 'Nova compra'}
             </DialogTitle>
             <DialogDescription>
               {discardDialogOpen
-                ? 'Os dados preenchidos serão perdidos.'
-                : 'Registre uma compra sem sair da tela atual.'}
+                ? isEditMode
+                  ? 'As alterações feitas não serão salvas.'
+                  : 'Os dados preenchidos serão perdidos.'
+                : isEditMode
+                  ? 'Atualize os dados da compra sem sair da tela atual.'
+                  : 'Registre uma compra sem sair da tela atual.'}
             </DialogDescription>
 
             <button
@@ -154,7 +213,9 @@ export function NewPurchaseDialogProvider({
               aria-label={
                 discardDialogOpen
                   ? 'Voltar ao formulário'
-                  : 'Fechar nova compra'
+                  : isEditMode
+                    ? 'Fechar edição de compra'
+                    : 'Fechar nova compra'
               }
               disabled={submitting}
               onClick={() => {
@@ -181,6 +242,9 @@ export function NewPurchaseDialogProvider({
                 }
               >
                 <TransactionFormController
+                  key={`${editingTransactionId ?? 'new'}-${initialPaymentMode}`}
+                  initialPaymentMode={initialPaymentMode}
+                  transactionId={editingTransactionId}
                   presentation="dialog"
                   onCancel={requestClose}
                   onDirtyChange={setDirty}

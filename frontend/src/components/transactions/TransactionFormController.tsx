@@ -2,6 +2,7 @@ import { isAxiosError } from 'axios';
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { AuthMessage } from '@/components/auth/AuthMessage';
+import { type PaymentMode } from '@/components/transactions/PaymentMethodCard';
 import {
   TransactionForm,
   type TransactionFormPresentation,
@@ -22,6 +23,7 @@ import {
 } from '@/utils/transactionPayload';
 
 type TransactionFormControllerProps = {
+  initialPaymentMode?: PaymentMode;
   onCancel: () => void;
   onDirtyChange?: (dirty: boolean) => void;
   onSubmittingChange?: (submitting: boolean) => void;
@@ -55,6 +57,7 @@ function getApiErrorMessage(error: unknown) {
 }
 
 export function TransactionFormController({
+  initialPaymentMode,
   onCancel,
   onDirtyChange,
   onSubmittingChange,
@@ -102,6 +105,7 @@ export function TransactionFormController({
     summaryInstallments,
     transactionError,
   } = useTransactionForm({
+    initialPaymentMode,
     transactionId,
     getErrorMessage: getApiErrorMessage,
   });
@@ -256,12 +260,18 @@ export function TransactionFormController({
   }
 
   if (isEditMode && loadingTransaction) {
-    return <TransactionFormSkeleton />;
+    return <TransactionFormSkeleton presentation={presentation} />;
   }
 
   if (isEditMode && transactionError) {
     return (
-      <div className="mx-auto w-full max-w-md space-y-4">
+      <div
+        className={
+          presentation === 'dialog'
+            ? 'space-y-4 px-6 py-5'
+            : 'mx-auto w-full max-w-md space-y-4'
+        }
+      >
         <AuthMessage tone="error">{transactionError}</AuthMessage>
         <Button type="button" variant="secondary" onClick={onCancel}>
           Voltar

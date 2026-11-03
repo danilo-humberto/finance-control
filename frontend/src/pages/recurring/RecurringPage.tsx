@@ -143,9 +143,11 @@ export function RecurringPage() {
 
   function handleNewRecurring() {
     if (window.matchMedia('(min-width: 1024px)').matches) {
-      openNewPurchaseDialog();
+      openNewPurchaseDialog({ initialPaymentMode: 'recurring' });
     } else {
-      navigate('/transactions/new');
+      navigate('/transactions/new', {
+        state: { initialPaymentMode: 'recurring' },
+      });
     }
   }
 
