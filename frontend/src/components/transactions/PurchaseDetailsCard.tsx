@@ -1,3 +1,4 @@
+import { Label } from '@/components/ui/Label';
 import { usePreferences } from '@/hooks/usePreferences';
 import {
   BookOpen,
@@ -283,9 +284,9 @@ function PurchaseSelectRow({
 
   return (
     <div className="space-y-1.5">
-      <p className="text-[0.72rem] font-medium leading-none text-app-muted">
+      <Label className="block text-[0.72rem] font-medium leading-none text-app-muted">
         {label}
-      </p>
+      </Label>
       {useDesktopControl ? (
         <Suspense
           fallback={

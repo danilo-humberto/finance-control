@@ -1,17 +1,18 @@
-import { usePreferences } from "@/hooks/usePreferences";
-import { cn } from "@/lib/utils";
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { usePreferences } from '@/hooks/usePreferences';
 import {
   CalendarDays,
   ChevronDown,
   CircleDollarSign,
   Diamond,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   lazy,
   Suspense,
   type InputHTMLAttributes,
   type ReactNode,
-} from "react";
+} from 'react';
 
 const PurchaseDesktopDatePicker = lazy(() =>
   import('./PurchaseDesktopDatePicker').then((module) => ({
@@ -73,9 +74,9 @@ export function PurchaseInfoCard({
         </div>
 
         <div className="border-t border-app-border p-2.5">
-          <p className="mb-1.5 text-[0.72rem] font-medium leading-none text-app-muted">
+          <Label className="mb-1.5 block text-[0.72rem] font-medium leading-none text-app-muted">
             Data da compra
-          </p>
+          </Label>
           {useDesktopControls ? (
             <Suspense
               fallback={
@@ -161,7 +162,7 @@ type PurchaseTextFieldProps = {
   value: string;
   placeholder: string;
   icon: ReactNode;
-  inputMode?: InputHTMLAttributes<HTMLInputElement>["inputMode"];
+  inputMode?: InputHTMLAttributes<HTMLInputElement>['inputMode'];
   onChange: (value: string) => void;
 };
 
@@ -175,26 +176,22 @@ function PurchaseTextField({
   onChange,
 }: PurchaseTextFieldProps) {
   return (
-    <label htmlFor={id} className="block min-w-0 space-y-1.5">
-      <span className="block text-[0.72rem] font-medium leading-none text-app-muted">
+    <div className="min-w-0 space-y-1.5">
+      <Label
+        htmlFor={id}
+        className="block text-[0.72rem] font-medium leading-none text-app-muted"
+      >
         {label}
-      </span>
-      <span className="relative block">
-        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-brand-400">
-          {icon}
-        </span>
-        <input
-          id={id}
-          value={value}
-          inputMode={inputMode}
-          placeholder={placeholder}
-          onChange={(event) => onChange(event.target.value)}
-          className={cn(
-            "h-10 w-full rounded-xl border border-app-border bg-app-bg/35 pl-9 pr-3 text-[0.8rem] text-app-text outline-none transition-colors",
-            "placeholder:text-app-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20",
-          )}
-        />
-      </span>
-    </label>
+      </Label>
+      <Input
+        id={id}
+        value={value}
+        inputMode={inputMode}
+        placeholder={placeholder}
+        leftIcon={<span className="text-brand-400">{icon}</span>}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 rounded-xl bg-app-bg/35 pl-9 pr-3 text-[0.8rem]"
+      />
+    </div>
   );
 }

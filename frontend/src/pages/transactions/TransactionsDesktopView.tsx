@@ -27,6 +27,7 @@ import { type TransactionFilter } from '@/components/transactions/TransactionsFi
 import { type TransactionsSummaryData } from '@/components/transactions/TransactionsSummary';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Input } from '@/components/ui/Input';
 import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
 
@@ -261,20 +262,15 @@ function DesktopTransactionsFilters({
   return (
     <section className="space-y-4" aria-label="Filtros de movimentações">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
-        <label className="relative block">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-app-muted"
-          />
-          <input
-            type="search"
-            aria-label="Buscar movimentação"
-            value={searchTerm}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Buscar movimentação"
-            className="h-12 w-full rounded-2xl border border-app-border bg-app-surface/55 pl-12 pr-4 text-sm text-app-text outline-none transition-colors placeholder:text-app-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
-          />
-        </label>
+        <Input
+          type="search"
+          aria-label="Buscar movimentação"
+          value={searchTerm}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder="Buscar movimentação"
+          leftIcon={<Search aria-hidden="true" className="h-5 w-5" />}
+          className="h-12 rounded-2xl bg-app-surface/55 pl-11 pr-4"
+        />
 
         <Button
           type="button"
