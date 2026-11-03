@@ -20,19 +20,22 @@ import {
   InvoiceSummaryCard,
   type InvoiceSummaryData,
 } from '@/components/invoices/InvoiceSummaryCard';
-import { ActionSheet, type ActionSheetAction } from '@/components/modals/ActionSheet';
+import {
+  ActionSheet,
+  type ActionSheetAction,
+} from '@/components/modals/ActionSheet';
 import { RecurringDeleteDialog } from '@/components/transactions/RecurringDeleteDialog';
-import { useDeleteRecurringTransactionMutation } from '@/hooks/useRecurringTransactionsQuery';
 import { Button } from '@/components/ui/Button';
+import { useCategoriesQuery } from '@/hooks/useCategoriesQuery';
+import { useCreditCardsQuery } from '@/hooks/useCreditCardsQuery';
 import {
   type InstallmentAction,
   useInstallmentActionMutation,
   useInvoiceQuery,
   usePayInvoiceMutation,
 } from '@/hooks/useInvoicesQuery';
-import { useCategoriesQuery } from '@/hooks/useCategoriesQuery';
-import { useCreditCardsQuery } from '@/hooks/useCreditCardsQuery';
 import { useNewPurchaseDialog } from '@/hooks/useNewPurchaseDialog';
+import { useDeleteRecurringTransactionMutation } from '@/hooks/useRecurringTransactionsQuery';
 import { type CreditCard as CreditCardType } from '@/types/credit-card';
 import { type Invoice, type InvoiceInstallment } from '@/types/invoice';
 import {
@@ -147,7 +150,6 @@ function getApiErrorMessage(error: unknown) {
     if (typeof responseMessage === 'string' && responseMessage.trim()) {
       return responseMessage;
     }
-
   }
 
   if (error instanceof Error && error.message) {
@@ -170,10 +172,11 @@ function buildInvoiceSummary(
   const paidAmount = items
     .filter((item) => item.status === 'PAID')
     .reduce((sum, item) => sum + item.amount, 0);
-  const total = invoice?.total ?? (openAmount + paidAmount);
+  const total = invoice?.total ?? openAmount + paidAmount;
   const limit = Number(selectedCard?.limitAmount) || 0;
   const usedPercentage = limit > 0 ? Math.round((total / limit) * 100) : 0;
-  const isInvoiceAllPaid = items.length > 0 && items.every((item) => item.status === 'PAID');
+  const isInvoiceAllPaid =
+    items.length > 0 && items.every((item) => item.status === 'PAID');
 
   return {
     cardName: selectedCard?.name ?? 'Fatura',
@@ -265,8 +268,10 @@ export function InvoicesPage() {
   const [monthManuallyChanged, setMonthManuallyChanged] = useState(
     Boolean(initialInvoiceMonthYear),
   );
-  const [recurringDeleteDialogOpen, setRecurringDeleteDialogOpen] = useState(false);
-  const deleteRecurringTransactionMutation = useDeleteRecurringTransactionMutation();
+  const [recurringDeleteDialogOpen, setRecurringDeleteDialogOpen] =
+    useState(false);
+  const deleteRecurringTransactionMutation =
+    useDeleteRecurringTransactionMutation();
   const [selectedInstallment, setSelectedInstallment] =
     useState<InvoiceInstallment | null>(null);
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
@@ -388,6 +393,7 @@ export function InvoicesPage() {
   useEffect(() => {
     const desktopMediaQuery = window.matchMedia('(min-width: 1024px)');
     const handleViewportChange = (event: MediaQueryListEvent) => {
+      setActionSheetOpen(false);
       setIsDesktopViewport(event.matches);
     };
 
@@ -489,6 +495,12 @@ export function InvoicesPage() {
     setActionSheetOpen(true);
   }
 
+  function handleDesktopCancelRecurring(item: InvoiceInstallment) {
+    setSelectedInstallment(item);
+    setActionSheetOpen(false);
+    setRecurringDeleteDialogOpen(true);
+  }
+
   async function handleInstallmentAction(
     action: InstallmentAction,
     installment: InvoiceInstallment,
@@ -543,7 +555,46 @@ export function InvoicesPage() {
       ];
     }
 
-    const actions: ActionSheetAction[] = []; if (selectedInstallment.status === "OPEN") { actions.push({ label: "Marcar como paga", description: "Atualizar o status desta parcela para paga", icon: CheckCircle2, onClick: () => void handleInstallmentAction("pay", selectedInstallment), }, { label: "Cancelar parcela", description: "Atualizar o status desta parcela para cancelada", icon: Ban, variant: "danger", onClick: () => void handleInstallmentAction("cancel", selectedInstallment), }); } else { actions.push({ label: "Reabrir parcela", description: "Voltar o status desta parcela para aberta", icon: RotateCcw, onClick: () => void handleInstallmentAction("reopen", selectedInstallment), }); } if (selectedInstallment.transaction.recurringTransactionId) { actions.push({ label: "Cancelar assinatura recorrente", description: "Encerrar cobranças automáticas desta assinatura", icon: Repeat, variant: "danger", onClick: () => { setActionSheetOpen(false); setRecurringDeleteDialogOpen(true); }, }); } return actions;
+    const actions: ActionSheetAction[] = [];
+    if (selectedInstallment.status === 'OPEN') {
+      actions.push(
+        {
+          label: 'Marcar como paga',
+          description: 'Atualizar o status desta parcela para paga',
+          icon: CheckCircle2,
+          onClick: () => void handleInstallmentAction('pay', selectedInstallment),
+        },
+        {
+          label: 'Cancelar parcela',
+          description: 'Atualizar o status desta parcela para cancelada',
+          icon: Ban,
+          variant: 'danger',
+          onClick: () =>
+            void handleInstallmentAction('cancel', selectedInstallment),
+        },
+      );
+    } else {
+      actions.push({
+        label: 'Reabrir parcela',
+        description: 'Voltar o status desta parcela para aberta',
+        icon: RotateCcw,
+        onClick: () =>
+          void handleInstallmentAction('reopen', selectedInstallment),
+      });
+    }
+    if (selectedInstallment.transaction.recurringTransactionId) {
+      actions.push({
+        label: 'Cancelar assinatura recorrente',
+        description: 'Encerrar cobranças automáticas desta assinatura',
+        icon: Repeat,
+        variant: 'danger',
+        onClick: () => {
+          setActionSheetOpen(false);
+          setRecurringDeleteDialogOpen(true);
+        },
+      });
+    }
+    return actions;
   }, [actionLoading, selectedInstallment]);
 
   const isInvoiceAllPaid =
@@ -554,7 +605,30 @@ export function InvoicesPage() {
     isInvoiceAllPaid ||
     payInvoiceMutation.isPending;
 
-  async function handleConfirmRecurringDelete(includeCurrentMonth: boolean) { if (!selectedInstallment?.transaction.recurringTransactionId) { return; } try { setFeedbackMessage(null); await deleteRecurringTransactionMutation.mutateAsync({ id: selectedInstallment.transaction.recurringTransactionId, includeCurrentMonth }); setFeedbackMessage({ tone: "success", message: includeCurrentMonth ? "Assinatura cancelada e cobrança do mês removida." : "Assinatura cancelada. Cobranças futuras foram removidas." }); setSelectedInstallment(null); } catch (error) { setFeedbackMessage({ tone: "error", message: getApiErrorMessage(error) }); } }
+  async function handleConfirmRecurringDelete(includeCurrentMonth: boolean) {
+    if (!selectedInstallment?.transaction.recurringTransactionId) {
+      return;
+    }
+    try {
+      setFeedbackMessage(null);
+      await deleteRecurringTransactionMutation.mutateAsync({
+        id: selectedInstallment.transaction.recurringTransactionId,
+        includeCurrentMonth,
+      });
+      setFeedbackMessage({
+        tone: 'success',
+        message: includeCurrentMonth
+          ? 'Assinatura cancelada e cobrança do mês removida.'
+          : 'Assinatura cancelada. Cobranças futuras foram removidas.',
+      });
+      setSelectedInstallment(null);
+    } catch (error) {
+      setFeedbackMessage({
+        tone: 'error',
+        message: getApiErrorMessage(error),
+      });
+    }
+  }
 
   async function handlePayInvoice() {
     try {
@@ -653,6 +727,7 @@ export function InvoicesPage() {
         {isDesktopViewport ? (
           <Suspense fallback={<InvoicesDesktopViewLoadingFallback />}>
             <InvoicesDesktopView
+              actionLoading={actionLoading}
               cardOptions={cardOptions}
               categoryBreakdown={categoryBreakdown}
               categoryOptions={categoryOptions}
@@ -666,9 +741,12 @@ export function InvoicesPage() {
               selectedCardId={selectedCardId}
               selectedCategoryId={selectedCategoryId}
               selectedMonthId={selectedMonthId}
+              onCancelRecurring={handleDesktopCancelRecurring}
               onCardChange={handleCardChange}
               onCategoryChange={setSelectedCategoryId}
-              onItemActionClick={handleInstallmentActionClick}
+              onInstallmentAction={(action, item) =>
+                void handleInstallmentAction(action, item)
+              }
               onMonthChange={handleMonthChange}
               onNewPurchase={openNewPurchaseDialog}
               onRetry={() => {
@@ -686,9 +764,16 @@ export function InvoicesPage() {
         ) : null}
       </div>
 
-      <RecurringDeleteDialog open={recurringDeleteDialogOpen} onOpenChange={setRecurringDeleteDialogOpen} transactionDescription={selectedInstallment?.description ?? ""} confirming={deleteRecurringTransactionMutation.isPending} onConfirm={handleConfirmRecurringDelete} />
+      <RecurringDeleteDialog
+        open={recurringDeleteDialogOpen}
+        onOpenChange={setRecurringDeleteDialogOpen}
+        transactionDescription={selectedInstallment?.description ?? ''}
+        confirming={deleteRecurringTransactionMutation.isPending}
+        onConfirm={handleConfirmRecurringDelete}
+      />
 
-      <ActionSheet open={actionSheetOpen}
+      <ActionSheet
+        open={actionSheetOpen}
         onOpenChange={setActionSheetOpen}
         title={selectedInstallment?.description ?? 'Parcela'}
         actions={installmentActions}

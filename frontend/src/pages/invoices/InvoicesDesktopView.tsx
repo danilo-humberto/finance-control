@@ -1,6 +1,8 @@
 import {
+  Ban,
   CalendarDays,
   Check,
+  CheckCircle2,
   ChevronsUpDown,
   CreditCard,
   LoaderCircle,
@@ -8,6 +10,7 @@ import {
   Plus,
   Receipt,
   Repeat,
+  RotateCcw,
   Tag,
   type LucideIcon,
 } from 'lucide-react';
@@ -45,6 +48,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { type InstallmentAction } from '@/hooks/useInvoicesQuery';
 import { usePreferences } from '@/hooks/usePreferences';
 import { cn } from '@/lib/utils';
 import { type InvoiceInstallment } from '@/types/invoice';
@@ -62,6 +66,7 @@ type FeedbackMessage = {
 } | null;
 
 type InvoicesDesktopViewProps = {
+  actionLoading?: boolean;
   cardOptions: InvoiceFilterOption[];
   categoryBreakdown: InvoiceCategoryBreakdown[];
   categoryOptions: InvoiceFilterOption[];
@@ -75,9 +80,13 @@ type InvoicesDesktopViewProps = {
   selectedCardId: string;
   selectedCategoryId: string;
   selectedMonthId: string;
+  onCancelRecurring: (item: InvoiceInstallment) => void;
   onCardChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
-  onItemActionClick: (item: InvoiceInstallment) => void;
+  onInstallmentAction: (
+    action: InstallmentAction,
+    item: InvoiceInstallment,
+  ) => void;
   onMonthChange: (value: string) => void;
   onNewPurchase: () => void;
   onRetry: () => void;
@@ -103,6 +112,7 @@ const percentageFormatter = new Intl.NumberFormat('pt-BR', {
 });
 
 export function InvoicesDesktopView({
+  actionLoading = false,
   cardOptions,
   categoryBreakdown,
   categoryOptions,
@@ -116,9 +126,10 @@ export function InvoicesDesktopView({
   selectedCardId,
   selectedCategoryId,
   selectedMonthId,
+  onCancelRecurring,
   onCardChange,
   onCategoryChange,
-  onItemActionClick,
+  onInstallmentAction,
   onMonthChange,
   onNewPurchase,
   onRetry,
@@ -182,7 +193,9 @@ export function InvoicesDesktopView({
               leftIcon={<CreditCard aria-hidden="true" className="h-4 w-4" />}
               className="h-11 shrink-0 rounded-xl px-4"
             >
-              {isPayDisabled && items.length > 0 && items.every((i) => i.status === 'PAID')
+              {isPayDisabled &&
+              items.length > 0 &&
+              items.every((i) => i.status === 'PAID')
                 ? 'Fatura já paga'
                 : 'Marcar fatura como paga'}
             </Button>
@@ -237,10 +250,12 @@ export function InvoicesDesktopView({
           </section>
 
           <InvoiceItemsTable
+            actionLoading={actionLoading}
             items={items}
             filteredTotal={filteredTotal}
             categoryFilterActive={Boolean(selectedCategoryId)}
-            onItemActionClick={onItemActionClick}
+            onCancelRecurring={onCancelRecurring}
+            onInstallmentAction={onInstallmentAction}
             onNewPurchase={onNewPurchase}
           />
         </>
@@ -380,7 +395,12 @@ function InvoiceUsagePanel({ invoice }: { invoice: InvoiceSummaryData }) {
           <h2 className="truncate text-base font-semibold text-app-text">
             {invoice.cardName}
           </h2>
-          <p className={cn("mt-1 text-xs font-medium", invoice.status === 'PAID' ? "text-emerald-400" : "text-brand-400")}>
+          <p
+            className={cn(
+              'mt-1 text-xs font-medium',
+              invoice.status === 'PAID' ? 'text-emerald-400' : 'text-brand-400',
+            )}
+          >
             {invoice.status === 'PAID' ? 'Fatura paga' : 'Fatura aberta'}
           </p>
         </div>
@@ -530,10 +550,7 @@ function CategoryBreakdownPanel({
         dominantBaseline="middle"
         style={{ fontVariantNumeric: 'tabular-nums' }}
       >
-        <tspan
-          fill="rgb(var(--color-text-secondary))"
-          fontSize={11}
-        >
+        <tspan fill="rgb(var(--color-text-secondary))" fontSize={11}>
           {percentageFormatter.format(category.percentage)}%
         </tspan>
         <tspan
@@ -625,7 +642,10 @@ function CategoryBreakdownPanel({
       ) : (
         <div className="mt-5 flex min-h-64 items-center justify-center rounded-xl border border-dashed border-app-border bg-app-bg/25 px-6 text-center">
           <div>
-            <Receipt aria-hidden="true" className="mx-auto h-6 w-6 text-app-muted" />
+            <Receipt
+              aria-hidden="true"
+              className="mx-auto h-6 w-6 text-app-muted"
+            />
             <p className="mt-3 text-sm font-semibold text-app-text">
               Nenhum gasto para analisar
             </p>
@@ -640,22 +660,32 @@ function CategoryBreakdownPanel({
 }
 
 function InvoiceItemsTable({
+  actionLoading = false,
   categoryFilterActive,
   filteredTotal,
   items,
-  onItemActionClick,
+  onCancelRecurring,
+  onInstallmentAction,
   onNewPurchase,
 }: {
+  actionLoading?: boolean;
   categoryFilterActive: boolean;
   filteredTotal: number;
   items: InvoiceInstallment[];
-  onItemActionClick: (item: InvoiceInstallment) => void;
+  onCancelRecurring: (item: InvoiceInstallment) => void;
+  onInstallmentAction: (
+    action: InstallmentAction,
+    item: InvoiceInstallment,
+  ) => void;
   onNewPurchase: () => void;
 }) {
   const { formatCurrency, formatDateLabel } = usePreferences();
 
   return (
-    <section className="space-y-3" aria-labelledby="desktop-invoice-items-title">
+    <section
+      className="space-y-3"
+      aria-labelledby="desktop-invoice-items-title"
+    >
       <div className="flex items-end justify-between gap-4">
         <div>
           <h2
@@ -729,8 +759,25 @@ function InvoiceItemsTable({
                   </td>
                   <td className="px-4 py-3 text-app-muted">
                     <div className="flex items-center gap-2">
-                      <span>{item.transaction.recurringTransactionId ? (<span className="inline-flex items-center gap-1 font-medium text-brand-400"><Repeat aria-hidden="true" className="h-3.5 w-3.5" />Recorrente</span>) : item.totalInstallments > 1 ? `${item.installmentNumber}/${item.totalInstallments}` : 'À vista'}</span>
-                      <Badge variant={item.status === 'PAID' ? 'success' : 'muted'} className="text-[0.62rem] px-1.5 py-0 leading-tight">
+                      <span>
+                        {item.transaction.recurringTransactionId ? (
+                          <span className="inline-flex items-center gap-1 font-medium text-brand-400">
+                            <Repeat
+                              aria-hidden="true"
+                              className="h-3.5 w-3.5"
+                            />
+                            Recorrente
+                          </span>
+                        ) : item.totalInstallments > 1 ? (
+                          `${item.installmentNumber}/${item.totalInstallments}`
+                        ) : (
+                          'À vista'
+                        )}
+                      </span>
+                      <Badge
+                        variant={item.status === 'PAID' ? 'success' : 'muted'}
+                        className="px-1.5 py-0 text-[0.62rem] leading-tight"
+                      >
                         {item.status === 'PAID' ? 'Paga' : 'Aberta'}
                       </Badge>
                     </div>
@@ -739,14 +786,12 @@ function InvoiceItemsTable({
                     {formatCurrency(item.amount)}
                   </td>
                   <td className="px-3 py-3 text-right">
-                    <button
-                      type="button"
-                      aria-label={`Abrir ações de ${item.description}`}
-                      onClick={() => onItemActionClick(item)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-app-muted transition-colors hover:bg-app-elevated hover:text-app-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                    >
-                      <MoreHorizontal aria-hidden="true" className="h-4 w-4" />
-                    </button>
+                    <InvoiceItemActionsMenu
+                      actionLoading={actionLoading}
+                      item={item}
+                      onCancelRecurring={onCancelRecurring}
+                      onInstallmentAction={onInstallmentAction}
+                    />
                   </td>
                 </tr>
               ))}
@@ -776,6 +821,108 @@ function InvoiceItemsTable({
         />
       )}
     </section>
+  );
+}
+
+function InvoiceItemActionsMenu({
+  actionLoading = false,
+  item,
+  onCancelRecurring,
+  onInstallmentAction,
+}: {
+  actionLoading?: boolean;
+  item: InvoiceInstallment;
+  onCancelRecurring: (item: InvoiceInstallment) => void;
+  onInstallmentAction: (
+    action: InstallmentAction,
+    item: InvoiceInstallment,
+  ) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const isOpenStatus = item.status === 'OPEN';
+  const isRecurring = Boolean(item.transaction.recurringTransactionId);
+
+  function handleSelectAction(action: InstallmentAction) {
+    setOpen(false);
+    onInstallmentAction(action, item);
+  }
+
+  function handleCancelRecurring() {
+    setOpen(false);
+    onCancelRecurring(item);
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`Abrir ações de ${item.description}`}
+          aria-expanded={open}
+          disabled={actionLoading}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-app-muted transition-colors hover:bg-app-elevated hover:text-app-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <MoreHorizontal aria-hidden="true" className="h-4 w-4" />
+        </button>
+      </PopoverTrigger>
+
+      <PopoverContent
+        align="end"
+        className="w-60 overflow-hidden rounded-xl border border-app-border bg-app-surface p-1.5 shadow-2xl shadow-black/40"
+      >
+        {isOpenStatus ? (
+          <>
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={() => handleSelectAction('pay')}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <CheckCircle2
+                aria-hidden="true"
+                className="h-4 w-4 shrink-0 text-brand-400"
+              />
+              <span>Marcar como paga</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={() => handleSelectAction('cancel')}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-400 transition-colors hover:bg-danger-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Ban aria-hidden="true" className="h-4 w-4 shrink-0" />
+              <span>Cancelar parcela</span>
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            disabled={actionLoading}
+            onClick={() => handleSelectAction('reopen')}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text transition-colors hover:bg-app-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <RotateCcw
+              aria-hidden="true"
+              className="h-4 w-4 shrink-0 text-brand-400"
+            />
+            <span>Reabrir parcela</span>
+          </button>
+        )}
+
+        {isRecurring ? (
+          <button
+            type="button"
+            disabled={actionLoading}
+            onClick={handleCancelRecurring}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-400 transition-colors hover:bg-danger-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Repeat aria-hidden="true" className="h-4 w-4 shrink-0" />
+            <span>Cancelar assinatura recorrente</span>
+          </button>
+        ) : null}
+      </PopoverContent>
+    </Popover>
   );
 }
 
