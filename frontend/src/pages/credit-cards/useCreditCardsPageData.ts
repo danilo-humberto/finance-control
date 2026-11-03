@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -200,6 +200,7 @@ export function useCreditCardsPageData() {
   );
   const [cardSheetOpen, setCardSheetOpen] = useState(false);
   const [cardFormMode, setCardFormMode] = useState<'create' | 'edit'>('create');
+  const [cardSubmitError, setCardSubmitError] = useState<string | null>(null);
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage>(null);
@@ -256,6 +257,7 @@ export function useCreditCardsPageData() {
 
   function handleCreateClick() {
     setFeedbackMessage(null);
+    setCardSubmitError(null);
     setSelectedCard(null);
     setCardFormMode('create');
     setCardSheetOpen(true);
@@ -279,6 +281,7 @@ export function useCreditCardsPageData() {
     }
 
     setFeedbackMessage(null);
+    setCardSubmitError(null);
     setSelectedCard(cardToEdit);
     setCardFormMode('edit');
     setActionSheetOpen(false);
@@ -308,18 +311,24 @@ export function useCreditCardsPageData() {
     navigate(`/invoices?creditCardId=${encodeURIComponent(cardToView.id)}`);
   }
 
+  const handleCardFormOpenChange = useCallback((open: boolean) => {
+    setCardSheetOpen(open);
+
+    if (!open) {
+      setCardSubmitError(null);
+    }
+  }, []);
+
   async function handleCardSubmit(values: CardFormValues) {
     setFeedbackMessage(null);
+    setCardSubmitError(null);
 
     let payload: CreateCreditCardPayload;
 
     try {
       payload = buildCreditCardPayload(values, selectedCard);
     } catch (error) {
-      setFeedbackMessage({
-        tone: 'error',
-        message: getApiErrorMessage(error),
-      });
+      setCardSubmitError(getApiErrorMessage(error));
       return;
     }
 
@@ -351,11 +360,8 @@ export function useCreditCardsPageData() {
       setCardSheetOpen(false);
     } catch (error) {
       const errorMsg = getApiErrorMessage(error);
+      setCardSubmitError(errorMsg);
       toast.error(errorMsg);
-      setFeedbackMessage({
-        tone: 'error',
-        message: errorMsg,
-      });
     }
   }
 
@@ -389,6 +395,7 @@ export function useCreditCardsPageData() {
     cardItems,
     cards,
     cardSheetOpen,
+    cardSubmitError,
     deleteDialogOpen,
     deletingCard,
     feedbackMessage,
@@ -396,11 +403,11 @@ export function useCreditCardsPageData() {
     loading,
     onActionSheetOpenChange: setActionSheetOpen,
     onCardFormDelete: () => {
-      setCardSheetOpen(false);
+      handleCardFormOpenChange(false);
       setDeleteDialogOpen(true);
     },
     onCardMenuClick: handleCardMenuClick,
-    onCardSheetOpenChange: setCardSheetOpen,
+    onCardSheetOpenChange: handleCardFormOpenChange,
     onCardSubmit: handleCardSubmit,
     onConfirmDelete: handleConfirmDelete,
     onCreateClick: handleCreateClick,

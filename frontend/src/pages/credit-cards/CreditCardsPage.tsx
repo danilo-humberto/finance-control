@@ -1,5 +1,7 @@
 import { Edit3, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
+import { CardFormDialog } from '@/components/credit-cards/CardFormDialog';
 import { ActionSheet } from '@/components/modals/ActionSheet';
 import { ConfirmDialog } from '@/components/modals/ConfirmDialog';
 import { CardFormSheet } from '@/components/sheets/CardFormSheet';
@@ -8,8 +10,28 @@ import { CreditCardsDesktopView } from './CreditCardsDesktopView';
 import { CreditCardsMobileView } from './CreditCardsMobileView';
 import { useCreditCardsPageData } from './useCreditCardsPageData';
 
+const desktopMediaQuery = '(min-width: 1024px)';
+
 export function CreditCardsPage() {
   const creditCardsData = useCreditCardsPageData();
+  const [isDesktopViewport, setIsDesktopViewport] = useState(() =>
+    window.matchMedia(desktopMediaQuery).matches,
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(desktopMediaQuery);
+
+    function handleViewportChange(event: MediaQueryListEvent) {
+      creditCardsData.onCardSheetOpenChange(false);
+      setIsDesktopViewport(event.matches);
+    }
+
+    mediaQuery.addEventListener('change', handleViewportChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleViewportChange);
+    };
+  }, [creditCardsData.onCardSheetOpenChange]);
 
   return (
     <>
@@ -45,16 +67,30 @@ export function CreditCardsPage() {
         ]}
       />
 
-      <CardFormSheet
-        open={creditCardsData.cardSheetOpen}
-        onOpenChange={creditCardsData.onCardSheetOpenChange}
-        mode={creditCardsData.cardFormMode}
-        closeOnSubmit={false}
-        submitting={creditCardsData.submittingCard}
-        initialData={creditCardsData.cardFormInitialData}
-        onSubmit={creditCardsData.onCardSubmit}
-        onDelete={creditCardsData.onCardFormDelete}
-      />
+      {isDesktopViewport ? (
+        <CardFormDialog
+          open={creditCardsData.cardSheetOpen}
+          onOpenChange={creditCardsData.onCardSheetOpenChange}
+          mode={creditCardsData.cardFormMode}
+          submitting={creditCardsData.submittingCard}
+          submitError={creditCardsData.cardSubmitError}
+          initialData={creditCardsData.cardFormInitialData}
+          onSubmit={creditCardsData.onCardSubmit}
+          onDelete={creditCardsData.onCardFormDelete}
+        />
+      ) : (
+        <CardFormSheet
+          open={creditCardsData.cardSheetOpen}
+          onOpenChange={creditCardsData.onCardSheetOpenChange}
+          mode={creditCardsData.cardFormMode}
+          closeOnSubmit={false}
+          submitting={creditCardsData.submittingCard}
+          submitError={creditCardsData.cardSubmitError}
+          initialData={creditCardsData.cardFormInitialData}
+          onSubmit={creditCardsData.onCardSubmit}
+          onDelete={creditCardsData.onCardFormDelete}
+        />
+      )}
 
       <ConfirmDialog
         open={creditCardsData.deleteDialogOpen}
